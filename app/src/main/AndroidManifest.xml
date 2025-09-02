@@ -12,7 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SyncTask">
         <activity
-            android:name=".activities.MainActivity"
+            android:name=".activities.LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -22,7 +22,8 @@
         </activity>
 
         <activity
-            android:name=".activities.LoginActivity"
+
+            android:name=".activities.MainActivity"
             android:exported="false" />
 
         <activity

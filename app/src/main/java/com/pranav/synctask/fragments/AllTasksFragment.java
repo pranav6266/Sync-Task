@@ -1,6 +1,7 @@
 package com.pranav.synctask.fragments;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,6 +11,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.pranav.synctask.R;
 import com.pranav.synctask.adapters.TaskAdapter;
@@ -38,18 +40,23 @@ public class AllTasksFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-        String currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        listenerRegistration = FirebaseHelper.getTasks(currentUserId, new FirebaseHelper.TasksCallback() {
-            @Override
-            public void onSuccess(List<Task> tasks) {
-                adapter.updateTasks(tasks);
-            }
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            String currentUserId = currentUser.getUid();
+            listenerRegistration = FirebaseHelper.getTasks(currentUserId, new FirebaseHelper.TasksCallback() {
+                @Override
+                public void onSuccess(List<Task> tasks) {
+                    adapter.updateTasks(tasks);
+                }
 
-            @Override
-            public void onError(Exception e) {
-                // Handle error
-            }
-        });
+                @Override
+                public void onError(Exception e) {
+                    Log.e("AllTasksFragment", "Error loading tasks", e);
+                }
+            });
+        } else {
+            Log.e("AllTasksFragment", "User is not authenticated, cannot load tasks.");
+        }
     }
 
     @Override
