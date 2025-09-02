@@ -5,25 +5,23 @@
     <color name="white">#FFFFFFFF</color>
 
     <!-- App Theme Colors -->
-    <color name="primary_color">#2E7D32</color> <!-- A deep, pleasant green -->
-    <color name="primary_dark_color">#1B5E20</color> <!-- A darker shade for the status bar -->
-    <color name="accent_color">#4CAF50</color> <!-- A vibrant green for FABs and highlights -->
+    <color name="primary_color">#00695C</color> <!-- Teal Green -->
+    <color name="primary_dark_color">#004D40</color> <!-- Darker Teal for status bar -->
+    <color name="accent_color">#00BFA5</color> <!-- Bright Teal for FABs and highlights -->
 
     <!-- UI Component Colors -->
-    <color name="background_color">#F5F5F5</color> <!-- A light gray background for contrast -->
+    <color name="background_color">#ECEFF1</color> <!-- Light Blue Grey for background -->
     <color name="card_background_color">#FFFFFF</color> <!-- White for cards -->
-    <color name="primary_text">#212121</color> <!-- Dark gray for primary text, easy to read -->
-    <color name="secondary_text">#757575</color> <!-- Lighter gray for secondary text -->
-    <color name="divider_color">#BDBDBD</color> <!-- A subtle line color -->
+    <color name="primary_text">#263238</color> <!-- Dark Blue Grey for primary text -->
+    <color name="secondary_text">#546E7A</color> <!-- Lighter Blue Grey for secondary text -->
+    <color name="divider_color">#B0BEC5</color> <!-- A subtle line color -->
 
     <!-- Specific Component Colors -->
-    <color name="tab_text_unselected">#A5D6A7</color> <!-- A light, faded green for unselected tabs -->
+    <color name="tab_text_unselected">#80CBC4</color> <!-- A light, faded teal for unselected tabs -->
     <color name="google_btn_color">#4285F4</color> <!-- Official Google Blue -->
-    <color name="delete_icon_color">#F44336</color> <!-- A standard red for delete actions -->
+    <color name="delete_icon_color">#D32F2F</color> <!-- A material red for delete actions -->
 
     <!-- Task Background Colors -->
-    <color name="my_task_bg">#E8F5E8</color>        <!-- Light green for user's tasks -->
-    <color name="partner_task_bg">#F3E5F5</color>   <!-- Light purple for partner's tasks -->
-
+    <color name="my_task_bg">#00796B</color>        <!-- Teal for user's tasks side bar -->
+    <color name="partner_task_bg">#5E35B1</color>   <!-- Deep Purple for partner's tasks side bar -->
 </resources>
-

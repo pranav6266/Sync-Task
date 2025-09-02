@@ -3,7 +3,9 @@ package com.pranav.synctask.activities;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -18,7 +20,6 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
-import com.google.firebase.firestore.FirebaseFirestore;
 import com.pranav.synctask.R;
 import com.pranav.synctask.models.User;
 import com.pranav.synctask.utils.FirebaseHelper;
@@ -29,7 +30,8 @@ public class LoginActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
     private GoogleSignInClient mGoogleSignInClient;
-    private FirebaseFirestore db;
+    private ProgressBar progressBar;
+    private Button signInButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,9 +39,7 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(R.layout.activity_login);
 
         mAuth = FirebaseAuth.getInstance();
-        db = FirebaseFirestore.getInstance();
 
-        // Configure Google Sign In
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken(getString(R.string.default_web_client_id))
                 .requestEmail()
@@ -47,7 +47,9 @@ public class LoginActivity extends AppCompatActivity {
 
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
 
-        Button signInButton = findViewById(R.id.btn_google_sign_in);
+        signInButton = findViewById(R.id.btn_google_sign_in);
+        progressBar = findViewById(R.id.login_progress_bar);
+
         signInButton.setOnClickListener(v -> signIn());
     }
 
@@ -56,6 +58,7 @@ public class LoginActivity extends AppCompatActivity {
         super.onStart();
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null) {
+            showLoading(true);
             checkUserPairingStatus(currentUser);
         }
     }
@@ -70,6 +73,7 @@ public class LoginActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == RC_SIGN_IN) {
+            showLoading(true);
             Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
             try {
                 GoogleSignInAccount account = task.getResult(ApiException.class);
@@ -77,6 +81,7 @@ public class LoginActivity extends AppCompatActivity {
             } catch (ApiException e) {
                 Log.w(TAG, "Google sign in failed", e);
                 Toast.makeText(this, "Authentication failed.", Toast.LENGTH_SHORT).show();
+                showLoading(false);
             }
         }
     }
@@ -92,19 +97,13 @@ public class LoginActivity extends AppCompatActivity {
                         Log.w(TAG, "signInWithCredential:failure", task.getException());
                         Toast.makeText(LoginActivity.this, "Authentication failed.",
                                 Toast.LENGTH_SHORT).show();
+                        showLoading(false);
                     }
                 });
     }
 
     private void createOrUpdateUser(FirebaseUser firebaseUser) {
-        User user = new User(
-                firebaseUser.getUid(),
-                firebaseUser.getEmail(),
-                firebaseUser.getDisplayName(),
-                firebaseUser.getPhotoUrl() != null ? firebaseUser.getPhotoUrl().toString() : null
-        );
-
-        FirebaseHelper.createOrUpdateUser(user, new FirebaseHelper.UserCallback() {
+        FirebaseHelper.createOrUpdateUser(firebaseUser, new FirebaseHelper.UserCallback() {
             @Override
             public void onSuccess(User user) {
                 checkUserPairingStatus(firebaseUser);
@@ -113,8 +112,9 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onError(Exception e) {
                 Log.e(TAG, "Error creating/updating user", e);
-                Toast.makeText(LoginActivity.this, "Error setting up user profile",
+                Toast.makeText(LoginActivity.this, "Error setting up user profile.",
                         Toast.LENGTH_SHORT).show();
+                showLoading(false);
             }
         });
     }
@@ -124,10 +124,8 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onSuccess(User userData) {
                 if (userData.getPairedWithUID() != null && !userData.getPairedWithUID().isEmpty()) {
-                    // User is paired, go to main activity
                     startActivity(new Intent(LoginActivity.this, MainActivity.class));
                 } else {
-                    // User needs to be paired
                     startActivity(new Intent(LoginActivity.this, PairingActivity.class));
                 }
                 finish();
@@ -136,9 +134,20 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onError(Exception e) {
                 Log.e(TAG, "Error checking pairing status", e);
-                Toast.makeText(LoginActivity.this, "Error loading user data",
+                Toast.makeText(LoginActivity.this, "Error loading user data.",
                         Toast.LENGTH_SHORT).show();
+                showLoading(false);
             }
         });
+    }
+
+    private void showLoading(boolean isLoading) {
+        if (isLoading) {
+            progressBar.setVisibility(View.VISIBLE);
+            signInButton.setVisibility(View.GONE);
+        } else {
+            progressBar.setVisibility(View.GONE);
+            signInButton.setVisibility(View.VISIBLE);
+        }
     }
 }

@@ -10,6 +10,7 @@
     <string name="add_task_content_description">Add Task</string>
     <string name="logo_content_description">SyncTask Logo</string>
     <string name="delete_task_content_description">Delete Task</string>
+    <string name="task_type_icon_desc">Task Type Icon</string>
 
     <!-- Login Activity -->
     <string name="app_tagline">Share tasks with your partner</string>
@@ -18,7 +19,7 @@
     <!-- Pairing Activity -->
     <string name="pair_with_partner_title">Pair with your partner</string>
     <string name="your_partner_code_label">Your Partner Code</string>
-    <string name="share_code_instruction">Share this code with your partner</string>
+    <string name="share_code_instruction">Tap code to copy. Share it with your partner.</string>
     <string name="enter_partner_code_label">Enter Partner\'s Code</string>
     <string name="partner_code_hint">Partner Code</string>
     <string name="pair_button_text">Pair with Partner</string>
@@ -36,5 +37,7 @@
     <string name="task_creator_label_you">You</string>
     <string name="task_creator_label_partner">Partner</string>
 
-</resources>
+    <!-- Empty State -->
+    <string name="no_tasks_message">No tasks here yet!\nPull down to refresh.</string>
 
+</resources>

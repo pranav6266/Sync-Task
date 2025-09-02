@@ -2,8 +2,11 @@ package com.pranav.synctask.utils;
 
 import android.util.Log;
 
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.pranav.synctask.models.Task;
@@ -17,7 +20,7 @@ public class FirebaseHelper {
     private static final String USERS_COLLECTION = "users";
     private static final String TASKS_COLLECTION = "tasks";
 
-    // User operations
+    // Callbacks
     public interface UserCallback {
         void onSuccess(User user);
         void onError(Exception e);
@@ -33,35 +36,43 @@ public class FirebaseHelper {
         void onError(Exception e);
     }
 
-    public static void createOrUpdateUser(User user, UserCallback callback) {
-        db.collection(USERS_COLLECTION)
-                .document(user.getUid())
-                .get()
-                .addOnSuccessListener(document -> {
-                    if (document.exists()) {
-                        // User exists, update only basic info
-                        User existingUser = document.toObject(User.class);
-                        existingUser.setEmail(user.getEmail());
-                        existingUser.setDisplayName(user.getDisplayName());
-                        existingUser.setPhotoURL(user.getPhotoURL());
+    /**
+     * Creates a new user document in Firestore if one doesn't exist,
+     * or updates the profile information if the user already exists.
+     * This ensures that the partnerCode and pairedWithUID are not overwritten on subsequent logins.
+     */
+    public static void createOrUpdateUser(FirebaseUser firebaseUser, UserCallback callback) {
+        DocumentReference userDocRef = db.collection(USERS_COLLECTION).document(firebaseUser.getUid());
 
-                        db.collection(USERS_COLLECTION)
-                                .document(user.getUid())
-                                .set(existingUser.toMap())
-                                .addOnSuccessListener(aVoid -> callback.onSuccess(existingUser))
-                                .addOnFailureListener(callback::onError);
-                    } else {
-                        // Create new user
-                        db.collection(USERS_COLLECTION)
-                                .document(user.getUid())
-                                .set(user.toMap())
-                                .addOnSuccessListener(aVoid -> callback.onSuccess(user))
-                                .addOnFailureListener(callback::onError);
-                    }
-                })
-                .addOnFailureListener(callback::onError);
+        userDocRef.get().addOnSuccessListener(document -> {
+            if (document.exists()) {
+                // User exists, just update their profile info
+                userDocRef.update(
+                        "displayName", firebaseUser.getDisplayName(),
+                        "photoURL", firebaseUser.getPhotoUrl() != null ? firebaseUser.getPhotoUrl().toString() : null
+                ).addOnSuccessListener(aVoid -> {
+                    // Return the full user object after update
+                    getUser(firebaseUser.getUid(), callback);
+                }).addOnFailureListener(callback::onError);
+            } else {
+                // This is a new user, create the document
+                User newUser = new User(
+                        firebaseUser.getUid(),
+                        firebaseUser.getEmail(),
+                        firebaseUser.getDisplayName(),
+                        firebaseUser.getPhotoUrl() != null ? firebaseUser.getPhotoUrl().toString() : null
+                );
+                userDocRef.set(newUser)
+                        .addOnSuccessListener(aVoid -> callback.onSuccess(newUser))
+                        .addOnFailureListener(callback::onError);
+            }
+        }).addOnFailureListener(callback::onError);
     }
 
+
+    /**
+     * Fetches a user's data from Firestore.
+     */
     public static void getUser(String uid, UserCallback callback) {
         db.collection(USERS_COLLECTION)
                 .document(uid)
@@ -77,38 +88,53 @@ public class FirebaseHelper {
                 .addOnFailureListener(callback::onError);
     }
 
+    /**
+     * Pairs the current user with a partner using their code.
+     * This operation is performed in a transaction to ensure atomicity.
+     * It checks if either user is already paired before proceeding.
+     */
     public static void pairUsers(String currentUserUID, String partnerCode, PairingCallback callback) {
-        // Find user with the partner code
         db.collection(USERS_COLLECTION)
-                .whereEqualTo("partnerCode", partnerCode)
+                .whereEqualTo("partnerCode", partnerCode.toUpperCase())
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
-                    if (querySnapshot.isEmpty()) {
-                        callback.onError(new Exception("Invalid partner code"));
+                    if (querySnapshot.isEmpty() || querySnapshot.getDocuments().get(0).getId().equals(currentUserUID)) {
+                        callback.onError(new Exception("Invalid partner code. Please check and try again."));
                         return;
                     }
 
-                    DocumentSnapshot partnerDoc = querySnapshot.getDocuments().get(0);
-                    User partner = partnerDoc.toObject(User.class);
+                    DocumentSnapshot partnerDocSnapshot = querySnapshot.getDocuments().get(0);
+                    String partnerUID = partnerDocSnapshot.getId();
 
-                    if (partner.getPairedWithUID() != null && !partner.getPairedWithUID().isEmpty()) {
-                        callback.onError(new Exception("Partner is already paired with someone else"));
-                        return;
-                    }
-
-                    // Update both users
                     db.runTransaction(transaction -> {
-                                // Update current user
-                                transaction.update(db.collection(USERS_COLLECTION).document(currentUserUID),
-                                        "pairedWithUID", partner.getUid());
+                                DocumentReference currentUserRef = db.collection(USERS_COLLECTION).document(currentUserUID);
+                                DocumentReference partnerUserRef = db.collection(USERS_COLLECTION).document(partnerUID);
 
-                                // Update partner
-                                transaction.update(db.collection(USERS_COLLECTION).document(partner.getUid()),
-                                        "pairedWithUID", currentUserUID);
+                                DocumentSnapshot currentUserDoc = transaction.get(currentUserRef);
+                                DocumentSnapshot partnerDoc = transaction.get(partnerUserRef);
 
-                                return null;
+                                if (!currentUserDoc.exists() || !partnerDoc.exists()) {
+                                    throw new FirebaseFirestoreException("User document not found.", FirebaseFirestoreException.Code.ABORTED);
+                                }
+
+                                User currentUser = currentUserDoc.toObject(User.class);
+                                User partnerUser = partnerDoc.toObject(User.class);
+
+                                if (currentUser != null && currentUser.getPairedWithUID() != null && !currentUser.getPairedWithUID().isEmpty()) {
+                                    throw new FirebaseFirestoreException("You are already paired with someone.", FirebaseFirestoreException.Code.ABORTED);
+                                }
+
+                                if (partnerUser != null && partnerUser.getPairedWithUID() != null && !partnerUser.getPairedWithUID().isEmpty()) {
+                                    throw new FirebaseFirestoreException("Your partner is already paired with someone else.", FirebaseFirestoreException.Code.ABORTED);
+                                }
+
+                                // All checks passed, perform the pairing
+                                transaction.update(currentUserRef, "pairedWithUID", partnerUID);
+                                transaction.update(partnerUserRef, "pairedWithUID", currentUserUID);
+
+                                return null; // Transaction success
                             }).addOnSuccessListener(aVoid -> callback.onSuccess())
-                            .addOnFailureListener(callback::onError);
+                            .addOnFailureListener(e -> callback.onError(new Exception(e.getMessage())));
                 })
                 .addOnFailureListener(callback::onError);
     }
@@ -119,7 +145,7 @@ public class FirebaseHelper {
                 .add(task.toMap())
                 .addOnSuccessListener(documentReference -> {
                     Log.d(TAG, "Task created with ID: " + documentReference.getId());
-                    // Note: callback could be modified to return the created task with ID
+                    // The listener will pick up the new task, so no need to call onSuccess here
                 })
                 .addOnFailureListener(e -> {
                     Log.w(TAG, "Error creating task", e);

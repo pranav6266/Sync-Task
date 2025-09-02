@@ -1,20 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/pairing_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/background_color"
     android:orientation="vertical"
-    android:padding="24dp"
-    android:background="@color/background_color">
+    android:padding="24dp">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
         android:text="@string/pair_with_partner_title"
-        android:textSize="24sp"
-        android:textStyle="bold"
         android:textColor="@color/primary_text"
-        android:layout_marginBottom="24dp" />
+        android:textSize="24sp"
+        android:textStyle="bold" />
 
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
@@ -32,30 +33,37 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
                 android:text="@string/your_partner_code_label"
-                android:textSize="16sp"
-                android:textStyle="bold"
                 android:textColor="@color/primary_text"
-                android:layout_marginBottom="8dp" />
+                android:textSize="16sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tv_partner_code"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="A7B1C9"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:textColor="@color/accent_color"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="12dp"
                 android:background="@drawable/code_background"
-                android:padding="12dp"
-                android:layout_marginBottom="12dp" />
+                android:letterSpacing="0.2"
+                android:paddingStart="24dp"
+                android:paddingTop="12dp"
+                android:paddingEnd="24dp"
+                android:paddingBottom="12dp"
+                android:text="LOADING..."
+                android:textColor="@color/accent_color"
+                android:textSize="24sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
                 android:text="@string/share_code_instruction"
-                android:textSize="14sp"
-                android:textColor="@color/secondary_text" />
+                android:textAlignment="center"
+                android:textColor="@color/secondary_text"
+                android:textSize="14sp" />
 
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -75,17 +83,17 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
                 android:text="@string/enter_partner_code_label"
-                android:textSize="16sp"
-                android:textStyle="bold"
                 android:textColor="@color/primary_text"
-                android:layout_marginBottom="12dp" />
+                android:textSize="16sp"
+                android:textStyle="bold" />
 
             <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                android:layout_marginBottom="16dp">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/et_partner_code"
@@ -97,15 +105,27 @@
 
             </com.google.android.material.textfield.TextInputLayout>
 
-            <Button
-                android:id="@+id/btn_pair"
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:text="@string/pair_button_text"
-                android:textColor="@android:color/white"
-                android:background="@drawable/btn_primary"
-                android:textSize="16sp"
-                android:textAllCaps="false" />
+                android:layout_height="56dp">
+
+                <Button
+                    android:id="@+id/btn_pair"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/btn_primary"
+                    android:text="@string/pair_button_text"
+                    android:textAllCaps="false"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp" />
+
+                <ProgressBar
+                    android:id="@+id/pairing_progress_bar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:visibility="gone" />
+            </FrameLayout>
 
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
