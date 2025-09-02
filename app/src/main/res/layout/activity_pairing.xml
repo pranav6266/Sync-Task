@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -9,7 +10,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Pair with your partner"
+        android:text="@string/pair_with_partner_title"
         android:textSize="24sp"
         android:textStyle="bold"
         android:textColor="@color/primary_text"
@@ -31,7 +32,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Your Partner Code"
+                android:text="@string/your_partner_code_label"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:textColor="@color/primary_text"
@@ -52,7 +53,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Share this code with your partner"
+                android:text="@string/share_code_instruction"
                 android:textSize="14sp"
                 android:textColor="@color/secondary_text" />
 
@@ -74,7 +75,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Enter Partner's Code"
+                android:text="@string/enter_partner_code_label"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:textColor="@color/primary_text"
@@ -90,7 +91,7 @@
                     android:id="@+id/et_partner_code"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Partner Code"
+                    android:hint="@string/partner_code_hint"
                     android:inputType="textCapCharacters"
                     android:maxLength="6" />
 
@@ -100,7 +101,7 @@
                 android:id="@+id/btn_pair"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
-                android:text="Pair with Partner"
+                android:text="@string/pair_button_text"
                 android:textColor="@android:color/white"
                 android:background="@drawable/btn_primary"
                 android:textSize="16sp"

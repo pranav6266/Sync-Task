@@ -1,5 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Base Colors -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- App Theme Colors -->
+    <color name="primary_color">#2E7D32</color> <!-- A deep, pleasant green -->
+    <color name="primary_dark_color">#1B5E20</color> <!-- A darker shade for the status bar -->
+    <color name="accent_color">#4CAF50</color> <!-- A vibrant green for FABs and highlights -->
+
+    <!-- UI Component Colors -->
+    <color name="background_color">#F5F5F5</color> <!-- A light gray background for contrast -->
+    <color name="card_background_color">#FFFFFF</color> <!-- White for cards -->
+    <color name="primary_text">#212121</color> <!-- Dark gray for primary text, easy to read -->
+    <color name="secondary_text">#757575</color> <!-- Lighter gray for secondary text -->
+    <color name="divider_color">#BDBDBD</color> <!-- A subtle line color -->
+
+    <!-- Specific Component Colors -->
+    <color name="tab_text_unselected">#A5D6A7</color> <!-- A light, faded green for unselected tabs -->
+    <color name="google_btn_color">#4285F4</color> <!-- Official Google Blue -->
+    <color name="delete_icon_color">#F44336</color> <!-- A standard red for delete actions -->
+
 </resources>
+

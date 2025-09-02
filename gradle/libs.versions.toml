@@ -10,6 +10,8 @@ constraintlayout = "2.2.1"
 firebaseCommon = "22.0.0"
 firebaseFirestore = "26.0.0"
 firebaseAuth = "24.0.1"
+playServicesAuth = "21.2.0"
+googleGmsGoogleServices = "4.4.2"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -22,7 +24,9 @@ constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayo
 firebase-common = { group = "com.google.firebase", name = "firebase-common", version.ref = "firebaseCommon" }
 firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firebaseFirestore" }
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth", version.ref = "firebaseAuth" }
+play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+google-gms-google-services = { id = "com.google.gms.google-services", version.ref = "googleGmsGoogleServices" }
 
