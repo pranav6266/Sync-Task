@@ -4,7 +4,7 @@
     IMPORTANT: You must replace "YOUR_WEB_CLIENT_ID" with the Web client ID from your google-services.json file.
     It looks like "xxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com"
     -->
-    <string name="default_web_client_id">YOUR_WEB_CLIENT_ID</string>
+    <string name="default_web_client_id">1:601701551928:android:362a4a75ea6ebb3e497bcd</string>
 
     <!-- Content Descriptions -->
     <string name="add_task_content_description">Add Task</string>

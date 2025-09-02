@@ -21,5 +21,9 @@
     <color name="google_btn_color">#4285F4</color> <!-- Official Google Blue -->
     <color name="delete_icon_color">#F44336</color> <!-- A standard red for delete actions -->
 
+    <!-- Task Background Colors -->
+    <color name="my_task_bg">#E8F5E8</color>        <!-- Light green for user's tasks -->
+    <color name="partner_task_bg">#F3E5F5</color>   <!-- Light purple for partner's tasks -->
+
 </resources>
 

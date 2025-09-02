@@ -10,6 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.pranav.synctask.R;
 import com.pranav.synctask.models.Task;
 import com.pranav.synctask.utils.DateUtils;
@@ -25,7 +26,8 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     public TaskAdapter(Context context, List<Task> taskList) {
         this.context = context;
         this.taskList = taskList;
-        this.currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        this.currentUserId = currentUser != null ? currentUser.getUid() : "";
     }
 
     @NonNull
@@ -39,20 +41,22 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     public void onBindViewHolder(@NonNull TaskViewHolder holder, int position) {
         Task task = taskList.get(position);
 
-        holder.tvTitle.setText(task.getTitle());
-        holder.tvDescription.setText(task.getDescription());
+        holder.tvTitle.setText(task.getTitle() != null ? task.getTitle() : "");
+        holder.tvDescription.setText(task.getDescription() != null ? task.getDescription() : "");
         holder.tvDueDate.setText(DateUtils.formatDate(task.getDueDate()));
 
-        boolean isMyTask = task.getCreatorUID().equals(currentUserId);
+        boolean isMyTask = currentUserId != null && !currentUserId.isEmpty()
+                && task.getCreatorUID() != null
+                && task.getCreatorUID().equals(currentUserId);
 
         holder.cbStatus.setChecked(Task.STATUS_COMPLETED.equals(task.getStatus()));
         holder.cbStatus.setEnabled(isMyTask);
         holder.ivDelete.setVisibility(isMyTask ? View.VISIBLE : View.GONE);
 
         if(isMyTask) {
-            holder.itemView.setBackgroundColor(context.getResources().getColor(R.color.my_task_bg));
+            holder.itemView.setBackgroundColor(context.getResources().getColor(R.color.my_task_bg, null));
         } else {
-            holder.itemView.setBackgroundColor(context.getResources().getColor(R.color.partner_task_bg));
+            holder.itemView.setBackgroundColor(context.getResources().getColor(R.color.partner_task_bg, null));
         }
 
         holder.cbStatus.setOnCheckedChangeListener((buttonView, isChecked) -> {
