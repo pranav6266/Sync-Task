@@ -40,4 +40,16 @@
     <!-- Empty State -->
     <string name="no_tasks_message">No tasks here yet!\nPull down to refresh.</string>
 
+    <!-- Dashboard Activity -->
+    <string name="go_to_tasks_button">View Shared Tasks</string>
+    <string name="pair_with_partner_button">Pair with Partner</string>
+    <string name="profile_and_settings_button">Profile &amp; Settings</string>
+    <string name="status_paired_text">You are paired with a partner</string>
+
+    <!-- Profile Activity -->
+    <string name="save_changes_button">Save Changes</string>
+    <string name="unpair_button">Unpair from Partner</string>
+    <string name="logout_button">Logout</string>
+
 </resources>
+

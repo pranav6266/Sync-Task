@@ -9,6 +9,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.WriteBatch;
 import com.pranav.synctask.models.Task;
 import com.pranav.synctask.models.User;
 
@@ -69,6 +70,13 @@ public class FirebaseHelper {
         }).addOnFailureListener(callback::onError);
     }
 
+    public static void updateDisplayName(String uid, String newName, UserCallback callback) {
+        db.collection(USERS_COLLECTION).document(uid)
+                .update("displayName", newName)
+                .addOnSuccessListener(aVoid -> getUser(uid, callback))
+                .addOnFailureListener(callback::onError);
+    }
+
 
     /**
      * Fetches a user's data from Firestore.
@@ -87,6 +95,28 @@ public class FirebaseHelper {
                 })
                 .addOnFailureListener(callback::onError);
     }
+
+    /**
+     * Adds a real-time listener to a user's document.
+     */
+    public static ListenerRegistration addUserListener(String uid, UserCallback callback) {
+        return db.collection(USERS_COLLECTION)
+                .document(uid)
+                .addSnapshotListener((snapshot, e) -> {
+                    if (e != null) {
+                        Log.w(TAG, "User listener failed.", e);
+                        callback.onError(e);
+                        return;
+                    }
+                    if (snapshot != null && snapshot.exists()) {
+                        User user = snapshot.toObject(User.class);
+                        callback.onSuccess(user);
+                    } else {
+                        Log.d(TAG, "Current data: null");
+                    }
+                });
+    }
+
 
     /**
      * Pairs the current user with a partner using their code.
@@ -137,6 +167,52 @@ public class FirebaseHelper {
                             .addOnFailureListener(e -> callback.onError(new Exception(e.getMessage())));
                 })
                 .addOnFailureListener(callback::onError);
+    }
+
+    public static void unpairUsers(String currentUserUID, PairingCallback callback) {
+        getUser(currentUserUID, new UserCallback() {
+            @Override
+            public void onSuccess(User user) {
+                String partnerUID = user.getPairedWithUID();
+                if (partnerUID == null || partnerUID.isEmpty()) {
+                    callback.onError(new Exception("You are not paired with anyone."));
+                    return;
+                }
+
+                // Find all tasks shared between the two users
+                db.collection(TASKS_COLLECTION)
+                        .whereArrayContains("sharedWith", currentUserUID)
+                        .get()
+                        .addOnSuccessListener(queryDocumentSnapshots -> {
+                            WriteBatch batch = db.batch();
+
+                            // Delete all shared tasks
+                            queryDocumentSnapshots.getDocuments().forEach(doc -> {
+                                Task task = doc.toObject(Task.class);
+                                if (task != null && task.getSharedWith().contains(partnerUID)) {
+                                    batch.delete(doc.getReference());
+                                }
+                            });
+
+                            // Unpair users
+                            DocumentReference currentUserRef = db.collection(USERS_COLLECTION).document(currentUserUID);
+                            DocumentReference partnerUserRef = db.collection(USERS_COLLECTION).document(partnerUID);
+                            batch.update(currentUserRef, "pairedWithUID", null);
+                            batch.update(partnerUserRef, "pairedWithUID", null);
+
+                            // Commit the batch
+                            batch.commit()
+                                    .addOnSuccessListener(aVoid -> callback.onSuccess())
+                                    .addOnFailureListener(callback::onError);
+                        })
+                        .addOnFailureListener(callback::onError);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                callback.onError(e);
+            }
+        });
     }
 
     // Task operations
@@ -190,3 +266,4 @@ public class FirebaseHelper {
                 .addOnFailureListener(e -> Log.w(TAG, "Error deleting task", e));
     }
 }
+

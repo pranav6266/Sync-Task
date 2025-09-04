@@ -58,8 +58,9 @@ public class LoginActivity extends AppCompatActivity {
         super.onStart();
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null) {
-            showLoading(true);
-            checkUserPairingStatus(currentUser);
+            // User is already signed in, go directly to the dashboard.
+            startActivity(new Intent(LoginActivity.this, DashboardActivity.class));
+            finish();
         }
     }
 
@@ -106,35 +107,15 @@ public class LoginActivity extends AppCompatActivity {
         FirebaseHelper.createOrUpdateUser(firebaseUser, new FirebaseHelper.UserCallback() {
             @Override
             public void onSuccess(User user) {
-                checkUserPairingStatus(firebaseUser);
+                // After user profile is created or updated, go to the dashboard.
+                startActivity(new Intent(LoginActivity.this, DashboardActivity.class));
+                finish();
             }
 
             @Override
             public void onError(Exception e) {
                 Log.e(TAG, "Error creating/updating user", e);
                 Toast.makeText(LoginActivity.this, "Error setting up user profile.",
-                        Toast.LENGTH_SHORT).show();
-                showLoading(false);
-            }
-        });
-    }
-
-    private void checkUserPairingStatus(FirebaseUser user) {
-        FirebaseHelper.getUser(user.getUid(), new FirebaseHelper.UserCallback() {
-            @Override
-            public void onSuccess(User userData) {
-                if (userData.getPairedWithUID() != null && !userData.getPairedWithUID().isEmpty()) {
-                    startActivity(new Intent(LoginActivity.this, MainActivity.class));
-                } else {
-                    startActivity(new Intent(LoginActivity.this, PairingActivity.class));
-                }
-                finish();
-            }
-
-            @Override
-            public void onError(Exception e) {
-                Log.e(TAG, "Error checking pairing status", e);
-                Toast.makeText(LoginActivity.this, "Error loading user data.",
                         Toast.LENGTH_SHORT).show();
                 showLoading(false);
             }
