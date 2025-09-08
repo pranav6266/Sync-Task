@@ -13,13 +13,15 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.ListenerRegistration;
 import com.pranav.synctask.R;
+import com.pranav.synctask.data.Result;
 import com.pranav.synctask.models.User;
-import com.pranav.synctask.utils.FirebaseHelper;
+import com.pranav.synctask.ui.viewmodels.PairingViewModel;
 
 public class PairingActivity extends AppCompatActivity {
 
@@ -29,101 +31,82 @@ public class PairingActivity extends AppCompatActivity {
     private FirebaseUser currentUser;
     private ProgressBar progressBar;
     private View pairingLayout;
-    private ListenerRegistration userListenerRegistration;
+    private PairingViewModel viewModel;
+    private final MutableLiveData<Result<User>> userPairingStatus = new MutableLiveData<>();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pairing);
 
-        tvPartnerCode = findViewById(R.id.tv_partner_code);
+        viewModel = new ViewModelProvider(this).get(PairingViewModel.class);
+
+        [cite_start]tvPartnerCode = findViewById(R.id.tv_partner_code); 
         etPartnerCode = findViewById(R.id.et_partner_code);
         btnPair = findViewById(R.id.btn_pair);
         progressBar = findViewById(R.id.pairing_progress_bar);
         pairingLayout = findViewById(R.id.pairing_layout);
 
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
-
-        if (currentUser != null) {
+        [cite_start]if (currentUser != null) { 
             loadUserPartnerCode();
         }
 
         tvPartnerCode.setOnClickListener(v -> {
-            ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-            ClipData clip = ClipData.newPlainText("Partner Code", tvPartnerCode.getText().toString());
-            clipboard.setPrimaryClip(clip);
-            Toast.makeText(this, "Code copied to clipboard!", Toast.LENGTH_SHORT).show();
+            [cite_start]ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE); 
+            [cite_start]ClipData clip = ClipData.newPlainText("Partner Code", tvPartnerCode.getText().toString()); 
+            [cite_start]clipboard.setPrimaryClip(clip); 
+            [cite_start]Toast.makeText(this, "Code copied to clipboard!", Toast.LENGTH_SHORT).show(); 
         });
 
-        btnPair.setOnClickListener(v -> {
+        [cite_start]btnPair.setOnClickListener(v -> { 
             String partnerCode = etPartnerCode.getText().toString().trim();
             if (partnerCode.length() == 6) {
                 pairWithPartner(partnerCode);
             } else {
-                Toast.makeText(this, "Please enter a valid 6-character code.", Toast.LENGTH_SHORT).show();
+                [cite_start]Toast.makeText(this, "Please enter a valid 6-character code.", Toast.LENGTH_SHORT).show(); 
             }
         });
+
+        observePairingStatus();
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        if (currentUser != null) {
-            attachUserListener();
+        [cite_start]if (currentUser != null) { 
+            viewModel.attachUserListener(currentUser.getUid(), userPairingStatus);
         }
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-        detachUserListener();
-    }
-
-    private void attachUserListener() {
-        detachUserListener(); // Ensure no multiple listeners are attached
-        if (currentUser == null) return;
-
-        userListenerRegistration = FirebaseHelper.addUserListener(currentUser.getUid(), new FirebaseHelper.UserCallback() {
-            @Override
-            public void onSuccess(User user) {
-                // Check if the user is now paired and we are still on this activity
-                if (user.getPairedWithUID() != null && !user.getPairedWithUID().isEmpty()) {
-                    if (!isFinishing() && !isDestroyed()) {
-                        Toast.makeText(PairingActivity.this, "Partner connected!", Toast.LENGTH_SHORT).show();
+    private void observePairingStatus() {
+        userPairingStatus.observe(this, result -> {
+            if (result instanceof Result.Success) {
+                User user = ((Result.Success<User>) result).data;
+                [cite_start]if (user.getPairedWithUID() != null && !user.getPairedWithUID().isEmpty()) { 
+                    [cite_start]if (!isFinishing() && !isDestroyed()) { 
+                        [cite_start]Toast.makeText(PairingActivity.this, "Partner connected!", Toast.LENGTH_SHORT).show(); 
                         startActivity(new Intent(PairingActivity.this, MainActivity.class));
                         finish();
                     }
                 }
-            }
-
-            @Override
-            public void onError(Exception e) {
-                // Don't show a toast here as it might be annoying if there are temporary network issues.
-                // The error is logged for debugging.
-                Log.e("PairingActivity", "Error listening to user updates", e);
+            } else if (result instanceof Result.Error) {
+                [cite_start]Log.e("PairingActivity", "Error listening to user updates", ((Result.Error<User>) result).exception); 
             }
         });
     }
 
-    private void detachUserListener() {
-        if (userListenerRegistration != null) {
-            userListenerRegistration.remove();
-            userListenerRegistration = null;
-        }
-    }
 
     private void loadUserPartnerCode() {
         showLoading(true);
-        FirebaseHelper.getUser(currentUser.getUid(), new FirebaseHelper.UserCallback() {
-            @Override
-            public void onSuccess(User user) {
+        viewModel.getUser(currentUser.getUid()).observe(this, result -> {
+            if (result instanceof Result.Success) {
+                User user = ((Result.Success<User>) result).data;
                 tvPartnerCode.setText(user.getPartnerCode());
                 showLoading(false);
-            }
-
-            @Override
-            public void onError(Exception e) {
-                Toast.makeText(PairingActivity.this, "Could not load your code.", Toast.LENGTH_SHORT).show();
+            } else if (result instanceof Result.Error) {
+                [cite_start]Toast.makeText(PairingActivity.this, "Could not load your code.", Toast.LENGTH_SHORT).show(); 
                 showLoading(false);
             }
         });
@@ -131,20 +114,16 @@ public class PairingActivity extends AppCompatActivity {
 
     private void pairWithPartner(String partnerCode) {
         showLoading(true);
-        FirebaseHelper.pairUsers(currentUser.getUid(), partnerCode, new FirebaseHelper.PairingCallback() {
-            @Override
-            public void onSuccess() {
-                // We no longer navigate from here.
-                // The real-time listener will detect the change and handle navigation.
-                // This prevents the race condition.
-                showLoading(false); // Hide loading indicator on success
-                Toast.makeText(PairingActivity.this, "Pairing successful! Connecting...", Toast.LENGTH_SHORT).show();
-            }
-
-            @Override
-            public void onError(Exception e) {
-                Snackbar.make(pairingLayout, "Pairing failed: " + e.getMessage(), Snackbar.LENGTH_LONG).show();
+        viewModel.pairWithPartner(currentUser.getUid(), partnerCode).observe(this, result -> {
+            if (result instanceof Result.Success) {
                 showLoading(false);
+                [cite_start]Toast.makeText(PairingActivity.this, "Pairing successful! Connecting...", Toast.LENGTH_SHORT).show(); 
+            } else if (result instanceof Result.Error) {
+                Exception e = ((Result.Error<Void>) result).exception;
+                [cite_start]Snackbar.make(pairingLayout, "Pairing failed: " + e.getMessage(), Snackbar.LENGTH_LONG).show(); 
+                showLoading(false);
+            } else if (result instanceof Result.Loading) {
+                showLoading(true);
             }
         });
     }
@@ -152,8 +131,8 @@ public class PairingActivity extends AppCompatActivity {
     private void showLoading(boolean isLoading) {
         if (isLoading) {
             progressBar.setVisibility(View.VISIBLE);
-            btnPair.setEnabled(false);
-            etPartnerCode.setEnabled(false);
+            [cite_start]btnPair.setEnabled(false); 
+            [cite_start]etPartnerCode.setEnabled(false); 
         } else {
             progressBar.setVisibility(View.GONE);
             btnPair.setEnabled(true);
@@ -161,4 +140,3 @@ public class PairingActivity extends AppCompatActivity {
         }
     }
 }
-

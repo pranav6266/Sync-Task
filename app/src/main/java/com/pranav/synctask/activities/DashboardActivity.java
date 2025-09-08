@@ -8,23 +8,21 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.appcompat.app.AppCompatActivity;
-
+import androidx.lifecycle.ViewModelProvider;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.ListenerRegistration;
 import com.pranav.synctask.R;
+import com.pranav.synctask.data.Result;
 import com.pranav.synctask.models.User;
-import com.pranav.synctask.utils.FirebaseHelper;
+import com.pranav.synctask.ui.viewmodels.DashboardViewModel;
 
 public class DashboardActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
-    private ListenerRegistration userListenerRegistration;
-
-    private Button btnGoToTasks, btnPairWithPartner, btnViewProfile;
-    private TextView tvWelcomeMessage;
+    private DashboardViewModel viewModel;
+    private Button btnGoToTasks;
+    private Button btnPairWithPartner;
     private LinearLayout layoutPairedStatus;
 
     @Override
@@ -33,29 +31,24 @@ public class DashboardActivity extends AppCompatActivity {
         setContentView(R.layout.activity_dashboard);
 
         mAuth = FirebaseAuth.getInstance();
+        viewModel = new ViewModelProvider(this).get(DashboardViewModel.class);
 
         btnGoToTasks = findViewById(R.id.btn_go_to_tasks);
         btnPairWithPartner = findViewById(R.id.btn_pair_with_partner);
-        btnViewProfile = findViewById(R.id.btn_view_profile);
-        tvWelcomeMessage = findViewById(R.id.tv_welcome_message);
+        Button btnViewProfile = findViewById(R.id.btn_view_profile);
+        TextView tvWelcomeMessage = findViewById(R.id.tv_welcome_message);
         layoutPairedStatus = findViewById(R.id.layout_paired_status);
 
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null && currentUser.getDisplayName() != null) {
-            tvWelcomeMessage.setText("Welcome, " + currentUser.getDisplayName() + "!");
+            tvWelcomeMessage.setText("Welcome, " + currentUser.getDisplayName() + "!"); 
         }
 
-        btnGoToTasks.setOnClickListener(v -> {
-            startActivity(new Intent(DashboardActivity.this, MainActivity.class));
-        });
+        btnGoToTasks.setOnClickListener(v -> startActivity(new Intent(DashboardActivity.this, MainActivity.class)));
+        btnPairWithPartner.setOnClickListener(v -> startActivity(new Intent(DashboardActivity.this, PairingActivity.class)));
+        btnViewProfile.setOnClickListener(v -> startActivity(new Intent(DashboardActivity.this, ProfileActivity.class)));
 
-        btnPairWithPartner.setOnClickListener(v -> {
-            startActivity(new Intent(DashboardActivity.this, PairingActivity.class));
-        });
-
-        btnViewProfile.setOnClickListener(v -> {
-            startActivity(new Intent(DashboardActivity.this, ProfileActivity.class));
-        });
+        observeViewModel();
     }
 
     @Override
@@ -63,50 +56,37 @@ public class DashboardActivity extends AppCompatActivity {
         super.onStart();
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser == null) {
-            // This should not happen, but as a safeguard
             startActivity(new Intent(this, LoginActivity.class));
-            finish();
+            finish(); 
             return;
         }
-        attachUserListener(currentUser.getUid());
+        viewModel.attachUserListener(currentUser.getUid());
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-        detachUserListener();
-    }
-
-    private void attachUserListener(String uid) {
-        detachUserListener();
-        userListenerRegistration = FirebaseHelper.addUserListener(uid, new FirebaseHelper.UserCallback() {
-            @Override
-            public void onSuccess(User user) {
-                if (user.getPairedWithUID() != null && !user.getPairedWithUID().isEmpty()) {
-                    // User is paired
-                    btnGoToTasks.setVisibility(View.VISIBLE);
-                    layoutPairedStatus.setVisibility(View.VISIBLE);
-                    btnPairWithPartner.setVisibility(View.GONE);
-                } else {
-                    // User is not paired
-                    btnGoToTasks.setVisibility(View.GONE);
-                    layoutPairedStatus.setVisibility(View.GONE);
-                    btnPairWithPartner.setVisibility(View.VISIBLE);
-                }
-            }
-
-            @Override
-            public void onError(Exception e) {
-                Log.e("DashboardActivity", "Error listening to user pairing status", e);
-                Toast.makeText(DashboardActivity.this, "Could not check pairing status.", Toast.LENGTH_SHORT).show();
+    private void observeViewModel() {
+        viewModel.getUserPairingStatus().observe(this, result -> {
+            if (result instanceof Result.Success) {
+                User user = ((Result.Success<User>) result).data;
+                updateUI(user);
+            } else if (result instanceof Result.Error) {
+                Exception e = ((Result.Error<User>) result).exception;
+                Log.e("DashboardActivity", "Error listening to user pairing status", e); 
+                Toast.makeText(DashboardActivity.this, "Could not check pairing status.", Toast.LENGTH_SHORT).show(); 
             }
         });
     }
 
-    private void detachUserListener() {
-        if (userListenerRegistration != null) {
-            userListenerRegistration.remove();
+    private void updateUI(User user) {
+        if (user.getPairedWithUID() != null && !user.getPairedWithUID().isEmpty()) {
+            // User is paired
+            btnGoToTasks.setVisibility(View.VISIBLE); 
+            layoutPairedStatus.setVisibility(View.VISIBLE); 
+            btnPairWithPartner.setVisibility(View.GONE); 
+        } else {
+            // User is not paired
+            btnGoToTasks.setVisibility(View.GONE); 
+            layoutPairedStatus.setVisibility(View.GONE); 
+            btnPairWithPartner.setVisibility(View.VISIBLE); 
         }
     }
 }
-
