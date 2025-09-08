@@ -9,7 +9,8 @@
     android:layout_marginEnd="8dp"
     android:layout_marginBottom="4dp"
     app:cardCornerRadius="12dp"
-    app:cardElevation="2dp">
+    app:cardElevation="2dp"
+    app:cardForegroundColor="?attr/selectableItemBackground">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -93,6 +94,17 @@
                 </LinearLayout>
 
             </LinearLayout>
+
+            <ImageView
+                android:id="@+id/iv_task_priority"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="8dp"
+                android:contentDescription="Task Priority"
+                android:visibility="gone"
+                tools:src="@drawable/ic_priority_high"
+                tools:visibility="visible" />
+
 
             <ImageView
                 android:id="@+id/iv_task_type"

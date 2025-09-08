@@ -9,7 +9,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/create_new_item"
+        android:text="Edit Item"
         android:textSize="24sp"
         android:textStyle="bold"
         android:textColor="@color/primary_text"
@@ -84,10 +84,10 @@
     </com.google.android.material.textfield.TextInputLayout>
 
     <Button
-        android:id="@+id/btn_create_task"
+        android:id="@+id/btn_save_task"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:text="@string/create_task_button"
+        android:text="Save Changes"
         android:background="@drawable/btn_primary"
         android:textColor="@android:color/white"
         android:textSize="16sp" />

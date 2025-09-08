@@ -78,6 +78,37 @@ public class TaskRepository {
         });
     }
 
+    // PHASE 4: Method to update a task
+    public LiveData<Result<Void>> updateTask(Task task) {
+        MutableLiveData<Result<Void>> result = new MutableLiveData<>();
+        if (task.getId() == null || task.getId().isEmpty()) {
+            // This is a local-only task, update it in the local list
+            for (int i = 0; i < localTasks.size(); i++) {
+                if (localTasks.get(i).getLocalId().equals(task.getLocalId())) {
+                    localTasks.set(i, task);
+                    break;
+                }
+            }
+            mergeAndNotify();
+            result.setValue(new Result.Success<>(null));
+        } else {
+            // This is a synced task, update it in Firestore
+            result.setValue(new Result.Loading<>());
+            FirebaseHelper.updateTask(task.getId(), task.toMap(), new FirebaseHelper.TasksCallback() {
+                @Override
+                public void onSuccess(List<Task> tasks) {
+                    result.setValue(new Result.Success<>(null));
+                }
+                @Override
+                public void onError(Exception e) {
+                    result.setValue(new Result.Error<>(e));
+                }
+            });
+        }
+        return result;
+    }
+
+
     private void mergeAndNotify() {
         List<Task> mergedList = new ArrayList<>(firestoreTasks);
         for (Task localTask : localTasks) {
@@ -92,9 +123,18 @@ public class TaskRepository {
                 mergedList.add(localTask);
             }
         }
-        Collections.sort(mergedList, (o1, o2) -> o2.getCreatedAt().compareTo(o1.getCreatedAt()));
+        // PHASE 4: Update sorting to include priority
+        mergedList.sort((o1, o2) -> {
+            int priorityCompare = getPriorityValue(o2.getPriority()) - getPriorityValue(o1.getPriority());
+            if (priorityCompare == 0) {
+                if (o1.getCreatedAt() == null || o2.getCreatedAt() == null) return 0;
+                return o2.getCreatedAt().compareTo(o1.getCreatedAt());
+            }
+            return priorityCompare;
+        });
         combinedTasksResult.postValue(new Result.Success<>(mergedList));
     }
+
 
 
     public void createTask(Task task, Context context) {
@@ -157,6 +197,16 @@ public class TaskRepository {
             tasksListenerRegistration = null;
         }
     }
+    // PHASE 4: Helper for priority sorting
+    private int getPriorityValue(String priority) {
+        if (priority == null) return 1;
+        switch (priority) {
+            case "High": return 2;
+            case "Low": return 0;
+            default: return 1;
+        }
+    }
+
 
     public void updateTaskStatus(String taskId, String newStatus) {
         FirebaseHelper.updateTaskStatus(taskId, newStatus);

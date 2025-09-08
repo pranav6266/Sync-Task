@@ -39,6 +39,10 @@
         <activity
             android:name=".activities.ProfileActivity"
             android:exported="false" />
+        <activity
+            android:name=".activities.EditTaskActivity"
+            android:exported="false" />
+
         <service
             android:name=".services.MyFirebaseMessagingService"
             android:exported="false">

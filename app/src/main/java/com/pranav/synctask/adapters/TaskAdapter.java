@@ -1,16 +1,21 @@
 package com.pranav.synctask.adapters;
 
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.pranav.synctask.R;
+import com.pranav.synctask.activities.EditTaskActivity;
 import com.pranav.synctask.models.Task;
 import com.pranav.synctask.utils.DateUtils;
 import com.pranav.synctask.utils.FirebaseHelper;
@@ -22,6 +27,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     private List<Task> taskList;
     private final Context context;
     private final String currentUserId;
+    private int lastPosition = -1;
 
     public TaskAdapter(Context context, List<Task> taskList, String currentUserId) {
         this.context = context;
@@ -41,6 +47,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         Task task = taskList.get(position);
         holder.tvTitle.setText(task.getTitle());
         holder.tvDescription.setText(task.getDescription());
+        holder.tvDescription.setVisibility(task.getDescription().isEmpty() ? View.GONE : View.VISIBLE);
 
         if (task.getDueDate() != null) {
             holder.tvDueDate.setText(DateUtils.formatDate(task.getDueDate()));
@@ -68,15 +75,28 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 break;
         }
 
-        // OFFLINE SUPPORT: Visually indicate if a task is not synced and disable actions
+        // PHASE 4: Set priority icon
+        holder.ivPriority.setVisibility(View.VISIBLE);
+        switch (task.getPriority()) {
+            case "High":
+                holder.ivPriority.setImageResource(R.drawable.ic_priority_high);
+                break;
+            case "Low":
+                holder.ivPriority.setImageResource(R.drawable.ic_priority_low);
+                break;
+            default: // Normal priority
+                holder.ivPriority.setVisibility(View.GONE);
+                break;
+        }
+
         if (task.isSynced()) {
             holder.itemView.setAlpha(1.0f);
             holder.cbStatus.setEnabled(isMyTask);
             holder.tvCreator.setText(isMyTask ? R.string.task_creator_label_you : R.string.task_creator_label_partner);
         } else {
             holder.itemView.setAlpha(0.7f);
-            holder.cbStatus.setEnabled(false); // Cannot complete an unsynced task
-            holder.tvCreator.setText(R.string.task_creator_label_local); // Indicate it's a local task
+            holder.cbStatus.setEnabled(false);
+            holder.tvCreator.setText(R.string.task_creator_label_local);
         }
 
         holder.cbStatus.setOnCheckedChangeListener(null);
@@ -95,7 +115,26 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         } else {
             holder.ivDelete.setOnClickListener(null);
         }
+
+        // PHASE 4: Set click listener to edit task
+        holder.itemView.setOnClickListener(v -> {
+            Intent intent = new Intent(context, EditTaskActivity.class);
+            intent.putExtra(EditTaskActivity.EXTRA_TASK, task);
+            context.startActivity(intent);
+        });
+
+        // PHASE 4: Add fade-in animation
+        setAnimation(holder.itemView, position);
     }
+
+    private void setAnimation(View viewToAnimate, int position) {
+        if (position > lastPosition) {
+            Animation animation = AnimationUtils.loadAnimation(context, R.anim.fade_in);
+            viewToAnimate.startAnimation(animation);
+            lastPosition = position;
+        }
+    }
+
 
     @Override
     public int getItemCount() {
@@ -105,7 +144,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     public void updateTasks(List<Task> newTasks) {
         TaskDiffCallback diffCallback = new TaskDiffCallback(this.taskList, newTasks);
         DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(diffCallback);
-
         this.taskList.clear();
         this.taskList.addAll(newTasks);
         diffResult.dispatchUpdatesTo(this);
@@ -114,7 +152,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     static class TaskViewHolder extends RecyclerView.ViewHolder {
         TextView tvTitle, tvDescription, tvDueDate, tvCreator;
         CheckBox cbStatus;
-        ImageView ivDelete, ivTaskType;
+        ImageView ivDelete, ivTaskType, ivPriority; // PHASE 4: Added priority ImageView
         View sideBar;
 
         public TaskViewHolder(@NonNull View itemView) {
@@ -126,6 +164,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             cbStatus = itemView.findViewById(R.id.cb_task_status);
             ivDelete = itemView.findViewById(R.id.iv_delete_task);
             ivTaskType = itemView.findViewById(R.id.iv_task_type);
+            ivPriority = itemView.findViewById(R.id.iv_task_priority); // PHASE 4
             sideBar = itemView.findViewById(R.id.side_bar);
         }
     }
@@ -139,16 +178,13 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             this.newList = newList;
         }
 
-        @Override
-        public int getOldListSize() { return oldList.size(); }
-        @Override
-        public int getNewListSize() { return newList.size(); }
+        @Override public int getOldListSize() { return oldList.size(); }
+        @Override public int getNewListSize() { return newList.size(); }
 
         @Override
         public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
             Task oldTask = oldList.get(oldItemPosition);
             Task newTask = newList.get(newItemPosition);
-            // OFFLINE SUPPORT: If a task is not synced, it won't have a Firestore ID. Use localId instead.
             if (!oldTask.isSynced() || !newTask.isSynced()) {
                 return Objects.equals(oldTask.getLocalId(), newTask.getLocalId());
             }
@@ -163,7 +199,8 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                     Objects.equals(oldTask.getDescription(), newTask.getDescription()) &&
                     Objects.equals(oldTask.getStatus(), newTask.getStatus()) &&
                     Objects.equals(oldTask.getDueDate(), newTask.getDueDate()) &&
-                    oldTask.isSynced() == newTask.isSynced(); // OFFLINE SUPPORT: Check sync status
+                    Objects.equals(oldTask.getPriority(), newTask.getPriority()) && // PHASE 4
+                    oldTask.isSynced() == newTask.isSynced();
         }
     }
 }

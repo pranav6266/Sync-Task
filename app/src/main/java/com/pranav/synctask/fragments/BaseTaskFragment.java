@@ -27,6 +27,7 @@ import com.pranav.synctask.models.Task;
 import com.pranav.synctask.ui.viewmodels.TasksViewModel;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public abstract class BaseTaskFragment extends Fragment {
 
@@ -37,6 +38,10 @@ public abstract class BaseTaskFragment extends Fragment {
     private String currentUserId;
     private TasksViewModel viewModel;
     private ConnectivityManager.NetworkCallback networkCallback;
+
+    // PHASE 4: Local copies of data for filtering
+    private List<Task> currentTaskList = new ArrayList<>();
+    private String currentSearchQuery = "";
 
     @Nullable
     @Override
@@ -52,7 +57,6 @@ public abstract class BaseTaskFragment extends Fragment {
         emptyView = view.findViewById(R.id.empty_view);
 
         setupRecyclerView();
-
         swipeRefreshLayout.setOnRefreshListener(() -> viewModel.loadTasks(currentUserId));
         swipeRefreshLayout.setColorSchemeResources(R.color.primary_color, R.color.accent_color);
 
@@ -77,8 +81,6 @@ public abstract class BaseTaskFragment extends Fragment {
         super.onStart();
         if (currentUserId != null) {
             viewModel.loadTasks(currentUserId);
-        } else {
-            Log.e(getClass().getSimpleName(), "User is not authenticated, cannot load tasks.");
         }
         registerNetworkCallback();
     }
@@ -90,52 +92,69 @@ public abstract class BaseTaskFragment extends Fragment {
     }
 
     private void observeViewModel() {
+        // Observe task list changes
         viewModel.getTasksResult().observe(getViewLifecycleOwner(), result -> {
             if (!isAdded()) return;
 
             swipeRefreshLayout.setRefreshing(result instanceof Result.Loading);
 
             if (result instanceof Result.Success) {
-                List<Task> tasks = ((Result.Success<List<Task>>) result).data;
-                List<Task> filteredTasks = filterTasks(tasks);
-                adapter.updateTasks(filteredTasks);
-                updateEmptyView(filteredTasks.isEmpty());
+                currentTaskList = ((Result.Success<List<Task>>) result).data;
+                filterAndDisplayTasks(); // PHASE 4
             } else if (result instanceof Result.Error) {
-                Exception e = ((Result.Error<List<Task>>) result).exception;
-                Log.e(getClass().getSimpleName(), "Error loading tasks", e);
+                Log.e(getClass().getSimpleName(), "Error loading tasks", ((Result.Error<List<Task>>) result).exception);
                 Toast.makeText(getContext(), "Error loading tasks.", Toast.LENGTH_SHORT).show();
             }
         });
+
+        // PHASE 4: Observe search query changes
+        viewModel.getSearchQuery().observe(getViewLifecycleOwner(), query -> {
+            currentSearchQuery = query;
+            filterAndDisplayTasks();
+        });
     }
 
-    // OFFLINE SUPPORT: Listen for network changes to trigger a sync
+    // PHASE 4: Centralized filtering logic
+    private void filterAndDisplayTasks() {
+        // 1. Apply time-based filter (Today, All, etc.)
+        List<Task> timeFilteredTasks = filterTasks(currentTaskList);
+
+        // 2. Apply search filter
+        List<Task> finalFilteredTasks;
+        if (currentSearchQuery.isEmpty()) {
+            finalFilteredTasks = timeFilteredTasks;
+        } else {
+            finalFilteredTasks = timeFilteredTasks.stream()
+                    .filter(task -> task.getTitle().toLowerCase().contains(currentSearchQuery.toLowerCase()))
+                    .collect(Collectors.toList());
+        }
+
+        adapter.updateTasks(finalFilteredTasks);
+        updateEmptyView(finalFilteredTasks.isEmpty());
+    }
+
     private void registerNetworkCallback() {
         ConnectivityManager cm = (ConnectivityManager) requireContext().getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkRequest request = new NetworkRequest.Builder().build();
         networkCallback = new ConnectivityManager.NetworkCallback() {
             @Override
             public void onAvailable(@NonNull Network network) {
                 super.onAvailable(network);
-                // This is called on a background thread, so post to the main thread
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
-                        Log.d(getClass().getSimpleName(), "Network available. Triggering sync.");
                         viewModel.syncLocalTasks(requireContext());
                     });
                 }
             }
         };
-        cm.registerNetworkCallback(request, networkCallback);
+        cm.registerNetworkCallback(new NetworkRequest.Builder().build(), networkCallback);
     }
 
     private void unregisterNetworkCallback() {
         if (networkCallback != null) {
             ConnectivityManager cm = (ConnectivityManager) requireContext().getSystemService(Context.CONNECTIVITY_SERVICE);
             cm.unregisterNetworkCallback(networkCallback);
-            networkCallback = null;
         }
     }
-
 
     private void updateEmptyView(boolean isEmpty) {
         emptyView.setVisibility(isEmpty ? View.VISIBLE : View.GONE);

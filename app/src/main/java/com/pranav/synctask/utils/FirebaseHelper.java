@@ -91,6 +91,20 @@ public class FirebaseHelper {
                 .addOnFailureListener(e -> Log.e(TAG, "Error updating FCM token", e));
     }
 
+    public static void updateTask(String taskId, Map<String, Object> taskMap, TasksCallback callback) {
+        db.collection(TASKS_COLLECTION)
+                .document(taskId)
+                .update(taskMap)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Task updated successfully");
+                    callback.onSuccess(null); // Listener will handle the update
+                })
+                .addOnFailureListener(e -> {
+                    Log.w(TAG, "Error updating task", e);
+                    callback.onError(e);
+                });
+    }
+
     public static void getUser(String uid, UserCallback callback) {
         db.collection(USERS_COLLECTION)
                 .document(uid)
