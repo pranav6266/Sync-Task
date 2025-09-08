@@ -26,6 +26,7 @@ import com.google.firebase.firestore.ListenerRegistration;
 import com.pranav.synctask.R;
 import com.pranav.synctask.models.User;
 import com.pranav.synctask.utils.FirebaseHelper;
+import com.pranav.synctask.utils.NetworkUtils;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -83,10 +84,29 @@ public class ProfileActivity extends AppCompatActivity {
         super.onStart();
         if (currentUser != null) {
             attachUserListener();
+            // Add the network check here
+            updateUiBasedOnNetworkStatus();
         } else {
             goToLogin();
         }
     }
+
+    private void updateUiBasedOnNetworkStatus() {
+        boolean isOnline = NetworkUtils.isNetworkAvailable(this);
+
+        // Disable the unpair button if offline
+        btnUnpair.setEnabled(isOnline);
+
+        // Optional: Give a visual cue that the button is disabled
+        if (!isOnline) {
+            btnUnpair.setAlpha(0.5f); // Make it look faded
+            // You could also show a small toast message
+            Toast.makeText(this, "Unpairing requires an internet connection.", Toast.LENGTH_SHORT).show();
+        } else {
+            btnUnpair.setAlpha(1.0f);
+        }
+    }
+
 
     @Override
     protected void onStop() {
@@ -246,12 +266,16 @@ public class ProfileActivity extends AppCompatActivity {
         if (isLoading) {
             progressBar.setVisibility(View.VISIBLE);
             btnSaveChanges.setEnabled(false);
-            btnUnpair.setEnabled(false);
+            // Only disable the unpair button if it's already enabled
+            if (btnUnpair.isEnabled()) {
+                btnUnpair.setEnabled(false);
+            }
             btnLogout.setEnabled(false);
         } else {
             progressBar.setVisibility(View.GONE);
             btnSaveChanges.setEnabled(true);
-            btnUnpair.setEnabled(true);
+            // Re-enable based on network status, not just blindly
+            updateUiBasedOnNetworkStatus();
             btnLogout.setEnabled(true);
         }
     }

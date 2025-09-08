@@ -20,6 +20,7 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.pranav.synctask.R;
 import com.pranav.synctask.models.User;
 import com.pranav.synctask.utils.FirebaseHelper;
@@ -37,6 +38,10 @@ public class LoginActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+        // Add this line to enable offline persistence
+        FirebaseFirestore.getInstance().getFirestoreSettings();
+
 
         mAuth = FirebaseAuth.getInstance();
 
