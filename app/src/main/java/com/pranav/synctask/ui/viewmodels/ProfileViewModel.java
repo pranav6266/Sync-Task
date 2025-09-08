@@ -39,9 +39,7 @@ public class ProfileViewModel extends ViewModel {
     }
 
     public void uploadProfilePicture(FirebaseUser firebaseUser, Uri imageUri) {
-        userRepository.updateProfilePicture(firebaseUser, imageUri).observeForever(result -> {
-            photoUpdateResult.setValue(result);
-        });
+        userRepository.updateProfilePicture(firebaseUser, imageUri).observeForever(photoUpdateResult::setValue);
     }
 
     public LiveData<Result<Void>> unpair(String uid) {

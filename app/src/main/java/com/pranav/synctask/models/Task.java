@@ -1,6 +1,9 @@
 package com.pranav.synctask.models;
 
 import com.google.firebase.Timestamp;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,11 +31,14 @@ public class Task {
     public static final String TYPE_TASK = "TASK";
     public static final String TYPE_REMINDER = "REMINDER";
     public static final String TYPE_UPDATE = "UPDATE";
+    private String creatorDisplayName;
 
     public Task() {
         // Required for Firestore
         this.isSynced = true; // Tasks deserialized from Firestore are always synced
         this.localId = UUID.randomUUID().toString();
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        this.creatorDisplayName = (user != null) ? user.getDisplayName() : "A user";
     }
 
     // Constructor for synced tasks (with a partner)
@@ -47,7 +53,9 @@ public class Task {
         this.createdAt = Timestamp.now();
         this.taskType = taskType;
         this.sharedWith = Arrays.asList(creatorUID, partnerUID);
-        this.isSynced = true; // This constructor is used for tasks intended for immediate sync
+        this.isSynced = true;
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        this.creatorDisplayName = (user != null) ? user.getDisplayName() : "A user";
     }
 
     // OFFLINE SUPPORT: Constructor for local-only tasks (unpaired or offline)
@@ -62,7 +70,9 @@ public class Task {
         this.createdAt = Timestamp.now();
         this.taskType = taskType;
         this.sharedWith = Collections.singletonList(creatorUID); // Only shared with self initially
-        this.isSynced = false; // This is a local-only task
+        this.isSynced = false;
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        this.creatorDisplayName = (user != null) ? user.getDisplayName() : "A user";
     }
 
 
@@ -101,6 +111,8 @@ public class Task {
     public boolean isSynced() { return isSynced; }
     public void setSynced(boolean synced) { isSynced = synced; }
 
+    public String getCreatorDisplayName() { return creatorDisplayName; }
+    public void setCreatorDisplayName(String creatorDisplayName) { this.creatorDisplayName = creatorDisplayName; }
     public Map<String, Object> toMap() {
         Map<String, Object> map = new HashMap<>();
         map.put("creatorUID", creatorUID);
@@ -111,7 +123,7 @@ public class Task {
         map.put("createdAt", createdAt);
         map.put("taskType", taskType);
         map.put("sharedWith", sharedWith);
-        // localId and isSynced are NOT included in the map, as they are client-side only.
+        map.put("creatorDisplayName", creatorDisplayName);
         return map;
     }
 }

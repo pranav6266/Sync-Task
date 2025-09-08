@@ -10,8 +10,9 @@ public class User {
     private String photoURL;
     private String partnerCode;
     private String pairedWithUID;
+    private String fcmToken; // PHASE 3: ADDED
 
-    public User() {} // Required for Firestore
+    public User() {}
 
     public User(String uid, String email, String displayName, String photoURL) {
         this.uid = uid;
@@ -20,6 +21,7 @@ public class User {
         this.photoURL = photoURL;
         this.partnerCode = generatePartnerCode();
         this.pairedWithUID = null;
+        this.fcmToken = null;
     }
 
     private String generatePartnerCode() {
@@ -50,6 +52,11 @@ public class User {
     public String getPairedWithUID() { return pairedWithUID; }
     public void setPairedWithUID(String pairedWithUID) { this.pairedWithUID = pairedWithUID; }
 
+    // PHASE 3: Getter and Setter for FCM token
+    public String getFcmToken() { return fcmToken; }
+    public void setFcmToken(String fcmToken) { this.fcmToken = fcmToken; }
+
+
     public Map<String, Object> toMap() {
         Map<String, Object> map = new HashMap<>();
         map.put("uid", uid);
@@ -58,6 +65,7 @@ public class User {
         map.put("photoURL", photoURL);
         map.put("partnerCode", partnerCode);
         map.put("pairedWithUID", pairedWithUID);
+        map.put("fcmToken", fcmToken); // PHASE 3: ADDED
         return map;
     }
 }

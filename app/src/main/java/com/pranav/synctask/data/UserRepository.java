@@ -162,6 +162,11 @@ public class UserRepository {
         return result;
     }
 
+    // PHASE 3: Method to be called from service or UI to update the token
+    public void updateFcmToken(String uid, String token) {
+        FirebaseHelper.updateFcmToken(uid, token);
+    }
+
     public LiveData<Result<User>> getUser(String uid) {
         MutableLiveData<Result<User>> result = new MutableLiveData<>();
         result.setValue(new Result.Loading<>());

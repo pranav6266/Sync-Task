@@ -13,7 +13,9 @@ import com.google.firebase.firestore.WriteBatch;
 import com.pranav.synctask.models.Task;
 import com.pranav.synctask.models.User;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class FirebaseHelper {
     private static final String TAG = "FirebaseHelper";
@@ -76,6 +78,17 @@ public class FirebaseHelper {
                 .update("photoURL", newUrl)
                 .addOnSuccessListener(aVoid -> getUser(uid, callback))
                 .addOnFailureListener(callback::onError);
+    }
+
+    // PHASE 3: Method to update a user's FCM token in Firestore
+    public static void updateFcmToken(String uid, String token) {
+        if (uid == null || token == null) return;
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("fcmToken", token);
+        db.collection(USERS_COLLECTION).document(uid)
+                .update(updates)
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "FCM token updated successfully."))
+                .addOnFailureListener(e -> Log.e(TAG, "Error updating FCM token", e));
     }
 
     public static void getUser(String uid, UserCallback callback) {
