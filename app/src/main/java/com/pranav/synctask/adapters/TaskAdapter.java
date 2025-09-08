@@ -10,7 +10,6 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.pranav.synctask.R;
 import com.pranav.synctask.models.Task;
 import com.pranav.synctask.utils.DateUtils;
@@ -40,7 +39,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     @Override
     public void onBindViewHolder(@NonNull TaskViewHolder holder, int position) {
         Task task = taskList.get(position);
-
         holder.tvTitle.setText(task.getTitle());
         holder.tvDescription.setText(task.getDescription());
 
@@ -52,16 +50,11 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         }
 
         boolean isMyTask = currentUserId != null && currentUserId.equals(task.getCreatorUID());
-
-        // Set who created the task
         holder.tvCreator.setText(isMyTask ? R.string.task_creator_label_you : R.string.task_creator_label_partner);
-
-        // Set side bar color
         holder.sideBar.setBackgroundColor(isMyTask ?
                 context.getResources().getColor(R.color.my_task_bg, null) :
                 context.getResources().getColor(R.color.partner_task_bg, null));
 
-        // Set task type icon
         switch (task.getTaskType()) {
             case Task.TYPE_REMINDER:
                 holder.ivTaskType.setImageResource(R.drawable.ic_task_type_reminder);
@@ -75,13 +68,20 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 break;
         }
 
+        // OFFLINE SUPPORT: Visually indicate if a task is not synced and disable actions
+        if (task.isSynced()) {
+            holder.itemView.setAlpha(1.0f);
+            holder.cbStatus.setEnabled(isMyTask);
+            holder.tvCreator.setText(isMyTask ? R.string.task_creator_label_you : R.string.task_creator_label_partner);
+        } else {
+            holder.itemView.setAlpha(0.7f);
+            holder.cbStatus.setEnabled(false); // Cannot complete an unsynced task
+            holder.tvCreator.setText(R.string.task_creator_label_local); // Indicate it's a local task
+        }
 
-        // Set checkbox status without triggering the listener
         holder.cbStatus.setOnCheckedChangeListener(null);
         holder.cbStatus.setChecked(Task.STATUS_COMPLETED.equals(task.getStatus()));
-        holder.cbStatus.setEnabled(isMyTask);
 
-        // Re-attach the listener
         holder.cbStatus.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (buttonView.isPressed()) {
                 String newStatus = isChecked ? Task.STATUS_COMPLETED : Task.STATUS_PENDING;
@@ -89,7 +89,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             }
         });
 
-        // Set delete button visibility and action
         holder.ivDelete.setVisibility(isMyTask ? View.VISIBLE : View.GONE);
         if (isMyTask) {
             holder.ivDelete.setOnClickListener(v -> FirebaseHelper.deleteTask(task.getId()));
@@ -131,7 +130,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         }
     }
 
-    // DiffUtil Callback to improve RecyclerView performance
     private static class TaskDiffCallback extends DiffUtil.Callback {
         private final List<Task> oldList;
         private final List<Task> newList;
@@ -142,18 +140,19 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         }
 
         @Override
-        public int getOldListSize() {
-            return oldList.size();
-        }
-
+        public int getOldListSize() { return oldList.size(); }
         @Override
-        public int getNewListSize() {
-            return newList.size();
-        }
+        public int getNewListSize() { return newList.size(); }
 
         @Override
         public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-            return oldList.get(oldItemPosition).getId().equals(newList.get(newItemPosition).getId());
+            Task oldTask = oldList.get(oldItemPosition);
+            Task newTask = newList.get(newItemPosition);
+            // OFFLINE SUPPORT: If a task is not synced, it won't have a Firestore ID. Use localId instead.
+            if (!oldTask.isSynced() || !newTask.isSynced()) {
+                return Objects.equals(oldTask.getLocalId(), newTask.getLocalId());
+            }
+            return oldTask.getId().equals(newTask.getId());
         }
 
         @Override
@@ -163,7 +162,8 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             return Objects.equals(oldTask.getTitle(), newTask.getTitle()) &&
                     Objects.equals(oldTask.getDescription(), newTask.getDescription()) &&
                     Objects.equals(oldTask.getStatus(), newTask.getStatus()) &&
-                    Objects.equals(oldTask.getDueDate(), newTask.getDueDate());
+                    Objects.equals(oldTask.getDueDate(), newTask.getDueDate()) &&
+                    oldTask.isSynced() == newTask.isSynced(); // OFFLINE SUPPORT: Check sync status
         }
     }
 }

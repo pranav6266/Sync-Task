@@ -11,6 +11,9 @@ public class UserRepository {
     private static volatile UserRepository instance;
     private ListenerRegistration userListenerRegistration;
 
+    // OFFLINE SUPPORT: Cache the last known user object to check pairing status synchronously.
+    private User currentUserCache;
+
     private UserRepository() {}
 
     public static UserRepository getInstance() {
@@ -24,12 +27,17 @@ public class UserRepository {
         return instance;
     }
 
+    public User getCurrentUserCache() {
+        return currentUserCache;
+    }
+
     public LiveData<Result<User>> createOrUpdateUser(FirebaseUser firebaseUser) {
         MutableLiveData<Result<User>> result = new MutableLiveData<>();
         result.setValue(new Result.Loading<>());
         FirebaseHelper.createOrUpdateUser(firebaseUser, new FirebaseHelper.UserCallback() {
             @Override
             public void onSuccess(User user) {
+                currentUserCache = user; // Update cache
                 result.setValue(new Result.Success<>(user));
             }
 
@@ -47,6 +55,7 @@ public class UserRepository {
         userListenerRegistration = FirebaseHelper.addUserListener(uid, new FirebaseHelper.UserCallback() {
             @Override
             public void onSuccess(User user) {
+                currentUserCache = user; // Update cache
                 userLiveData.setValue(new Result.Success<>(user));
             }
 
@@ -104,6 +113,7 @@ public class UserRepository {
         FirebaseHelper.updateDisplayName(uid, newName, new FirebaseHelper.UserCallback() {
             @Override
             public void onSuccess(User user) {
+                currentUserCache = user; // Update cache
                 result.setValue(new Result.Success<>(user));
             }
 
@@ -121,6 +131,7 @@ public class UserRepository {
         FirebaseHelper.getUser(uid, new FirebaseHelper.UserCallback() {
             @Override
             public void onSuccess(User user) {
+                currentUserCache = user; // Update cache
                 result.setValue(new Result.Success<>(user));
             }
 

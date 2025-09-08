@@ -1,5 +1,7 @@
 package com.pranav.synctask.ui.viewmodels;
 
+import android.content.Context;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
@@ -14,7 +16,6 @@ public class TasksViewModel extends ViewModel {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
 
-    private final MutableLiveData<Result<List<Task>>> tasksResult = new MutableLiveData<>();
     private final MutableLiveData<Result<User>> userResult = new MutableLiveData<>();
 
     public TasksViewModel() {
@@ -23,7 +24,7 @@ public class TasksViewModel extends ViewModel {
     }
 
     public LiveData<Result<List<Task>>> getTasksResult() {
-        return tasksResult;
+        return taskRepository.getTasks();
     }
 
     public LiveData<Result<User>> getUserResult() {
@@ -31,7 +32,12 @@ public class TasksViewModel extends ViewModel {
     }
 
     public void loadTasks(String userUID) {
-        taskRepository.attachTasksListener(userUID, tasksResult);
+        taskRepository.attachTasksListener(userUID);
+    }
+
+    // OFFLINE SUPPORT: Method to trigger a sync
+    public void syncLocalTasks(Context context) {
+        taskRepository.syncLocalTasks(context);
     }
 
     public void attachUserListener(String userUID) {

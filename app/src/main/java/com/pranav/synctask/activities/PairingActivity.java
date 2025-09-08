@@ -42,30 +42,30 @@ public class PairingActivity extends AppCompatActivity {
 
         viewModel = new ViewModelProvider(this).get(PairingViewModel.class);
 
-        [cite_start]tvPartnerCode = findViewById(R.id.tv_partner_code); 
+        tvPartnerCode = findViewById(R.id.tv_partner_code); 
         etPartnerCode = findViewById(R.id.et_partner_code);
         btnPair = findViewById(R.id.btn_pair);
         progressBar = findViewById(R.id.pairing_progress_bar);
         pairingLayout = findViewById(R.id.pairing_layout);
 
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        [cite_start]if (currentUser != null) { 
+        if (currentUser != null) { 
             loadUserPartnerCode();
         }
 
         tvPartnerCode.setOnClickListener(v -> {
-            [cite_start]ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE); 
-            [cite_start]ClipData clip = ClipData.newPlainText("Partner Code", tvPartnerCode.getText().toString()); 
-            [cite_start]clipboard.setPrimaryClip(clip); 
-            [cite_start]Toast.makeText(this, "Code copied to clipboard!", Toast.LENGTH_SHORT).show(); 
+            ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE); 
+            ClipData clip = ClipData.newPlainText("Partner Code", tvPartnerCode.getText().toString()); 
+            clipboard.setPrimaryClip(clip); 
+            Toast.makeText(this, "Code copied to clipboard!", Toast.LENGTH_SHORT).show(); 
         });
 
-        [cite_start]btnPair.setOnClickListener(v -> { 
+        btnPair.setOnClickListener(v -> { 
             String partnerCode = etPartnerCode.getText().toString().trim();
             if (partnerCode.length() == 6) {
                 pairWithPartner(partnerCode);
             } else {
-                [cite_start]Toast.makeText(this, "Please enter a valid 6-character code.", Toast.LENGTH_SHORT).show(); 
+                Toast.makeText(this, "Please enter a valid 6-character code.", Toast.LENGTH_SHORT).show(); 
             }
         });
 
@@ -75,7 +75,7 @@ public class PairingActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        [cite_start]if (currentUser != null) { 
+        if (currentUser != null) { 
             viewModel.attachUserListener(currentUser.getUid(), userPairingStatus);
         }
     }
@@ -84,15 +84,15 @@ public class PairingActivity extends AppCompatActivity {
         userPairingStatus.observe(this, result -> {
             if (result instanceof Result.Success) {
                 User user = ((Result.Success<User>) result).data;
-                [cite_start]if (user.getPairedWithUID() != null && !user.getPairedWithUID().isEmpty()) { 
-                    [cite_start]if (!isFinishing() && !isDestroyed()) { 
-                        [cite_start]Toast.makeText(PairingActivity.this, "Partner connected!", Toast.LENGTH_SHORT).show(); 
+                if (user.getPairedWithUID() != null && !user.getPairedWithUID().isEmpty()) { 
+                    if (!isFinishing() && !isDestroyed()) { 
+                        Toast.makeText(PairingActivity.this, "Partner connected!", Toast.LENGTH_SHORT).show(); 
                         startActivity(new Intent(PairingActivity.this, MainActivity.class));
                         finish();
                     }
                 }
             } else if (result instanceof Result.Error) {
-                [cite_start]Log.e("PairingActivity", "Error listening to user updates", ((Result.Error<User>) result).exception); 
+                Log.e("PairingActivity", "Error listening to user updates", ((Result.Error<User>) result).exception); 
             }
         });
     }
@@ -106,7 +106,7 @@ public class PairingActivity extends AppCompatActivity {
                 tvPartnerCode.setText(user.getPartnerCode());
                 showLoading(false);
             } else if (result instanceof Result.Error) {
-                [cite_start]Toast.makeText(PairingActivity.this, "Could not load your code.", Toast.LENGTH_SHORT).show(); 
+                Toast.makeText(PairingActivity.this, "Could not load your code.", Toast.LENGTH_SHORT).show(); 
                 showLoading(false);
             }
         });
@@ -117,10 +117,10 @@ public class PairingActivity extends AppCompatActivity {
         viewModel.pairWithPartner(currentUser.getUid(), partnerCode).observe(this, result -> {
             if (result instanceof Result.Success) {
                 showLoading(false);
-                [cite_start]Toast.makeText(PairingActivity.this, "Pairing successful! Connecting...", Toast.LENGTH_SHORT).show(); 
+                Toast.makeText(PairingActivity.this, "Pairing successful! Connecting...", Toast.LENGTH_SHORT).show(); 
             } else if (result instanceof Result.Error) {
                 Exception e = ((Result.Error<Void>) result).exception;
-                [cite_start]Snackbar.make(pairingLayout, "Pairing failed: " + e.getMessage(), Snackbar.LENGTH_LONG).show(); 
+                Snackbar.make(pairingLayout, "Pairing failed: " + e.getMessage(), Snackbar.LENGTH_LONG).show(); 
                 showLoading(false);
             } else if (result instanceof Result.Loading) {
                 showLoading(true);
@@ -131,8 +131,8 @@ public class PairingActivity extends AppCompatActivity {
     private void showLoading(boolean isLoading) {
         if (isLoading) {
             progressBar.setVisibility(View.VISIBLE);
-            [cite_start]btnPair.setEnabled(false); 
-            [cite_start]etPartnerCode.setEnabled(false); 
+            btnPair.setEnabled(false); 
+            etPartnerCode.setEnabled(false); 
         } else {
             progressBar.setVisibility(View.GONE);
             btnPair.setEnabled(true);

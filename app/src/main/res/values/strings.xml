@@ -1,30 +1,23 @@
 <resources>
     <string name="app_name">Sync Task</string>
-    <!--
-    IMPORTANT: You must replace "YOUR_WEB_CLIENT_ID" with the Web client ID from your google-services.json file.
-    It looks like "xxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com"
-    -->
     <string name="default_web_client_id">601701551928-mabu0ln6kt508h8q07p2hm69j0ccj391.apps.googleusercontent.com</string>
 
-    <!-- Content Descriptions -->
     <string name="add_task_content_description">Add Task</string>
     <string name="logo_content_description">SyncTask Logo</string>
     <string name="delete_task_content_description">Delete Task</string>
     <string name="task_type_icon_desc">Task Type Icon</string>
 
-    <!-- Login Activity -->
     <string name="app_tagline">Share tasks with your partner</string>
     <string name="sign_in_with_google">Sign in with Google</string>
 
-    <!-- Pairing Activity -->
     <string name="pair_with_partner_title">Pair with your partner</string>
     <string name="your_partner_code_label">Your Partner Code</string>
-    <string name="share_code_instruction">Tap code to copy. Share it with your partner.</string>
+    <string name="share_code_instruction">Tap code to copy.
+Share it with your partner.</string>
     <string name="enter_partner_code_label">Enter Partner\'s Code</string>
     <string name="partner_code_hint">Partner Code</string>
     <string name="pair_button_text">Pair with Partner</string>
 
-    <!-- Create Task Activity -->
     <string name="create_new_item">Create New Item</string>
     <string name="title_hint">Title</string>
     <string name="description_hint">Description (Optional)</string>
@@ -32,24 +25,21 @@
     <string name="due_date_hint">Due Date (Optional)</string>
     <string name="create_task_button">Create Task</string>
 
-    <!-- Task Item Labels -->
     <string name="due_date_label">Due:</string>
     <string name="task_creator_label_you">You</string>
     <string name="task_creator_label_partner">Partner</string>
+    <string name="task_creator_label_local">Not Synced</string>
 
-    <!-- Empty State -->
     <string name="no_tasks_message">No tasks here yet!\nPull down to refresh.</string>
 
-    <!-- Dashboard Activity -->
     <string name="go_to_tasks_button">View Shared Tasks</string>
     <string name="pair_with_partner_button">Pair with Partner</string>
-    <string name="profile_and_settings_button">Profile &amp; Settings</string>
+    <string name="profile_and_settings_button">Profile &amp;
+Settings</string>
     <string name="status_paired_text">You are paired with a partner</string>
 
-    <!-- Profile Activity -->
     <string name="save_changes_button">Save Changes</string>
     <string name="unpair_button">Unpair from Partner</string>
     <string name="logout_button">Logout</string>
 
 </resources>
-

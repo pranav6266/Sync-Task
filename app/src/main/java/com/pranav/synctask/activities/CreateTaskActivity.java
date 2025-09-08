@@ -20,13 +20,13 @@ import com.pranav.synctask.models.User;
 import com.pranav.synctask.ui.viewmodels.CreateTaskViewModel;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Objects;
 
 public class CreateTaskActivity extends AppCompatActivity {
 
     private TextInputEditText etTitle, etDescription, etDueDate;
     private AutoCompleteTextView acTaskType;
-    private final Calendar selectedDueDate = Calendar.getInstance();
+    private Button btnCreateTask;
+    private Calendar selectedDueDate = Calendar.getInstance();
     private String partnerUID;
     private CreateTaskViewModel viewModel;
 
@@ -41,7 +41,7 @@ public class CreateTaskActivity extends AppCompatActivity {
         etDescription = findViewById(R.id.et_task_description);
         etDueDate = findViewById(R.id.et_task_due_date);
         acTaskType = findViewById(R.id.ac_task_type);
-        Button btnCreateTask = findViewById(R.id.btn_create_task);
+        btnCreateTask = findViewById(R.id.btn_create_task);
 
         setupTaskTypeDropdown();
         setupDatePicker();
@@ -53,8 +53,7 @@ public class CreateTaskActivity extends AppCompatActivity {
                     User user = ((Result.Success<User>) result).data;
                     partnerUID = user.getPairedWithUID();
                 } else if (result instanceof Result.Error) {
-                    Toast.makeText(CreateTaskActivity.this, "Could not get partner info.", Toast.LENGTH_SHORT).show();
-                    finish();
+                    Toast.makeText(CreateTaskActivity.this, "Could not get user info.", Toast.LENGTH_SHORT).show();
                 }
             });
         }
@@ -83,31 +82,31 @@ public class CreateTaskActivity extends AppCompatActivity {
     }
 
     private void createTask() {
-        String title = Objects.requireNonNull(etTitle.getText()).toString().trim();
-        String description = Objects.requireNonNull(etDescription.getText()).toString().trim();
+        String title = etTitle.getText().toString().trim();
+        String description = etDescription.getText().toString().trim();
         String taskType = acTaskType.getText().toString().trim();
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
 
-        if (TextUtils.isEmpty(title) || TextUtils.isEmpty(taskType) || currentUser == null || partnerUID == null) {
+        if (TextUtils.isEmpty(title) || TextUtils.isEmpty(taskType) || currentUser == null) {
             Toast.makeText(this, "Title and Task Type are required.", Toast.LENGTH_SHORT).show();
             return;
         }
 
         Timestamp dueDateTimestamp = null;
-        if (!Objects.requireNonNull(etDueDate.getText()).toString().isEmpty()) {
+        if (!etDueDate.getText().toString().isEmpty()) {
             dueDateTimestamp = new Timestamp(new Date(selectedDueDate.getTimeInMillis()));
         }
 
+        // OFFLINE SUPPORT: The repository will handle if the task is created locally or synced
         Task newTask = new Task(
                 currentUser.getUid(),
                 title,
                 description,
                 dueDateTimestamp,
-                taskType,
-                partnerUID
-                        );
+                taskType
+        );
 
-        viewModel.createTask(newTask).observe(this, result -> {
+        viewModel.createTask(newTask, this).observe(this, result -> {
             if (result instanceof Result.Success) {
                 Toast.makeText(this, "Task created!", Toast.LENGTH_SHORT).show();
                 finish();

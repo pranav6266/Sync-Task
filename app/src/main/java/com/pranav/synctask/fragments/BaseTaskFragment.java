@@ -1,5 +1,9 @@
 package com.pranav.synctask.fragments;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkRequest;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -32,14 +36,15 @@ public abstract class BaseTaskFragment extends Fragment {
     protected TextView emptyView;
     private String currentUserId;
     private TasksViewModel viewModel;
+    private ConnectivityManager.NetworkCallback networkCallback;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_task_list, container, false);
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser(); 
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
-            currentUserId = currentUser.getUid(); 
+            currentUserId = currentUser.getUid();
         }
 
         recyclerView = view.findViewById(R.id.recycler_view);
@@ -49,7 +54,7 @@ public abstract class BaseTaskFragment extends Fragment {
         setupRecyclerView();
 
         swipeRefreshLayout.setOnRefreshListener(() -> viewModel.loadTasks(currentUserId));
-        swipeRefreshLayout.setColorSchemeResources(R.color.primary_color, R.color.accent_color); 
+        swipeRefreshLayout.setColorSchemeResources(R.color.primary_color, R.color.accent_color);
 
         return view;
     }
@@ -57,14 +62,13 @@ public abstract class BaseTaskFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        // Scoping the ViewModel to the Activity ensures all fragments share the same ViewModel instance
         viewModel = new ViewModelProvider(requireActivity()).get(TasksViewModel.class);
         observeViewModel();
     }
 
     private void setupRecyclerView() {
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapter = new TaskAdapter(getContext(), new ArrayList<>(), currentUserId); 
+        adapter = new TaskAdapter(getContext(), new ArrayList<>(), currentUserId);
         recyclerView.setAdapter(adapter);
     }
 
@@ -74,39 +78,68 @@ public abstract class BaseTaskFragment extends Fragment {
         if (currentUserId != null) {
             viewModel.loadTasks(currentUserId);
         } else {
-             Log.e(getClass().getSimpleName(), "User is not authenticated, cannot load tasks."); 
+            Log.e(getClass().getSimpleName(), "User is not authenticated, cannot load tasks.");
         }
+        registerNetworkCallback();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        unregisterNetworkCallback();
     }
 
     private void observeViewModel() {
         viewModel.getTasksResult().observe(getViewLifecycleOwner(), result -> {
             if (!isAdded()) return;
 
+            swipeRefreshLayout.setRefreshing(result instanceof Result.Loading);
+
             if (result instanceof Result.Success) {
                 List<Task> tasks = ((Result.Success<List<Task>>) result).data;
                 List<Task> filteredTasks = filterTasks(tasks);
-                adapter.updateTasks(filteredTasks); 
+                adapter.updateTasks(filteredTasks);
                 updateEmptyView(filteredTasks.isEmpty());
-                swipeRefreshLayout.setRefreshing(false);
             } else if (result instanceof Result.Error) {
                 Exception e = ((Result.Error<List<Task>>) result).exception;
-                Log.e(getClass().getSimpleName(), "Error loading tasks", e); 
-                Toast.makeText(getContext(), "Error loading tasks.", Toast.LENGTH_SHORT).show(); 
-                swipeRefreshLayout.setRefreshing(false);
-            } else if (result instanceof Result.Loading) {
-                swipeRefreshLayout.setRefreshing(true);
+                Log.e(getClass().getSimpleName(), "Error loading tasks", e);
+                Toast.makeText(getContext(), "Error loading tasks.", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void updateEmptyView(boolean isEmpty) {
-        if (isEmpty) {
-            recyclerView.setVisibility(View.GONE);
-            emptyView.setVisibility(View.VISIBLE); 
-        } else {
-            recyclerView.setVisibility(View.VISIBLE);
-            emptyView.setVisibility(View.GONE);
+    // OFFLINE SUPPORT: Listen for network changes to trigger a sync
+    private void registerNetworkCallback() {
+        ConnectivityManager cm = (ConnectivityManager) requireContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkRequest request = new NetworkRequest.Builder().build();
+        networkCallback = new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(@NonNull Network network) {
+                super.onAvailable(network);
+                // This is called on a background thread, so post to the main thread
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        Log.d(getClass().getSimpleName(), "Network available. Triggering sync.");
+                        viewModel.syncLocalTasks(requireContext());
+                    });
+                }
+            }
+        };
+        cm.registerNetworkCallback(request, networkCallback);
+    }
+
+    private void unregisterNetworkCallback() {
+        if (networkCallback != null) {
+            ConnectivityManager cm = (ConnectivityManager) requireContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+            cm.unregisterNetworkCallback(networkCallback);
+            networkCallback = null;
         }
+    }
+
+
+    private void updateEmptyView(boolean isEmpty) {
+        emptyView.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+        recyclerView.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
     }
 
     protected abstract List<Task> filterTasks(List<Task> tasks);

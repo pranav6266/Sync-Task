@@ -1,6 +1,8 @@
 package com.pranav.synctask.ui.viewmodels;
 
+import android.content.Context;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import com.pranav.synctask.data.Result;
 import com.pranav.synctask.data.TaskRepository;
@@ -21,7 +23,13 @@ public class CreateTaskViewModel extends ViewModel {
         return userRepository.getUser(uid);
     }
 
-    public LiveData<Result<Void>> createTask(Task task) {
-        return taskRepository.createTask(task);
+    // OFFLINE SUPPORT: Pass context to check network status
+    public LiveData<Result<Void>> createTask(Task task, Context context) {
+        // The LiveData returned here is mainly for showing errors,
+        // since success is handled by the real-time listener.
+        // For offline, we will handle it optimistically.
+        taskRepository.createTask(task, context);
+        // Return an empty LiveData or a simple success for navigation purposes
+        return new MutableLiveData<>(new Result.Success<>(null));
     }
 }

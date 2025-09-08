@@ -30,7 +30,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        [cite_start]setContentView(R.layout.activity_main); 
+        setContentView(R.layout.activity_main); 
 
         mAuth = FirebaseAuth.getInstance();
         viewModel = new ViewModelProvider(this).get(TasksViewModel.class);
@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
 
         ViewPager2 viewPager = findViewById(R.id.view_pager);
         TabLayout tabLayout = findViewById(R.id.tab_layout);
-        [cite_start]FloatingActionButton fab = findViewById(R.id.fab_add_task); 
+        FloatingActionButton fab = findViewById(R.id.fab_add_task); 
 
         ViewPagerAdapter adapter = new ViewPagerAdapter(this);
         viewPager.setAdapter(adapter);
@@ -48,16 +48,16 @@ public class MainActivity extends AppCompatActivity {
         new TabLayoutMediator(tabLayout, viewPager,
                 (tab, position) -> {
                     switch (position) {
-                        [cite_start]case 0: tab.setText("Today"); break; 
-                        [cite_start]case 1: tab.setText("This Month"); break; 
-                        [cite_start]case 2: tab.setText("All"); break; 
-                        [cite_start]case 3: tab.setText("Updates"); break; 
+                        case 0: tab.setText("Today"); break; 
+                        case 1: tab.setText("This Month"); break; 
+                        case 2: tab.setText("All"); break; 
+                        case 3: tab.setText("Updates"); break; 
                     }
                 }
-                        [cite_start]).attach(); 
+                        ).attach(); 
 
         fab.setOnClickListener(v -> {
-            [cite_start]startActivity(new Intent(MainActivity.this, CreateTaskActivity.class)); 
+            startActivity(new Intent(MainActivity.this, CreateTaskActivity.class)); 
         });
 
         observeViewModel();
@@ -68,12 +68,12 @@ public class MainActivity extends AppCompatActivity {
             if (result instanceof Result.Success) {
                 User user = ((Result.Success<User>) result).data;
                 // If user is no longer paired, send them back to the dashboard screen
-                [cite_start]if ((user.getPairedWithUID() == null || user.getPairedWithUID().isEmpty()) && !isFinishing()) { 
-                    [cite_start]Toast.makeText(MainActivity.this, "You are no longer paired.", Toast.LENGTH_LONG).show(); 
+                if ((user.getPairedWithUID() == null || user.getPairedWithUID().isEmpty()) && !isFinishing()) { 
+                    Toast.makeText(MainActivity.this, "You are no longer paired.", Toast.LENGTH_LONG).show(); 
                     goToDashboard();
                 }
             } else if (result instanceof Result.Error) {
-                [cite_start]Log.e("MainActivity", "Error listening to user pairing status", ((Result.Error<User>) result).exception); 
+                Log.e("MainActivity", "Error listening to user pairing status", ((Result.Error<User>) result).exception); 
                 goToDashboard();
             }
         });
@@ -82,14 +82,14 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_menu, menu);
-        [cite_start]return true; 
+        return true; 
     }
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.action_profile) {
             startActivity(new Intent(this, ProfileActivity.class));
-            [cite_start]return true; 
+            return true; 
         }
         return super.onOptionsItemSelected(item);
     }
@@ -97,24 +97,24 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        [cite_start]FirebaseUser currentUser = mAuth.getCurrentUser(); 
+        FirebaseUser currentUser = mAuth.getCurrentUser(); 
         if (currentUser == null) {
             goToLogin();
-            [cite_start]return; 
+            return; 
         }
         viewModel.attachUserListener(currentUser.getUid());
     }
 
     private void goToLogin() {
         Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-        [cite_start]intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK); 
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK); 
         startActivity(intent);
         finish();
     }
 
     private void goToDashboard() {
         Intent intent = new Intent(MainActivity.this, DashboardActivity.class);
-        [cite_start]intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK); 
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK); 
         startActivity(intent);
         finish();
     }
