@@ -37,14 +37,8 @@ public class FirebaseHelper {
         void onError(Exception e);
     }
 
-    /**
-     * Creates a new user document in Firestore if one doesn't exist,
-     * or updates the profile information if the user already exists.
-     * This ensures that the partnerCode and pairedWithUID are not overwritten on subsequent logins.
-     */
     public static void createOrUpdateUser(FirebaseUser firebaseUser, UserCallback callback) {
         DocumentReference userDocRef = db.collection(USERS_COLLECTION).document(firebaseUser.getUid());
-
         userDocRef.get().addOnSuccessListener(document -> {
             if (document.exists()) {
                 // User exists, just update their profile info
@@ -52,7 +46,6 @@ public class FirebaseHelper {
                         "displayName", firebaseUser.getDisplayName(),
                         "photoURL", firebaseUser.getPhotoUrl() != null ? firebaseUser.getPhotoUrl().toString() : null
                 ).addOnSuccessListener(aVoid -> {
-                    // Return the full user object after update
                     getUser(firebaseUser.getUid(), callback);
                 }).addOnFailureListener(callback::onError);
             } else {
@@ -77,10 +70,14 @@ public class FirebaseHelper {
                 .addOnFailureListener(callback::onError);
     }
 
+    // PHASE 2: Method to update photo URL in Firestore
+    public static void updatePhotoUrl(String uid, String newUrl, UserCallback callback) {
+        db.collection(USERS_COLLECTION).document(uid)
+                .update("photoURL", newUrl)
+                .addOnSuccessListener(aVoid -> getUser(uid, callback))
+                .addOnFailureListener(callback::onError);
+    }
 
-    /**
-     * Fetches a user's data from Firestore.
-     */
     public static void getUser(String uid, UserCallback callback) {
         db.collection(USERS_COLLECTION)
                 .document(uid)
@@ -96,9 +93,6 @@ public class FirebaseHelper {
                 .addOnFailureListener(callback::onError);
     }
 
-    /**
-     * Adds a real-time listener to a user's document.
-     */
     public static ListenerRegistration addUserListener(String uid, UserCallback callback) {
         return db.collection(USERS_COLLECTION)
                 .document(uid)
@@ -117,12 +111,6 @@ public class FirebaseHelper {
                 });
     }
 
-
-    /**
-     * Pairs the current user with a partner using their code.
-     * This operation is performed in a transaction to ensure atomicity.
-     * It checks if either user is already paired before proceeding.
-     */
     public static void pairUsers(String currentUserUID, String partnerCode, PairingCallback callback) {
         db.collection(USERS_COLLECTION)
                 .whereEqualTo("partnerCode", partnerCode.toUpperCase())
@@ -158,11 +146,10 @@ public class FirebaseHelper {
                                     throw new FirebaseFirestoreException("Your partner is already paired with someone else.", FirebaseFirestoreException.Code.ABORTED);
                                 }
 
-                                // All checks passed, perform the pairing
                                 transaction.update(currentUserRef, "pairedWithUID", partnerUID);
                                 transaction.update(partnerUserRef, "pairedWithUID", currentUserUID);
 
-                                return null; // Transaction success
+                                return null;
                             }).addOnSuccessListener(aVoid -> callback.onSuccess())
                             .addOnFailureListener(e -> callback.onError(new Exception(e.getMessage())));
                 })
@@ -179,14 +166,12 @@ public class FirebaseHelper {
                     return;
                 }
 
-                // Find all tasks shared between the two users
                 db.collection(TASKS_COLLECTION)
                         .whereArrayContains("sharedWith", currentUserUID)
                         .get()
                         .addOnSuccessListener(queryDocumentSnapshots -> {
                             WriteBatch batch = db.batch();
 
-                            // Delete all shared tasks
                             queryDocumentSnapshots.getDocuments().forEach(doc -> {
                                 Task task = doc.toObject(Task.class);
                                 if (task != null && task.getSharedWith().contains(partnerUID)) {
@@ -194,13 +179,11 @@ public class FirebaseHelper {
                                 }
                             });
 
-                            // Unpair users
                             DocumentReference currentUserRef = db.collection(USERS_COLLECTION).document(currentUserUID);
                             DocumentReference partnerUserRef = db.collection(USERS_COLLECTION).document(partnerUID);
                             batch.update(currentUserRef, "pairedWithUID", null);
                             batch.update(partnerUserRef, "pairedWithUID", null);
 
-                            // Commit the batch
                             batch.commit()
                                     .addOnSuccessListener(aVoid -> callback.onSuccess())
                                     .addOnFailureListener(callback::onError);
@@ -215,13 +198,12 @@ public class FirebaseHelper {
         });
     }
 
-    // Task operations
     public static void createTask(Task task, TasksCallback callback) {
         db.collection(TASKS_COLLECTION)
                 .add(task.toMap())
                 .addOnSuccessListener(documentReference -> {
                     Log.d(TAG, "Task created with ID: " + documentReference.getId());
-                    // The listener will pick up the new task, so no need to call onSuccess here
+                    callback.onSuccess(null); // Listener will pick up the change
                 })
                 .addOnFailureListener(e -> {
                     Log.w(TAG, "Error creating task", e);
@@ -266,4 +248,3 @@ public class FirebaseHelper {
                 .addOnFailureListener(e -> Log.w(TAG, "Error deleting task", e));
     }
 }
-

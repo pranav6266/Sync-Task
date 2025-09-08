@@ -1,6 +1,5 @@
 package com.pranav.synctask.activities;
 
-import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.widget.ArrayAdapter;
@@ -9,6 +8,7 @@ import android.widget.Button;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
+import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
@@ -18,8 +18,11 @@ import com.pranav.synctask.data.Result;
 import com.pranav.synctask.models.Task;
 import com.pranav.synctask.models.User;
 import com.pranav.synctask.ui.viewmodels.CreateTaskViewModel;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
 
 public class CreateTaskActivity extends AppCompatActivity {
 
@@ -67,17 +70,25 @@ public class CreateTaskActivity extends AppCompatActivity {
         acTaskType.setAdapter(adapter);
     }
 
+    // PHASE 2: Replaced DatePickerDialog with MaterialDatePicker
     private void setupDatePicker() {
         etDueDate.setOnClickListener(v -> {
-            DatePickerDialog datePickerDialog = new DatePickerDialog(this,
-                    (view, year, month, dayOfMonth) -> {
-                        selectedDueDate.set(year, month, dayOfMonth);
-                        etDueDate.setText(String.format("%d-%02d-%02d", year, month + 1, dayOfMonth));
-                    },
-                    selectedDueDate.get(Calendar.YEAR),
-                    selectedDueDate.get(Calendar.MONTH),
-                    selectedDueDate.get(Calendar.DAY_OF_MONTH));
-            datePickerDialog.show();
+            MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
+                    .setTitleText("Select Due Date")
+                    .setSelection(MaterialDatePicker.todayInUtcMilliseconds())
+                    .build();
+
+            datePicker.addOnPositiveButtonClickListener(selection -> {
+                // The selection is in UTC milliseconds. Convert it to a local date.
+                selectedDueDate.setTimeInMillis(selection);
+
+                // Format it for the EditText
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                sdf.setTimeZone(TimeZone.getTimeZone("UTC")); // Adjust for timezone
+                etDueDate.setText(sdf.format(new Date(selection)));
+            });
+
+            datePicker.show(getSupportFragmentManager(), "MATERIAL_DATE_PICKER");
         });
     }
 
@@ -97,7 +108,6 @@ public class CreateTaskActivity extends AppCompatActivity {
             dueDateTimestamp = new Timestamp(new Date(selectedDueDate.getTimeInMillis()));
         }
 
-        // OFFLINE SUPPORT: The repository will handle if the task is created locally or synced
         Task newTask = new Task(
                 currentUser.getUid(),
                 title,

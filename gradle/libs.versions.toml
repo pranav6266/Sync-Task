@@ -15,8 +15,9 @@ constraintlayout = "2.2.1"
 firebaseCommon = "22.0.0"
 firebaseFirestore = "26.0.0"
 firebaseAuth = "24.0.1"
-playServicesAuth = "21.2.0"
-googleGmsGoogleServices = "4.4.2"
+firebaseStorage = "21.0.0"
+playServicesAuth = "21.4.0"
+googleGmsGoogleServices = "4.4.3"
 swiperefreshlayout = "1.1.0"
 
 [libraries]
@@ -36,6 +37,7 @@ constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayo
 firebase-common = { group = "com.google.firebase", name = "firebase-common", version.ref = "firebaseCommon" }
 firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firebaseFirestore" }
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth", version.ref = "firebaseAuth" }
+firebase-storage = { group = "com.google.firebase", name = "firebase-storage", version.ref = "firebaseStorage" }
 play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
 swiperefreshlayout = { group = "androidx.swiperefreshlayout", name = "swiperefreshlayout", version.ref = "swiperefreshlayout" }
 
