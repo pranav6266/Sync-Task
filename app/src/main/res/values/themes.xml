@@ -1,16 +1,13 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Theme.SyncTask" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Primary brand color. -->
+    <!-- Change this line -->
+    <style name="Theme.SyncTask" parent="Theme.MaterialComponents.DayNight">
+        <!-- Your existing theme attributes -->
         <item name="colorPrimary">@color/primary_color</item>
         <item name="colorPrimaryVariant">@color/primary_dark_color</item>
         <item name="colorOnPrimary">@color/white</item>
-        <!-- Secondary brand color. -->
         <item name="colorSecondary">@color/accent_color</item>
         <item name="colorSecondaryVariant">@color/accent_color</item>
         <item name="colorOnSecondary">@color/white</item>
-        <!-- Status bar color. -->
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
-        <!-- Customize your theme here. -->
     </style>
 </resources>

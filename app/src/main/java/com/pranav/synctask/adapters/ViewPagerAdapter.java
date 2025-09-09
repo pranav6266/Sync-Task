@@ -23,6 +23,8 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
                 return new TodayFragment();
             case 1:
                 return new ThisMonthFragment();
+            case 2:  // Fixed: was missing case 2
+                return new AllTasksFragment();
             case 3:
                 return new UpdatesFragment();
             default:
