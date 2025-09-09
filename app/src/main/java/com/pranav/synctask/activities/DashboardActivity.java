@@ -24,7 +24,7 @@ import com.pranav.synctask.R;
 import com.pranav.synctask.data.Result;
 import com.pranav.synctask.data.UserRepository;
 import com.pranav.synctask.models.User;
-import com.pranav.synctask.ui.viewmodels.DashboardViewModel;
+import com.pranav.synctask.ui.DashboardViewModel;
 
 public class DashboardActivity extends AppCompatActivity {
 

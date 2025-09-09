@@ -17,7 +17,7 @@ import com.pranav.synctask.R;
 import com.pranav.synctask.data.Result;
 import com.pranav.synctask.models.Task;
 import com.pranav.synctask.models.User;
-import com.pranav.synctask.ui.viewmodels.CreateTaskViewModel;
+import com.pranav.synctask.ui.CreateTaskViewModel;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;

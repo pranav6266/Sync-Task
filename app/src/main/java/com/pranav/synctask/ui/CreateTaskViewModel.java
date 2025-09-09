@@ -1,4 +1,4 @@
-package com.pranav.synctask.ui.viewmodels;
+package com.pranav.synctask.ui;
 
 import android.content.Context;
 import androidx.lifecycle.LiveData;

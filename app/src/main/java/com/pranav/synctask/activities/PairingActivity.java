@@ -21,7 +21,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.pranav.synctask.R;
 import com.pranav.synctask.data.Result;
 import com.pranav.synctask.models.User;
-import com.pranav.synctask.ui.viewmodels.PairingViewModel;
+import com.pranav.synctask.ui.PairingViewModel;
 
 public class PairingActivity extends AppCompatActivity {
 
