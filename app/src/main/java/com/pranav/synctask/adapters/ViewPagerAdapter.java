@@ -20,15 +20,17 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
     public Fragment createFragment(int position) {
         switch (position) {
             case 0:
-                return new TodayFragment();
-            case 1:
+                // Return the fragment for the first tab
                 return new ThisMonthFragment();
-            case 2:  // Fixed: was missing case 2
+            case 1:
+                // Return the fragment for the second tab
+                return new TodayFragment();
+            case 2:
+                // Return the fragment for the third tab
                 return new AllTasksFragment();
-            case 3:
-                return new UpdatesFragment();
             default:
-                return new AllTasksFragment();
+                // This should never happen, but it's good practice
+                return new UpdatesFragment();
         }
     }
 

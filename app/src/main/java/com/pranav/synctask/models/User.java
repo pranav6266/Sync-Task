@@ -1,9 +1,10 @@
 package com.pranav.synctask.models;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class User {
+public class User implements Serializable {
     private String uid;
     private String email;
     private String displayName;
