@@ -86,13 +86,18 @@
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:layout_alignParentBottom="true"
-        android:drawableLeft="@drawable/ic_profile_settings"
+        android:drawableStart="@drawable/ic_profile_settings"
         android:drawablePadding="12dp"
         android:paddingStart="24dp"
         android:paddingEnd="24dp"
         android:text="@string/profile_and_settings_button"
         android:textColor="@color/primary_text"
         app:strokeColor="@color/divider_color" />
+
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/viewPager"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
 </RelativeLayout>
 

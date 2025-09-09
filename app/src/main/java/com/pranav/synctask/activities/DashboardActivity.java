@@ -30,8 +30,8 @@ public class DashboardActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
     private DashboardViewModel viewModel;
-    private Button btnGoToTasks, btnPairWithPartner, btnViewProfile;
-    private TextView tvWelcomeMessage;
+    private Button btnGoToTasks;
+    private Button btnPairWithPartner;
     private LinearLayout layoutPairedStatus;
 
     // PHASE 3: Launcher for notification permission request
@@ -55,8 +55,8 @@ public class DashboardActivity extends AppCompatActivity {
 
         btnGoToTasks = findViewById(R.id.btn_go_to_tasks);
         btnPairWithPartner = findViewById(R.id.btn_pair_with_partner);
-        btnViewProfile = findViewById(R.id.btn_view_profile);
-        tvWelcomeMessage = findViewById(R.id.tv_welcome_message);
+        Button btnViewProfile = findViewById(R.id.btn_view_profile);
+        TextView tvWelcomeMessage = findViewById(R.id.tv_welcome_message);
         layoutPairedStatus = findViewById(R.id.layout_paired_status);
 
         FirebaseUser currentUser = mAuth.getCurrentUser();
