@@ -71,6 +71,7 @@ public class UserRepository {
     public LiveData<Result<User>> createOrUpdateUser(FirebaseUser firebaseUser) {
         MutableLiveData<Result<User>> result = new MutableLiveData<>();
         result.setValue(new Result.Loading<>());
+        FirebaseHelper firebaseHelper = new FirebaseHelper();
         FirebaseHelper.createOrUpdateUser(firebaseUser, new FirebaseHelper.UserCallback() {
             @Override
             public void onSuccess(User user) {

@@ -29,9 +29,16 @@ public class MainActivity extends AppCompatActivity {
     private TasksViewModel viewModel;
 
     @Override
+    protected void onNewIntent(@NonNull Intent intent) {
+        super.onNewIntent(intent);
+        handleNotificationIntent(intent);
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        handleNotificationIntent(getIntent());
 
         mAuth = FirebaseAuth.getInstance();
         viewModel = new ViewModelProvider(this).get(TasksViewModel.class);
@@ -130,5 +137,27 @@ public class MainActivity extends AppCompatActivity {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
+    }
+
+    private void handleNotificationIntent(Intent intent) {
+        if (intent != null) {
+            String taskId = intent.getStringExtra("taskId");
+            String action = intent.getStringExtra("action");
+
+            if (taskId != null && action != null) {
+                // Handle the specific task action
+                switch (action) {
+                    case "view":
+                    case "new_task":
+                    case "task_updated":
+                        // Navigate to the specific task or refresh the view
+                        Toast.makeText(this, "Opening task: " + taskId, Toast.LENGTH_SHORT).show();
+                        break;
+                    case "status_changed":
+                        Toast.makeText(this, "Task status updated", Toast.LENGTH_SHORT).show();
+                        break;
+                }
+            }
+        }
     }
 }

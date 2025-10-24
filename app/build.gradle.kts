@@ -62,5 +62,8 @@ dependencies {
     implementation(libs.lifecycle.viewmodel)
     implementation(libs.lifecycle.livedata)
 
-}
+    implementation(libs.firebase.functions)
 
+
+}
+apply(plugin = "com.google.gms.google-services")

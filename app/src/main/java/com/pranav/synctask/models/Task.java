@@ -10,23 +10,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Date;
 
-// PHASE 4: Implement Serializable to pass Task objects between activities
 public class Task implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private String id;
     private String creatorUID;
     private String title;
     private String description;
     private String status;
-    private Timestamp dueDate;
-    private Timestamp createdAt;
+    private Date dueDate; // Changed from Timestamp to Date for serialization
+    private Date createdAt; // Changed from Timestamp to Date for serialization
     private String taskType;
     private List<String> sharedWith;
     private String localId;
     private boolean isSynced;
     private String creatorDisplayName;
-
-    // PHASE 4: Add priority field
     private String priority;
 
     public static final String STATUS_PENDING = "pending";
@@ -40,7 +40,7 @@ public class Task implements Serializable {
         this.localId = UUID.randomUUID().toString();
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         this.creatorDisplayName = (user != null) ? user.getDisplayName() : "A user";
-        this.priority = "Normal"; // Default priority
+        this.priority = "Normal";
     }
 
     public Task(String creatorUID, String title, String description,
@@ -50,8 +50,8 @@ public class Task implements Serializable {
         this.title = title;
         this.description = description;
         this.status = STATUS_PENDING;
-        this.dueDate = dueDate;
-        this.createdAt = Timestamp.now();
+        this.dueDate = dueDate != null ? dueDate.toDate() : null;
+        this.createdAt = Timestamp.now().toDate();
         this.taskType = taskType;
         this.sharedWith = Arrays.asList(creatorUID, partnerUID);
         this.isSynced = true;
@@ -67,8 +67,8 @@ public class Task implements Serializable {
         this.title = title;
         this.description = description;
         this.status = STATUS_PENDING;
-        this.dueDate = dueDate;
-        this.createdAt = Timestamp.now();
+        this.dueDate = dueDate != null ? dueDate.toDate() : null;
+        this.createdAt = Timestamp.now().toDate();
         this.taskType = taskType;
         this.sharedWith = Collections.singletonList(creatorUID);
         this.isSynced = false;
@@ -77,7 +77,7 @@ public class Task implements Serializable {
         this.priority = "Normal";
     }
 
-    // Getters and Setters...
+    // Getters and Setters with Timestamp conversion
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
     public String getCreatorUID() { return creatorUID; }
@@ -88,10 +88,30 @@ public class Task implements Serializable {
     public void setDescription(String description) { this.description = description; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
-    public Timestamp getDueDate() { return dueDate; }
-    public void setDueDate(Timestamp dueDate) { this.dueDate = dueDate; }
-    public Timestamp getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
+
+    // Firebase Timestamp compatibility methods
+    public Timestamp getDueDate() {
+        return dueDate != null ? new Timestamp(dueDate) : null;
+    }
+
+    public void setDueDate(Timestamp dueDate) {
+        this.dueDate = dueDate != null ? dueDate.toDate() : null;
+    }
+
+    public Timestamp getCreatedAt() {
+        return createdAt != null ? new Timestamp(createdAt) : null;
+    }
+
+    public void setCreatedAt(Timestamp createdAt) {
+        this.createdAt = createdAt != null ? createdAt.toDate() : null;
+    }
+
+    // Date methods for direct access
+    public Date getDueDateAsDate() { return dueDate; }
+    public void setDueDateFromDate(Date dueDate) { this.dueDate = dueDate; }
+    public Date getCreatedAtAsDate() { return createdAt; }
+    public void setCreatedAtFromDate(Date createdAt) { this.createdAt = createdAt; }
+
     public String getTaskType() { return taskType; }
     public void setTaskType(String taskType) { this.taskType = taskType; }
     public List<String> getSharedWith() { return sharedWith; }
@@ -102,8 +122,6 @@ public class Task implements Serializable {
     public void setSynced(boolean synced) { isSynced = synced; }
     public String getCreatorDisplayName() { return creatorDisplayName; }
     public void setCreatorDisplayName(String creatorDisplayName) { this.creatorDisplayName = creatorDisplayName; }
-
-    // PHASE 4: Getter and setter for priority
     public String getPriority() { return priority; }
     public void setPriority(String priority) { this.priority = priority; }
 
@@ -113,12 +131,12 @@ public class Task implements Serializable {
         map.put("title", title);
         map.put("description", description);
         map.put("status", status);
-        map.put("dueDate", dueDate);
-        map.put("createdAt", createdAt);
+        map.put("dueDate", getDueDate()); // Convert back to Timestamp for Firebase
+        map.put("createdAt", getCreatedAt()); // Convert back to Timestamp for Firebase
         map.put("taskType", taskType);
         map.put("sharedWith", sharedWith);
         map.put("creatorDisplayName", creatorDisplayName);
-        map.put("priority", priority); // PHASE 4: Add to map
+        map.put("priority", priority);
         return map;
     }
 }
