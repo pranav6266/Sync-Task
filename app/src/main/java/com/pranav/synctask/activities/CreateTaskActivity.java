@@ -21,22 +21,34 @@ import com.pranav.synctask.ui.CreateTaskViewModel;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TimeZone;
 
 public class CreateTaskActivity extends AppCompatActivity {
 
     private TextInputEditText etTitle, etDescription, etDueDate;
-    private AutoCompleteTextView acTaskType, acTaskPriority; // PHASE 4: Added priority
+    private AutoCompleteTextView acTaskType, acTaskPriority, acTaskScope; // MODIFIED
     private Button btnCreateTask;
     private Calendar selectedDueDate = Calendar.getInstance();
-    private String partnerUID;
+    private String currentSpaceId;
     private CreateTaskViewModel viewModel;
+
+    // ADDED: Map to hold scope display names and constants
+    private final Map<String, String> scopeMap = new HashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_task);
+
+        currentSpaceId = getIntent().getStringExtra("SPACE_ID");
+        if (currentSpaceId == null || currentSpaceId.isEmpty()) {
+            Toast.makeText(this, "Error: No Space ID provided.", Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
 
         viewModel = new ViewModelProvider(this).get(CreateTaskViewModel.class);
 
@@ -44,37 +56,41 @@ public class CreateTaskActivity extends AppCompatActivity {
         etDescription = findViewById(R.id.et_task_description);
         etDueDate = findViewById(R.id.et_task_due_date);
         acTaskType = findViewById(R.id.ac_task_type);
-        acTaskPriority = findViewById(R.id.ac_task_priority); // PHASE 4
+        acTaskPriority = findViewById(R.id.ac_task_priority);
+        acTaskScope = findViewById(R.id.ac_task_scope); // ADDED
         btnCreateTask = findViewById(R.id.btn_create_task);
 
         setupDropdowns();
         setupDatePicker();
 
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (currentUser != null) {
-            viewModel.getPartnerInfo(currentUser.getUid()).observe(this, result -> {
-                if (result instanceof Result.Success) {
-                    partnerUID = ((Result.Success<User>) result).data.getPairedWithUID();
-                } else if (result instanceof Result.Error) {
-                    Toast.makeText(CreateTaskActivity.this, "Could not get user info.", Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
-
         btnCreateTask.setOnClickListener(v -> createTask());
     }
 
     private void setupDropdowns() {
+        // Task Type
         String[] taskTypes = {Task.TYPE_TASK, Task.TYPE_REMINDER, Task.TYPE_UPDATE};
         ArrayAdapter<String> typeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, taskTypes);
         acTaskType.setAdapter(typeAdapter);
-        acTaskType.setText(Task.TYPE_TASK, false); // Set default value
+        acTaskType.setText(Task.TYPE_TASK, false);
 
-        // PHASE 4: Setup priority dropdown
+        // Priority
         String[] priorities = {"Low", "Normal", "High"};
         ArrayAdapter<String> priorityAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, priorities);
         acTaskPriority.setAdapter(priorityAdapter);
-        acTaskPriority.setText("Normal", false); // Set default value
+        acTaskPriority.setText("Normal", false);
+
+        // --- ADDED: Task Scope ---
+        // Using a map to decouple display text from the constant
+        scopeMap.put(getString(R.string.scope_shared), Task.SCOPE_SHARED);
+        scopeMap.put(getString(R.string.scope_individual), Task.SCOPE_INDIVIDUAL);
+        scopeMap.put(getString(R.string.scope_assigned), Task.SCOPE_ASSIGNED);
+
+        String[] scopeDisplayNames = scopeMap.keySet().toArray(new String[0]);
+        ArrayAdapter<String> scopeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, scopeDisplayNames);
+        acTaskScope.setAdapter(scopeAdapter);
+        // Default to "Shared Task"
+        acTaskScope.setText(getString(R.string.scope_shared), false);
+        // --- END ADDED ---
     }
 
     private void setupDatePicker() {
@@ -99,11 +115,13 @@ public class CreateTaskActivity extends AppCompatActivity {
         String title = etTitle.getText().toString().trim();
         String description = etDescription.getText().toString().trim();
         String taskType = acTaskType.getText().toString().trim();
-        String priority = acTaskPriority.getText().toString().trim(); // PHASE 4
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        String priority = acTaskPriority.getText().toString().trim();
+        String scopeDisplayName = acTaskScope.getText().toString().trim(); // ADDED
+        String ownershipScope = scopeMap.get(scopeDisplayName); // ADDED
 
-        if (TextUtils.isEmpty(title) || TextUtils.isEmpty(taskType) || currentUser == null) {
-            Toast.makeText(this, "Title and Task Type are required.", Toast.LENGTH_SHORT).show();
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (TextUtils.isEmpty(title) || TextUtils.isEmpty(taskType) || TextUtils.isEmpty(ownershipScope) || currentUser == null) {
+            Toast.makeText(this, "Title, Type, and Scope are required.", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -113,7 +131,9 @@ public class CreateTaskActivity extends AppCompatActivity {
         }
 
         Task newTask = new Task(currentUser.getUid(), title, description, dueDateTimestamp, taskType);
-        newTask.setPriority(priority); // PHASE 4: Set priority on the new task
+        newTask.setPriority(priority);
+        newTask.setSpaceId(currentSpaceId);
+        newTask.setOwnershipScope(ownershipScope); // --- ADDED ---
 
         viewModel.createTask(newTask, this).observe(this, result -> {
             if (result instanceof Result.Success) {

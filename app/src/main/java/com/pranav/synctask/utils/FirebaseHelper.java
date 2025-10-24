@@ -2,34 +2,38 @@ package com.pranav.synctask.utils;
 
 import android.util.Log;
 
+import com.google.android.gms.tasks.TaskCompletionSource;
+import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.WriteBatch;
 import com.google.firebase.functions.FirebaseFunctions;
+import com.pranav.synctask.models.Space;
 import com.pranav.synctask.models.Task;
 import com.pranav.synctask.models.User;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
-// CHANGED: Class is no longer static. This fixes the memory leak warning.
 public class FirebaseHelper {
     private static final String TAG = "FirebaseHelper";
-
-    // CHANGED: Fields are no longer static and are final
     private final FirebaseFirestore db;
     private final FirebaseFunctions functions;
 
     private static final String USERS_COLLECTION = "users";
     private static final String TASKS_COLLECTION = "tasks";
+    private static final String SPACES_COLLECTION = "spaces"; // ADDED
 
-    // CHANGED: Constructor initializes non-static fields
     public FirebaseHelper() {
         db = FirebaseFirestore.getInstance();
         functions = FirebaseFunctions.getInstance();
@@ -38,25 +42,36 @@ public class FirebaseHelper {
     // Callbacks
     public interface UserCallback {
         void onSuccess(User user);
+
         void onError(Exception e);
     }
 
     public interface TasksCallback {
         void onSuccess(List<Task> tasks);
+
         void onError(Exception e);
     }
 
-    public interface PairingCallback {
-        void onSuccess();
+    // ADDED
+    public interface SpaceCallback {
+        void onSuccess(Space space);
+
+        void onError(Exception e);
+    }
+
+    // ADDED
+    public interface SpacesCallback {
+        void onSuccess(List<Space> spaces);
+
         void onError(Exception e);
     }
 
     public interface NotificationCallback {
         void onSuccess();
+
         void onError(Exception e);
     }
 
-    // CHANGED: Method is no longer static
     public void createOrUpdateUser(FirebaseUser firebaseUser, UserCallback callback) {
         DocumentReference userDocRef = db.collection(USERS_COLLECTION).document(firebaseUser.getUid());
         userDocRef.get().addOnSuccessListener(document -> {
@@ -76,6 +91,7 @@ public class FirebaseHelper {
                         firebaseUser.getDisplayName(),
                         firebaseUser.getPhotoUrl() != null ? firebaseUser.getPhotoUrl().toString() : null
                 );
+                // newUser.spaceIds is already initialized as new ArrayList<>()
                 userDocRef.set(newUser)
                         .addOnSuccessListener(aVoid -> callback.onSuccess(newUser))
                         .addOnFailureListener(callback::onError);
@@ -83,7 +99,6 @@ public class FirebaseHelper {
         }).addOnFailureListener(callback::onError);
     }
 
-    // CHANGED: Method is no longer static
     public void updateDisplayName(String uid, String newName, UserCallback callback) {
         db.collection(USERS_COLLECTION).document(uid)
                 .update("displayName", newName)
@@ -91,7 +106,6 @@ public class FirebaseHelper {
                 .addOnFailureListener(callback::onError);
     }
 
-    // CHANGED: Method is no longer static
     public void updatePhotoUrl(String uid, String newUrl, UserCallback callback) {
         db.collection(USERS_COLLECTION).document(uid)
                 .update("photoURL", newUrl)
@@ -99,7 +113,6 @@ public class FirebaseHelper {
                 .addOnFailureListener(callback::onError);
     }
 
-    // CHANGED: Method is no longer static
     public void updateFcmToken(String uid, String token) {
         if (uid == null || token == null) return;
         Map<String, Object> updates = new HashMap<>();
@@ -110,21 +123,18 @@ public class FirebaseHelper {
                 .addOnFailureListener(e -> Log.e(TAG, "Error updating FCM token", e));
     }
 
-    // CHANGED: Method is no longer static
     public void updateTask(String taskId, Map<String, Object> taskMap, TasksCallback callback) {
         db.collection(TASKS_COLLECTION)
                 .document(taskId)
                 .update(taskMap)
                 .addOnSuccessListener(aVoid -> {
                     Log.d(TAG, "Task updated successfully");
-                    // Send notification about task update
-                    sendTaskNotification(taskId, null, "task_updated", null);
+                    // TODO: Re-implement notification logic based on spaceId
                     callback.onSuccess(null);
                 })
                 .addOnFailureListener(callback::onError);
     }
 
-    // CHANGED: Method is no longer static
     public void getUser(String uid, UserCallback callback) {
         db.collection(USERS_COLLECTION)
                 .document(uid)
@@ -140,7 +150,6 @@ public class FirebaseHelper {
                 .addOnFailureListener(callback::onError);
     }
 
-    // CHANGED: Method is no longer static
     public ListenerRegistration addUserListener(String uid, UserCallback callback) {
         return db.collection(USERS_COLLECTION)
                 .document(uid)
@@ -159,114 +168,110 @@ public class FirebaseHelper {
                 });
     }
 
-    // CHANGED: Method is no longer static
-    public void pairUsers(String currentUserUID, String partnerCode, PairingCallback callback) {
-        db.collection(USERS_COLLECTION)
-                .whereEqualTo("partnerCode", partnerCode.toUpperCase())
+    // --- NEW METHODS for SPACES ---
+
+    public void createSpace(String spaceName, String creatorUID, SpaceCallback callback) {
+        // Generate a new space document
+        DocumentReference spaceDocRef = db.collection(SPACES_COLLECTION).document();
+        String spaceId = spaceDocRef.getId();
+        String inviteCode = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+
+        Space newSpace = new Space(
+                spaceId,
+                spaceName,
+                Arrays.asList(creatorUID),
+                inviteCode
+        );
+
+        // Get the user document
+        DocumentReference userDocRef = db.collection(USERS_COLLECTION).document(creatorUID);
+
+        // Run a batch write to create the space AND update the user
+        WriteBatch batch = db.batch();
+        batch.set(spaceDocRef, newSpace);
+        batch.update(userDocRef, "spaceIds", FieldValue.arrayUnion(spaceId));
+
+        batch.commit()
+                .addOnSuccessListener(aVoid -> callback.onSuccess(newSpace))
+                .addOnFailureListener(callback::onError);
+    }
+
+    public void joinSpace(String inviteCode, String userUID, SpaceCallback callback) {
+        // Find the space with the invite code
+        db.collection(SPACES_COLLECTION)
+                .whereEqualTo("inviteCode", inviteCode.toUpperCase())
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
-                    if (querySnapshot.isEmpty() || querySnapshot.getDocuments().get(0).getId().equals(currentUserUID)) {
-                        callback.onError(new Exception("Invalid partner code. Please check and try again."));
+                    if (querySnapshot.isEmpty()) {
+                        callback.onError(new Exception("Invalid invite code."));
                         return;
                     }
 
-                    DocumentSnapshot partnerDocSnapshot = querySnapshot.getDocuments().get(0);
-                    String partnerUID = partnerDocSnapshot.getId();
+                    DocumentSnapshot spaceDoc = querySnapshot.getDocuments().get(0);
+                    String spaceId = spaceDoc.getId();
+                    Space space = spaceDoc.toObject(Space.class);
 
-                    db.runTransaction(transaction -> {
-                                DocumentReference currentUserRef = db.collection(USERS_COLLECTION).document(currentUserUID);
-                                DocumentReference partnerUserRef = db.collection(USERS_COLLECTION).document(partnerUID);
+                    if (space.getMembers().contains(userUID)) {
+                        callback.onError(new Exception("You are already in this space."));
+                        return;
+                    }
 
-                                DocumentSnapshot currentUserDoc = transaction.get(currentUserRef);
-                                DocumentSnapshot partnerDoc = transaction.get(partnerUserRef);
+                    // Add user to the space and add space to the user's list
+                    DocumentReference spaceDocRef = spaceDoc.getReference();
+                    DocumentReference userDocRef = db.collection(USERS_COLLECTION).document(userUID);
 
-                                if (!currentUserDoc.exists() || !partnerDoc.exists()) {
-                                    throw new FirebaseFirestoreException("User document not found.", FirebaseFirestoreException.Code.ABORTED);
-                                }
+                    WriteBatch batch = db.batch();
+                    batch.update(spaceDocRef, "members", FieldValue.arrayUnion(userUID));
+                    batch.update(userDocRef, "spaceIds", FieldValue.arrayUnion(spaceId));
 
-                                User currentUser = currentUserDoc.toObject(User.class);
-                                User partnerUser = partnerDoc.toObject(User.class);
+                    batch.commit()
+                            .addOnSuccessListener(aVoid -> callback.onSuccess(space))
+                            .addOnFailureListener(callback::onError);
 
-                                if (currentUser != null && currentUser.getPairedWithUID() != null && !currentUser.getPairedWithUID().isEmpty()) {
-                                    throw new FirebaseFirestoreException("You are already paired with someone.", FirebaseFirestoreException.Code.ABORTED);
-                                }
-
-                                if (partnerUser != null && partnerUser.getPairedWithUID() != null && !partnerUser.getPairedWithUID().isEmpty()) {
-                                    throw new FirebaseFirestoreException("Your partner is already paired with someone else.", FirebaseFirestoreException.Code.ABORTED);
-                                }
-
-                                transaction.update(currentUserRef, "pairedWithUID", partnerUID);
-                                transaction.update(partnerUserRef, "pairedWithUID", currentUserUID);
-
-                                return null;
-                            }).addOnSuccessListener(aVoid -> callback.onSuccess())
-                            .addOnFailureListener(e -> callback.onError(new Exception(e.getMessage())));
                 })
                 .addOnFailureListener(callback::onError);
     }
 
-    // CHANGED: Method is no longer static
-    public void unpairUsers(String currentUserUID, PairingCallback callback) {
-        getUser(currentUserUID, new UserCallback() {
-            @Override
-            public void onSuccess(User user) {
-                String partnerUID = user.getPairedWithUID();
-                if (partnerUID == null || partnerUID.isEmpty()) {
-                    callback.onError(new Exception("You are not paired with anyone."));
-                    return;
+    public void getSpaces(List<String> spaceIds, SpacesCallback callback) {
+        if (spaceIds == null || spaceIds.isEmpty()) {
+            callback.onSuccess(new ArrayList<>());
+            return;
+        }
+
+        List<com.google.android.gms.tasks.Task<DocumentSnapshot>> tasks = new ArrayList<>();
+        for (String id : spaceIds) {
+            tasks.add(db.collection(SPACES_COLLECTION).document(id).get());
+        }
+
+        Tasks.whenAllSuccess(tasks).addOnSuccessListener(list -> {
+            List<Space> spaces = new ArrayList<>();
+            for (Object doc : list) {
+                DocumentSnapshot snapshot = (DocumentSnapshot) doc;
+                if (snapshot.exists()) {
+                    spaces.add(snapshot.toObject(Space.class));
                 }
-
-                db.collection(TASKS_COLLECTION)
-                        .whereArrayContains("sharedWith", currentUserUID)
-                        .get()
-                        .addOnSuccessListener(queryDocumentSnapshots -> {
-                            WriteBatch batch = db.batch();
-
-                            queryDocumentSnapshots.getDocuments().forEach(doc -> {
-                                Task task = doc.toObject(Task.class);
-                                if (task != null && task.getSharedWith().contains(partnerUID)) {
-                                    batch.delete(doc.getReference());
-                                }
-                            });
-
-                            DocumentReference currentUserRef = db.collection(USERS_COLLECTION).document(currentUserUID);
-                            DocumentReference partnerUserRef = db.collection(USERS_COLLECTION).document(partnerUID);
-                            batch.update(currentUserRef, "pairedWithUID", null);
-                            batch.update(partnerUserRef, "pairedWithUID", null);
-
-                            batch.commit()
-                                    .addOnSuccessListener(aVoid -> callback.onSuccess())
-                                    .addOnFailureListener(callback::onError);
-                        })
-                        .addOnFailureListener(callback::onError);
             }
-
-            @Override
-            public void onError(Exception e) {
-                callback.onError(e);
-            }
-        });
+            callback.onSuccess(spaces);
+        }).addOnFailureListener(callback::onError);
     }
 
-    // CHANGED: Method is no longer static
+    // --- MODIFIED TASK METHODS ---
+
     public void createTask(Task task, TasksCallback callback) {
         db.collection(TASKS_COLLECTION)
-                .add(task.toMap())
+                .add(task.toMap()) // task.toMap() now includes spaceId
                 .addOnSuccessListener(documentReference -> {
                     String taskId = documentReference.getId();
                     Log.d(TAG, "Task created with ID: " + taskId);
-
-                    // Send notification to partner
-                    sendTaskNotification(taskId, task, "new_task", null);
+                    // TODO: Re-implement notification logic for space
                     callback.onSuccess(null);
                 })
                 .addOnFailureListener(callback::onError);
     }
 
-    // CHANGED: Method is no longer static
-    public ListenerRegistration getTasks(String userUID, TasksCallback callback) {
+    public ListenerRegistration getTasks(String spaceId, TasksCallback callback) {
         return db.collection(TASKS_COLLECTION)
-                .whereArrayContains("sharedWith", userUID)
+                .whereEqualTo("spaceId", spaceId) // CHANGED QUERY
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .addSnapshotListener((value, error) -> {
                     if (error != null) {
@@ -285,172 +290,83 @@ public class FirebaseHelper {
                 });
     }
 
-    // CHANGED: Method is no longer static
     public void updateTaskStatus(String taskId, String status) {
         db.collection(TASKS_COLLECTION)
                 .document(taskId)
                 .update("status", status)
                 .addOnSuccessListener(aVoid -> {
                     Log.d(TAG, "Task status updated");
-                    // Send notification about status change
-                    sendTaskStatusNotification(taskId, status);
+                    // TODO: Re-implement notification logic
                 })
                 .addOnFailureListener(e -> Log.w(TAG, "Error updating task status", e));
     }
 
-    // CHANGED: Method is no longer static
     public void deleteTask(String taskId) {
-        // First get the task to send notification
         db.collection(TASKS_COLLECTION)
                 .document(taskId)
-                .get()
-                .addOnSuccessListener(document -> {
-                    if (document.exists()) {
-                        Task task = document.toObject(Task.class);
-                        // Delete the task
-                        db.collection(TASKS_COLLECTION)
-                                .document(taskId)
-                                .delete()
-                                .addOnSuccessListener(aVoid -> {
-                                    Log.d(TAG, "Task deleted");
-                                    // Send notification about task deletion
-                                    sendTaskNotification(taskId, task, "task_deleted", null);
-                                })
-                                .addOnFailureListener(e -> Log.w(TAG, "Error deleting task", e));
-                    }
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "Task deleted");
+                    // TODO: Re-implement notification logic
                 })
-                .addOnFailureListener(e -> Log.w(TAG, "Error getting task for deletion", e));
+                .addOnFailureListener(e -> Log.w(TAG, "Error deleting task", e));
     }
 
-    // CHANGED: Method is no longer static
-    private void sendTaskNotification(String taskId, Task task, String action, NotificationCallback callback) {
-        if (task == null) {
-            // If task is null, fetch it first
-            db.collection(TASKS_COLLECTION)
-                    .document(taskId)
-                    .get()
-                    .addOnSuccessListener(document -> {
-                        if (document.exists()) {
-                            Task fetchedTask = document.toObject(Task.class);
-                            sendTaskNotificationInternal(taskId, fetchedTask, action, callback);
-                        }
-                    })
-                    .addOnFailureListener(e -> {
-                        if (callback != null) callback.onError(e);
-                    });
-        } else {
-            sendTaskNotificationInternal(taskId, task, action, callback);
-        }
-    }
+    // ADD THIS METHOD TO FirebaseHelper.java
+    public void leaveSpace(String spaceId, String userUID, SpaceCallback callback) {
+        DocumentReference spaceDocRef = db.collection(SPACES_COLLECTION).document(spaceId);
+        DocumentReference userDocRef = db.collection(USERS_COLLECTION).document(userUID);
 
-    // CHANGED: Method is no longer static
-    private void sendTaskNotificationInternal(String taskId, Task task, String action, NotificationCallback callback) {
-        if (task == null || task.getSharedWith() == null || task.getSharedWith().size() < 2) {
-            if (callback != null) callback.onError(new Exception("Task data is incomplete for notification."));
-            return;
-        }
-
-        // Get the partner's UID (the one who didn't create the task)
-        String partnerUID = null;
-        for (String uid : task.getSharedWith()) {
-            if (!uid.equals(task.getCreatorUID())) {
-                partnerUID = uid;
-                break;
+        db.runTransaction(transaction -> {
+            DocumentSnapshot spaceDoc = transaction.get(spaceDocRef);
+            if (!spaceDoc.exists()) {
+                throw new FirebaseFirestoreException("Space not found.", FirebaseFirestoreException.Code.NOT_FOUND);
             }
-        }
 
-        if (partnerUID == null) {
-            if (callback != null) callback.onError(new Exception("Partner UID not found for notification."));
-            return;
-        }
+            Space space = spaceDoc.toObject(Space.class);
+            List<String> members = space.getMembers();
 
-        // Get partner's FCM token
-        db.collection(USERS_COLLECTION)
-                .document(partnerUID)
-                .get()
-                .addOnSuccessListener(document -> {
-                    if (document.exists()) {
-                        User partner = document.toObject(User.class);
-                        if (partner != null && partner.getFcmToken() != null) {
-                            // Prepare notification data
-                            Map<String, Object> data = new HashMap<>();
-                            data.put("taskId", taskId);
-                            data.put("action", action);
-                            data.put("taskTitle", task.getTitle());
-                            data.put("creatorName", task.getCreatorDisplayName());
-                            data.put("targetToken", partner.getFcmToken());
+            // Run batch updates
+            transaction.update(userDocRef, "spaceIds", FieldValue.arrayRemove(spaceId));
+            transaction.update(spaceDocRef, "members", FieldValue.arrayRemove(userUID));
 
-                            // Call cloud function to send notification
-                            // This assumes you have a Cloud Function named "sendTaskNotification"
-                            functions.getHttpsCallable("sendTaskNotification")
-                                    .call(data)
-                                    .addOnSuccessListener(result -> {
-                                        Log.d(TAG, "Notification sent successfully");
-                                        if (callback != null) callback.onSuccess();
-                                    })
-                                    .addOnFailureListener(e -> {
-                                        Log.w(TAG, "Failed to send notification", e);
-                                        if (callback != null) callback.onError(e);
-                                    });
-                        } else {
-                            if (callback != null) callback.onError(new Exception("Partner FCM token is missing."));
-                        }
-                    } else {
-                        if (callback != null) callback.onError(new Exception("Partner document not found."));
+            // If the user was the last member, delete the space and its tasks
+            if (members.size() == 1 && members.contains(userUID)) {
+                // Return the space object so we can delete tasks
+                return space;
+            }
+
+            return null; // User left, but space remains
+        }).addOnSuccessListener(result -> {
+            if (result != null) {
+                // This was the last user. Delete all tasks for this space.
+                Space spaceToDelete = (Space) result;
+                deleteTasksForSpace(spaceToDelete.getSpaceId(), () -> {
+                    // After tasks are deleted, delete the space doc
+                    spaceDocRef.delete()
+                            .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                            .addOnFailureListener(callback::onError);
+                });
+            } else {
+                // Space was left successfully, not deleted
+                callback.onSuccess(null);
+            }
+        }).addOnFailureListener(callback::onError);
+    }
+
+    // ADD THIS HELPER METHOD TO FirebaseHelper.java
+    private void deleteTasksForSpace(String spaceId, Runnable onComplete) {
+        db.collection(TASKS_COLLECTION).whereEqualTo("spaceId", spaceId).get()
+                .addOnSuccessListener(querySnapshot -> {
+                    WriteBatch batch = db.batch();
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        batch.delete(doc.getReference());
                     }
+                    batch.commit().addOnCompleteListener(task -> onComplete.run());
                 })
                 .addOnFailureListener(e -> {
-                    Log.w(TAG, "Error getting partner info", e);
-                    if (callback != null) callback.onError(e);
+                    Log.e(TAG, "Failed to query tasks for deletion", e);
+                    onComplete.run(); // Still run onComplete, even if task deletion fails
                 });
-    }
-
-    // CHANGED: Method is no longer static
-    private void sendTaskStatusNotification(String taskId, String newStatus) {
-        db.collection(TASKS_COLLECTION)
-                .document(taskId)
-                .get()
-                .addOnSuccessListener(document -> {
-                    if (document.exists()) {
-                        Task task = document.toObject(Task.class);
-                        if (task != null && task.getSharedWith() != null && task.getSharedWith().size() >= 2) {
-                            // Find partner UID
-                            String partnerUID = null;
-                            for (String uid : task.getSharedWith()) {
-                                if (!uid.equals(task.getCreatorUID())) {
-                                    partnerUID = uid;
-                                    break;
-                                }
-                            }
-
-                            if (partnerUID != null) {
-                                // Get partner's FCM token and send notification
-                                db.collection(USERS_COLLECTION)
-                                        .document(partnerUID)
-                                        .get()
-                                        .addOnSuccessListener(partnerDoc -> {
-                                            if (partnerDoc.exists()) {
-                                                User partner = partnerDoc.toObject(User.class);
-                                                if (partner != null && partner.getFcmToken() != null) {
-                                                    Map<String, Object> data = new HashMap<>();
-                                                    data.put("taskId", taskId);
-                                                    data.put("action", "status_changed");
-                                                    data.put("taskTitle", task.getTitle());
-                                                    data.put("newStatus", newStatus);
-                                                    data.put("creatorName", task.getCreatorDisplayName());
-                                                    data.put("targetToken", partner.getFcmToken());
-
-                                                    functions.getHttpsCallable("sendTaskNotification")
-                                                            .call(data)
-                                                            .addOnSuccessListener(result -> Log.d(TAG, "Status change notification sent"))
-                                                            .addOnFailureListener(e -> Log.w(TAG, "Failed to send status notification", e));
-                                                }
-                                            }
-                                        });
-                            }
-                        }
-                    }
-                })
-                .addOnFailureListener(e -> Log.w(TAG, "Error getting task for status notification", e));
     }
 }

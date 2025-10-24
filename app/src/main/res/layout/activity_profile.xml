@@ -47,7 +47,6 @@
 
             </FrameLayout>
 
-
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -75,7 +74,6 @@
                     android:textSize="22sp"
                     android:textStyle="bold"
                     android:visibility="gone" />
-
 
                 <ImageView
                     android:id="@+id/iv_edit_name"
@@ -128,7 +126,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="12dp"
-                        android:text="Task Statistics"
+                        android:text="Task Statistics (All Spaces)"
                         android:textColor="@color/primary_text"
                         android:textSize="16sp"
                         android:textStyle="bold" />
@@ -148,7 +146,7 @@
                             <TextView
                                 android:id="@+id/tv_tasks_created"
                                 android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
+                                android.layout_height="wrap_content"
                                 android:textColor="@color/primary_text"
                                 android:textSize="20sp"
                                 android:textStyle="bold"
@@ -156,7 +154,7 @@
 
                             <TextView
                                 android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
+                                android.layout_height="wrap_content"
                                 android:text="Created"
                                 android:textColor="@color/secondary_text" />
                         </LinearLayout>
@@ -172,7 +170,7 @@
                                 android:id="@+id/tv_tasks_completed"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:textColor="@color/primary_text"
+                                android.textColor="@color/primary_text"
                                 android:textSize="20sp"
                                 android:textStyle="bold"
                                 tools:text="0" />
@@ -203,20 +201,9 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
             android:layout_marginBottom="4dp"
-            android:text="Danger Zone"
-            android:textColor="@color/delete_icon_color"
+            android:text="Account Actions"
+            android:textColor="@color/secondary_text"
             android:textSize="14sp" />
-
-        <Button
-            android:id="@+id/btn_unpair"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginBottom="8dp"
-            android:text="@string/unpair_button"
-            android:textColor="@color/delete_icon_color"
-            android:visibility="gone"
-            app:strokeColor="@color/delete_icon_color" />
 
         <Button
             android:id="@+id/btn_logout"

@@ -16,10 +16,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.pranav.synctask.R;
 import com.pranav.synctask.activities.EditTaskActivity;
-import com.pranav.synctask.data.TaskRepository; // CHANGED: Added import
+import com.pranav.synctask.data.TaskRepository;
 import com.pranav.synctask.models.Task;
 import com.pranav.synctask.utils.DateUtils;
-// CHANGED: Removed FirebaseHelper import, it's no longer used here
 import java.util.List;
 import java.util.Objects;
 
@@ -47,6 +46,56 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     @Override
     public void onBindViewHolder(@NonNull TaskViewHolder holder, int position) {
         Task task = taskList.get(position);
+        if (task == null) return;
+
+        // --- PERMISSIONS LOGIC (PHASE 2) ---
+        String scope = task.getOwnershipScope();
+        // Fallback for older tasks that might not have a scope
+        if (scope == null) {
+            scope = Task.SCOPE_SHARED;
+        }
+
+        boolean isCreator = currentUserId != null && currentUserId.equals(task.getCreatorUID());
+
+        boolean canEdit = false;
+        boolean canComplete = false;
+        boolean canDelete = false;
+
+        switch (scope) {
+            case Task.SCOPE_INDIVIDUAL:
+                // Only the creator can see, edit, complete, and delete.
+                // Since tasks are filtered in the repository (eventually),
+                // we assume if we see it, we are the creator.
+                canEdit = true;
+                canComplete = true;
+                canDelete = true;
+                break;
+            case Task.SCOPE_SHARED:
+                // Both users can do everything
+                canEdit = true;
+                canComplete = true;
+                canDelete = true;
+                break;
+            case Task.SCOPE_ASSIGNED:
+                if (isCreator) {
+                    // I created it, I can edit/delete but not complete
+                    canEdit = true;
+                    canDelete = true;
+                    canComplete = false; // Only assignee can complete
+                } else {
+                    // It's assigned to me. I can complete, but not edit/delete
+                    canEdit = false;
+                    canDelete = false;
+                    canComplete = true;
+                }
+                break;
+        }
+
+        // --- END PERMISSIONS LOGIC ---
+
+
+        // --- APPLY UI AND PERMISSIONS ---
+
         holder.tvTitle.setText(task.getTitle());
         holder.tvDescription.setText(task.getDescription());
         holder.tvDescription.setVisibility(task.getDescription().isEmpty() ? View.GONE : View.VISIBLE);
@@ -58,9 +107,8 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             holder.tvDueDate.setVisibility(View.GONE);
         }
 
-        boolean isMyTask = currentUserId != null && currentUserId.equals(task.getCreatorUID());
-        holder.tvCreator.setText(isMyTask ? R.string.task_creator_label_you : R.string.task_creator_label_partner);
-        holder.sideBar.setBackgroundColor(isMyTask ?
+        holder.tvCreator.setText(isCreator ? R.string.task_creator_label_you : R.string.task_creator_label_partner);
+        holder.sideBar.setBackgroundColor(isCreator ?
                 context.getResources().getColor(R.color.my_task_bg, null) :
                 context.getResources().getColor(R.color.partner_task_bg, null));
 
@@ -92,38 +140,42 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
 
         if (task.isSynced()) {
             holder.itemView.setAlpha(1.0f);
-            holder.cbStatus.setEnabled(isMyTask);
-            holder.tvCreator.setText(isMyTask ? R.string.task_creator_label_you : R.string.task_creator_label_partner);
+            holder.tvCreator.setText(isCreator ? R.string.task_creator_label_you : R.string.task_creator_label_partner);
         } else {
             holder.itemView.setAlpha(0.7f);
-            holder.cbStatus.setEnabled(false);
             holder.tvCreator.setText(R.string.task_creator_label_local);
         }
 
+        // Apply completion permission
+        holder.cbStatus.setEnabled(canComplete || task.isSynced());
         holder.cbStatus.setOnCheckedChangeListener(null);
         holder.cbStatus.setChecked(Task.STATUS_COMPLETED.equals(task.getStatus()));
-
         holder.cbStatus.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (buttonView.isPressed()) {
                 String newStatus = isChecked ? Task.STATUS_COMPLETED : Task.STATUS_PENDING;
-                // CHANGED: Call the repository, not the helper
                 TaskRepository.getInstance().updateTaskStatus(task.getId(), newStatus);
             }
         });
 
-        holder.ivDelete.setVisibility(isMyTask ? View.VISIBLE : View.GONE);
-        if (isMyTask) {
-            // CHANGED: Call the repository, not the helper
+        // Apply deletion permission
+        holder.ivDelete.setVisibility(canDelete ? View.VISIBLE : View.GONE);
+        if (canDelete) {
             holder.ivDelete.setOnClickListener(v -> TaskRepository.getInstance().deleteTask(task.getId()));
         } else {
             holder.ivDelete.setOnClickListener(null);
         }
 
-        holder.itemView.setOnClickListener(v -> {
-            Intent intent = new Intent(context, EditTaskActivity.class);
-            intent.putExtra(EditTaskActivity.EXTRA_TASK, task);
-            context.startActivity(intent);
-        });
+        // Apply edit/view permission
+        if (canEdit) {
+            holder.itemView.setOnClickListener(v -> {
+                Intent intent = new Intent(context, EditTaskActivity.class);
+                intent.putExtra(EditTaskActivity.EXTRA_TASK, task);
+                context.startActivity(intent);
+            });
+        } else {
+            // It's view-only
+            holder.itemView.setOnClickListener(null);
+        }
 
         setAnimation(holder.itemView, position);
     }
@@ -165,7 +217,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             ivDelete = itemView.findViewById(R.id.iv_delete_task);
             ivTaskType = itemView.findViewById(R.id.iv_task_type);
             ivPriority = itemView.findViewById(R.id.iv_task_priority);
-                        sideBar = itemView.findViewById(R.id.side_bar);
+            sideBar = itemView.findViewById(R.id.side_bar);
         }
     }
 
@@ -178,8 +230,15 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             this.newList = newList;
         }
 
-        @Override public int getOldListSize() { return oldList.size(); }
-        @Override public int getNewListSize() { return newList.size(); }
+        @Override
+        public int getOldListSize() {
+            return oldList.size();
+        }
+
+        @Override
+        public int getNewListSize() {
+            return newList.size();
+        }
 
         @Override
         public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
@@ -200,6 +259,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                     Objects.equals(oldTask.getStatus(), newTask.getStatus()) &&
                     Objects.equals(oldTask.getDueDate(), newTask.getDueDate()) &&
                     Objects.equals(oldTask.getPriority(), newTask.getPriority()) &&
+                    Objects.equals(oldTask.getOwnershipScope(), newTask.getOwnershipScope()) && // ADDED
                     oldTask.isSynced() == newTask.isSynced();
         }
     }

@@ -49,6 +49,19 @@
         android:layout_marginBottom="16dp"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
         <AutoCompleteTextView
+            android:id="@+id/ac_task_scope"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/scope_hint"
+            android:inputType="none" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+        <AutoCompleteTextView
             android:id="@+id/ac_task_type"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -79,7 +92,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/due_date_hint"
-            android:focusable="false"
+            android:focusable="true"
             android:clickable="true" />
     </com.google.android.material.textfield.TextInputLayout>
 

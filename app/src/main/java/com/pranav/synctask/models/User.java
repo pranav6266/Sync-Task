@@ -1,7 +1,9 @@
 package com.pranav.synctask.models;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class User implements Serializable {
@@ -9,54 +11,69 @@ public class User implements Serializable {
     private String email;
     private String displayName;
     private String photoURL;
-    private String partnerCode;
-    private String pairedWithUID;
-    private String fcmToken; // PHASE 3: ADDED
+    private String fcmToken;
+    private List<String> spaceIds; // CHANGED
 
-    public User() {}
+    public User() {
+    }
 
     public User(String uid, String email, String displayName, String photoURL) {
         this.uid = uid;
         this.email = email;
         this.displayName = displayName;
         this.photoURL = photoURL;
-        this.partnerCode = generatePartnerCode();
-        this.pairedWithUID = null;
         this.fcmToken = null;
-    }
-
-    private String generatePartnerCode() {
-        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        StringBuilder code = new StringBuilder();
-        for (int i = 0; i < 6; i++) {
-            code.append(chars.charAt((int) (Math.random() * chars.length())));
-        }
-        return code.toString();
+        this.spaceIds = new ArrayList<>(); // CHANGED
     }
 
     // Getters and Setters
-    public String getUid() { return uid; }
-    public void setUid(String uid) { this.uid = uid; }
+    public String getUid() {
+        return uid;
+    }
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public void setUid(String uid) {
+        this.uid = uid;
+    }
 
-    public String getDisplayName() { return displayName; }
-    public void setDisplayName(String displayName) { this.displayName = displayName; }
+    public String getEmail() {
+        return email;
+    }
 
-    public String getPhotoURL() { return photoURL; }
-    public void setPhotoURL(String photoURL) { this.photoURL = photoURL; }
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
-    public String getPartnerCode() { return partnerCode; }
-    public void setPartnerCode(String partnerCode) { this.partnerCode = partnerCode; }
+    public String getDisplayName() {
+        return displayName;
+    }
 
-    public String getPairedWithUID() { return pairedWithUID; }
-    public void setPairedWithUID(String pairedWithUID) { this.pairedWithUID = pairedWithUID; }
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
 
-    // PHASE 3: Getter and Setter for FCM token
-    public String getFcmToken() { return fcmToken; }
-    public void setFcmToken(String fcmToken) { this.fcmToken = fcmToken; }
+    public String getPhotoURL() {
+        return photoURL;
+    }
 
+    public void setPhotoURL(String photoURL) {
+        this.photoURL = photoURL;
+    }
+
+    public String getFcmToken() {
+        return fcmToken;
+    }
+
+    public void setFcmToken(String fcmToken) {
+        this.fcmToken = fcmToken;
+    }
+
+    public List<String> getSpaceIds() { // CHANGED
+        return spaceIds;
+    }
+
+    public void setSpaceIds(List<String> spaceIds) { // CHANGED
+        this.spaceIds = spaceIds;
+    }
 
     public Map<String, Object> toMap() {
         Map<String, Object> map = new HashMap<>();
@@ -64,9 +81,8 @@ public class User implements Serializable {
         map.put("email", email);
         map.put("displayName", displayName);
         map.put("photoURL", photoURL);
-        map.put("partnerCode", partnerCode);
-        map.put("pairedWithUID", pairedWithUID);
-        map.put("fcmToken", fcmToken); // PHASE 3: ADDED
+        map.put("fcmToken", fcmToken);
+        map.put("spaceIds", spaceIds); // CHANGED
         return map;
     }
 }

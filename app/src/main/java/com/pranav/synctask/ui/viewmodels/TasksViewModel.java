@@ -14,9 +14,6 @@ import java.util.List;
 public class TasksViewModel extends ViewModel {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
-    private final MutableLiveData<Result<User>> userResult = new MutableLiveData<>();
-
-    // PHASE 4: LiveData for search query
     private final MutableLiveData<String> searchQuery = new MutableLiveData<>("");
 
     public TasksViewModel() {
@@ -27,31 +24,26 @@ public class TasksViewModel extends ViewModel {
     public LiveData<Result<List<Task>>> getTasksResult() {
         return taskRepository.getTasks();
     }
-    public LiveData<Result<User>> getUserResult() {
-        return userResult;
+
+    public LiveData<String> getSearchQuery() {
+        return searchQuery;
     }
-    public LiveData<String> getSearchQuery() { return searchQuery; }
 
     public void setSearchQuery(String query) {
         searchQuery.setValue(query);
     }
 
-    public void loadTasks(String userUID) {
-        taskRepository.attachTasksListener(userUID);
+    public void loadTasks(String spaceId) {
+        taskRepository.attachTasksListener(spaceId);
     }
 
     public void syncLocalTasks(Context context) {
         taskRepository.syncLocalTasks(context);
     }
 
-    public void attachUserListener(String userUID) {
-        userRepository.addUserListener(userUID, userResult);
-    }
-
     @Override
     protected void onCleared() {
         super.onCleared();
         taskRepository.removeTasksListener();
-        userRepository.removeUserListener();
     }
 }

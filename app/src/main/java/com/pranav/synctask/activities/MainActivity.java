@@ -19,14 +19,13 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.pranav.synctask.R;
 import com.pranav.synctask.adapters.ViewPagerAdapter;
-import com.pranav.synctask.data.Result;
-import com.pranav.synctask.models.User;
 import com.pranav.synctask.ui.viewmodels.TasksViewModel;
 
 public class MainActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
     private TasksViewModel viewModel;
+    private String currentSpaceId; // ADDED
 
     @Override
     protected void onNewIntent(@NonNull Intent intent) {
@@ -39,6 +38,15 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         handleNotificationIntent(getIntent());
+
+        // --- ADDED ---
+        currentSpaceId = getIntent().getStringExtra("SPACE_ID");
+        if (currentSpaceId == null || currentSpaceId.isEmpty()) {
+            Toast.makeText(this, "Error: No Space ID provided.", Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
+        // --- END ADDED ---
 
         mAuth = FirebaseAuth.getInstance();
         viewModel = new ViewModelProvider(this).get(TasksViewModel.class);
@@ -54,39 +62,34 @@ public class MainActivity extends AppCompatActivity {
         new TabLayoutMediator(tabLayout, viewPager,
                 (tab, position) -> {
                     switch (position) {
-                        case 0: tab.setText("Today"); break;
-                        case 1: tab.setText("This Month"); break;
-                        case 2: tab.setText("All"); break;
-                        case 3: tab.setText("Updates"); break;
+                        case 0:
+                            tab.setText("Today");
+                            break;
+                        case 1:
+                            tab.setText("This Month");
+                            break;
+                        case 2:
+                            tab.setText("All");
+                            break;
+                        case 3:
+                            tab.setText("Updates");
+                            break;
                     }
                 }
         ).attach();
 
-        fab.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, CreateTaskActivity.class)));
-
-        observeViewModel();
-    }
-
-    private void observeViewModel() {
-        viewModel.getUserResult().observe(this, result -> {
-            if (result instanceof Result.Success) {
-                User user = ((Result.Success<User>) result).data;
-                if ((user.getPairedWithUID() == null || user.getPairedWithUID().isEmpty()) && !isFinishing()) {
-                    Toast.makeText(MainActivity.this, "You are no longer paired.", Toast.LENGTH_LONG).show();
-                    goToDashboard();
-                }
-            } else if (result instanceof Result.Error) {
-                Log.e("MainActivity", "Error listening to user pairing status", ((Result.Error<User>) result).exception);
-                goToDashboard();
-            }
+        fab.setOnClickListener(v -> {
+            // --- MODIFIED ---
+            Intent intent = new Intent(MainActivity.this, CreateTaskActivity.class);
+            intent.putExtra("SPACE_ID", currentSpaceId);
+            startActivity(intent);
+            // --- END MODIFIED ---
         });
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_menu, menu);
-
-        // PHASE 4: Setup search view
         MenuItem searchItem = menu.findItem(R.id.action_search);
         SearchView searchView = (SearchView) searchItem.getActionView();
         searchView.setQueryHint("Search by title...");
@@ -122,7 +125,8 @@ public class MainActivity extends AppCompatActivity {
             goToLogin();
             return;
         }
-        viewModel.attachUserListener(currentUser.getUid());
+        // MODIFIED: Pass spaceId to load tasks
+        viewModel.loadTasks(currentSpaceId);
     }
 
     private void goToLogin() {
@@ -132,12 +136,8 @@ public class MainActivity extends AppCompatActivity {
         finish();
     }
 
-    private void goToDashboard() {
-        Intent intent = new Intent(MainActivity.this, DashboardActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
-    }
+    // This method is no longer needed in this activity
+    // private void goToDashboard() { ... }
 
     private void handleNotificationIntent(Intent intent) {
         if (intent != null) {

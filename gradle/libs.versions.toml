@@ -21,6 +21,7 @@ firebaseMessaging = "24.0.0"
 playServicesAuth = "21.4.0"
 googleGmsGoogleServices = "4.4.3"
 swiperefreshlayout = "1.1.0"
+materialVersion = "1.13.0"
 
 [libraries]
 circleimageview = { module = "de.hdodenhof:circleimageview", version.ref = "circleimageview" }
@@ -44,6 +45,7 @@ firebase-storage = { group = "com.google.firebase", name = "firebase-storage", v
 firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging", version.ref = "firebaseMessaging" }
 play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
 swiperefreshlayout = { group = "androidx.swiperefreshlayout", name = "swiperefreshlayout", version.ref = "swiperefreshlayout" }
+google-material = { group = "com.google.android.material", name = "material", version.ref = "materialVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

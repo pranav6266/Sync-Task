@@ -1,99 +1,74 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_color"
-    android:padding="32dp">
+    android:background="@color/background_color">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
-        android:gravity="center_horizontal"
+        android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <ImageView
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:layout_marginBottom="16dp"
-            android:contentDescription="@string/logo_content_description"
-            android:src="@drawable/ic_sync_task_logo" />
-
-        <TextView
-            android:id="@+id/tv_welcome_message"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="48dp"
-            android:text="Welcome!"
-            android:textColor="@color/primary_text"
-            android:textSize="24sp"
-            android:textStyle="bold" />
-
-        <!-- This button is only visible when the user is paired -->
-        <Button
-            android:id="@+id/btn_go_to_tasks"
+        <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginBottom="12dp"
-            android:backgroundTint="@color/accent_color"
-            android:text="@string/go_to_tasks_button"
-            android:textColor="@color/white"
-            android:visibility="gone" />
-
-        <!-- This button is only visible when the user is NOT paired -->
-        <Button
-            android:id="@+id/btn_pair_with_partner"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginBottom="12dp"
-            android:backgroundTint="@color/primary_color"
-            android:text="@string/pair_with_partner_button"
-            android:textColor="@color/white"
-            android:visibility="visible" />
-
-        <!-- This status indicator is only visible when the user is paired -->
-        <LinearLayout
-            android:id="@+id/layout_paired_status"
-            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:visibility="gone">
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_marginEnd="8dp"
-                android:src="@drawable/ic_status_paired"
-                app:tint="@color/primary_color" />
+            android:padding="24dp">
 
             <TextView
+                android:id="@+id/tv_welcome_message"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/status_paired_text"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:layout_toStartOf="@+id/btn_view_profile"
+                android:text="Welcome!"
                 android:textColor="@color/primary_text"
-                android:textSize="16sp" />
+                android:textSize="24sp"
+                android:textStyle="bold" />
 
-        </LinearLayout>
+            <Button
+                android:id="@+id/btn_view_profile"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:text="Profile"
+                android:textColor="@color/primary_text"
+                app:icon="@drawable/ic_profile_settings"
+                app:strokeColor="@color/divider_color" />
+        </RelativeLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Your Spaces"
+            android:textSize="18sp"
+            android:textColor="@color/primary_text"
+            android:textStyle="bold"
+            android:layout_marginStart="24dp"
+            android:layout_marginBottom="8dp"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/spaces_recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingBottom="88dp" />
 
     </LinearLayout>
 
-    <Button
-        android:id="@+id/btn_view_profile"
-        style="?attr/materialButtonOutlinedStyle"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_alignParentBottom="true"
-        android:drawableStart="@drawable/ic_profile_settings"
-        android:drawablePadding="12dp"
-        android:paddingStart="24dp"
-        android:paddingEnd="24dp"
-        android:text="@string/profile_and_settings_button"
-        android:textColor="@color/primary_text"
-        app:strokeColor="@color/divider_color" />
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_add_space"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:src="@drawable/ic_add"
+        android:contentDescription="Add Space"
+        app:backgroundTint="@color/accent_color"
+        app:tint="@android:color/white" />
 
-    <!-- Removed the conflicting ViewPager2 element -->
-
-</RelativeLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

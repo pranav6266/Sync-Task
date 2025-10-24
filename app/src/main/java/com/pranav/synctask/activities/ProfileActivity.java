@@ -39,7 +39,7 @@ public class ProfileActivity extends AppCompatActivity {
     private TextView tvDisplayName, tvEmail;
     private EditText etDisplayName;
     private ImageView ivEditName, ivEditPhoto;
-    private Button btnUnpair, btnLogout, btnSaveChanges;
+    private Button btnLogout, btnSaveChanges; // REMOVED btnUnpair
     private ProgressBar progressBar;
     private FirebaseAuth mAuth;
     private GoogleSignInClient mGoogleSignInClient;
@@ -47,18 +47,15 @@ public class ProfileActivity extends AppCompatActivity {
     private ProfileViewModel viewModel;
     private ActivityResultLauncher<String> mGetContent;
 
-    // PHASE 2: Views for stats
     private TextView tvTasksCreated, tvTasksCompleted;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
-
         viewModel = new ViewModelProvider(this).get(ProfileViewModel.class);
         mAuth = FirebaseAuth.getInstance();
         currentUser = mAuth.getCurrentUser();
-
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken(getString(R.string.default_web_client_id))
                 .requestEmail()
@@ -71,7 +68,7 @@ public class ProfileActivity extends AppCompatActivity {
         ivEditName = findViewById(R.id.iv_edit_name);
         ivEditPhoto = findViewById(R.id.iv_edit_photo);
         tvEmail = findViewById(R.id.tv_email);
-        btnUnpair = findViewById(R.id.btn_unpair);
+        // REMOVED: btnUnpair = findViewById(R.id.btn_unpair);
         btnLogout = findViewById(R.id.btn_logout);
         btnSaveChanges = findViewById(R.id.btn_save_changes);
         progressBar = findViewById(R.id.profile_progress_bar);
@@ -82,34 +79,32 @@ public class ProfileActivity extends AppCompatActivity {
             loadUserProfile();
         }
 
-        // PHASE 2: Initialize activity result launcher for picking image
         mGetContent = registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
             if (uri != null) {
                 viewModel.uploadProfilePicture(currentUser, uri);
             }
         });
-
         ivEditName.setOnClickListener(v -> toggleEditMode(true));
         ivEditPhoto.setOnClickListener(v -> mGetContent.launch("image/*"));
         btnSaveChanges.setOnClickListener(v -> saveProfileChanges());
         btnLogout.setOnClickListener(v -> logoutUser());
-        btnUnpair.setOnClickListener(v -> showUnpairConfirmationDialog());
+        // REMOVED: btnUnpair.setOnClickListener(v -> showUnpairConfirmationDialog());
 
         observeViewModel();
     }
 
     private void observeViewModel() {
+        // This observer no longer needs to check for pairing status
         viewModel.getUserLiveData().observe(this, result -> {
             if (isFinishing()) return;
             if (result instanceof Result.Success) {
                 User user = ((Result.Success<User>) result).data;
-                btnUnpair.setVisibility((user.getPairedWithUID() != null && !user.getPairedWithUID().isEmpty()) ? View.VISIBLE : View.GONE);
+                // REMOVED: btnUnpair.setVisibility((user.getPairedWithUID() != null && !user.getPairedWithUID().isEmpty()) ? View.VISIBLE : View.GONE);
             } else if (result instanceof Result.Error) {
                 Log.e("ProfileActivity", "Error listening to user pairing status", ((Result.Error<User>) result).exception);
             }
         });
 
-        // PHASE 2: Observer for photo update
         viewModel.getPhotoUpdateResult().observe(this, result -> {
             showLoading(result instanceof Result.Loading);
             if (result instanceof Result.Success) {
@@ -121,7 +116,6 @@ public class ProfileActivity extends AppCompatActivity {
             }
         });
 
-        // PHASE 2: Observer for task stats
         viewModel.getTaskStats().observe(this, stats -> {
             if (stats != null) {
                 tvTasksCreated.setText(String.valueOf(stats.getOrDefault("total", 0)));
@@ -135,7 +129,7 @@ public class ProfileActivity extends AppCompatActivity {
         super.onStart();
         if (currentUser != null) {
             viewModel.attachUserListener(currentUser.getUid());
-            viewModel.loadTaskStats(); // Load stats when screen is shown
+            viewModel.loadTaskStats();
             updateUiBasedOnNetworkStatus();
         } else {
             goToLogin();
@@ -144,13 +138,8 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void updateUiBasedOnNetworkStatus() {
         boolean isOnline = NetworkUtils.isNetworkAvailable(this);
-        btnUnpair.setEnabled(isOnline);
-        if (!isOnline) {
-            btnUnpair.setAlpha(0.5f);
-            Toast.makeText(this, "Unpairing requires an internet connection.", Toast.LENGTH_SHORT).show();
-        } else {
-            btnUnpair.setAlpha(1.0f);
-        }
+        // REMOVED: btnUnpair.setEnabled(isOnline);
+        // ... (rest of the method is no longer needed)
     }
 
     private void loadUserProfile() {
@@ -207,28 +196,10 @@ public class ProfileActivity extends AppCompatActivity {
                 });
     }
 
-    private void showUnpairConfirmationDialog() {
-        new AlertDialog.Builder(this)
-                .setTitle("Unpair Partner")
-                .setMessage("Are you sure you want to unpair? This will delete all shared tasks.")
-                .setPositiveButton("Unpair", (dialog, which) -> unpairPartner())
-                .setNegativeButton("Cancel", null)
-                .show();
-    }
-
-    private void unpairPartner() {
-        showLoading(true);
-        viewModel.unpair(currentUser.getUid()).observe(this, result -> {
-            showLoading(false);
-            if (result instanceof Result.Success) {
-                Toast.makeText(ProfileActivity.this, "Unpaired successfully.", Toast.LENGTH_SHORT).show();
-                goToDashboard();
-            } else if (result instanceof Result.Error) {
-                Exception e = ((Result.Error<Void>) result).exception;
-                Toast.makeText(ProfileActivity.this, "Failed to unpair: " + e.getMessage(), Toast.LENGTH_LONG).show();
-            }
-        });
-    }
+    // --- ENTIRELY REMOVED ---
+    // private void showUnpairConfirmationDialog() { ... }
+    // private void unpairPartner() { ... }
+    // --- END REMOVED ---
 
     private void logoutUser() {
         mAuth.signOut();
@@ -254,12 +225,6 @@ public class ProfileActivity extends AppCompatActivity {
         btnSaveChanges.setEnabled(!isLoading);
         btnLogout.setEnabled(!isLoading);
         ivEditPhoto.setEnabled(!isLoading);
-        if (isLoading) {
-            if (btnUnpair.isEnabled()) {
-                btnUnpair.setEnabled(false);
-            }
-        } else {
-            updateUiBasedOnNetworkStatus();
-        }
+        // REMOVED: btnUnpair logic
     }
 }

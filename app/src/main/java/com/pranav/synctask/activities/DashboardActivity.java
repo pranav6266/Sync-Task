@@ -5,36 +5,48 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.pranav.synctask.R;
+import com.pranav.synctask.adapters.SpacesAdapter;
 import com.pranav.synctask.data.Result;
 import com.pranav.synctask.data.UserRepository;
+import com.pranav.synctask.models.Space;
 import com.pranav.synctask.models.User;
 import com.pranav.synctask.ui.DashboardViewModel;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class DashboardActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
     private DashboardViewModel viewModel;
-    private Button btnGoToTasks;
-    private Button btnPairWithPartner;
-    private LinearLayout layoutPairedStatus;
+    private FirebaseUser currentUser;
+    private SpacesAdapter spacesAdapter;
+    private RecyclerView spacesRecyclerView;
+    private FloatingActionButton fabAddSpace;
 
-    // PHASE 3: Launcher for notification permission request
     private final ActivityResultLauncher<String> requestPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
                 if (isGranted) {
@@ -44,40 +56,75 @@ public class DashboardActivity extends AppCompatActivity {
                 }
             });
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dashboard);
-
         mAuth = FirebaseAuth.getInstance();
+        currentUser = mAuth.getCurrentUser();
         viewModel = new ViewModelProvider(this).get(DashboardViewModel.class);
 
-        btnGoToTasks = findViewById(R.id.btn_go_to_tasks);
-        btnPairWithPartner = findViewById(R.id.btn_pair_with_partner);
+        spacesRecyclerView = findViewById(R.id.spaces_recycler_view);
+        fabAddSpace = findViewById(R.id.fab_add_space);
         Button btnViewProfile = findViewById(R.id.btn_view_profile);
         TextView tvWelcomeMessage = findViewById(R.id.tv_welcome_message);
-        layoutPairedStatus = findViewById(R.id.layout_paired_status);
 
-        FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null && currentUser.getDisplayName() != null) {
             tvWelcomeMessage.setText("Welcome, " + currentUser.getDisplayName() + "!");
         }
 
-        btnGoToTasks.setOnClickListener(v -> startActivity(new Intent(DashboardActivity.this, MainActivity.class)));
-        btnPairWithPartner.setOnClickListener(v -> startActivity(new Intent(DashboardActivity.this, PairingActivity.class)));
+        setupRecyclerView();
+
+        fabAddSpace.setOnClickListener(v -> showAddSpaceDialog());
         btnViewProfile.setOnClickListener(v -> startActivity(new Intent(DashboardActivity.this, ProfileActivity.class)));
 
         observeViewModel();
-        askNotificationPermission(); // PHASE 3
-        updateFcmToken(); // PHASE 3
+        askNotificationPermission();
+        updateFcmToken();
     }
 
-    // PHASE 3: Get and update the FCM token
-    private void updateFcmToken() {
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser == null) return;
+    private void setupRecyclerView() {
+        spacesRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        spacesAdapter = new SpacesAdapter(this, new ArrayList<>());
+        spacesRecyclerView.setAdapter(spacesAdapter);
+    }
 
+    private void showAddSpaceDialog() {
+        final String[] options = {"Create a new Space", "Join a Space"};
+        new AlertDialog.Builder(this)
+                .setTitle("Add Space")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        showCreateSpaceDialog();
+                    } else {
+                        startActivity(new Intent(DashboardActivity.this, PairingActivity.class));
+                    }
+                })
+                .show();
+    }
+
+    private void showCreateSpaceDialog() {
+        final EditText input = new EditText(this);
+        input.setHint("Space Name (e.g. Home Tasks)");
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Create New Space")
+                .setView(input)
+                .setPositiveButton("Create", (dialog, which) -> {
+                    String spaceName = input.getText().toString().trim();
+                    if (!spaceName.isEmpty()) {
+                        viewModel.createSpace(spaceName);
+                    } else {
+                        Toast.makeText(this, "Space name cannot be empty.", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void updateFcmToken() {
+        if (currentUser == null) return;
         FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
             if (!task.isSuccessful()) {
                 Log.w("DashboardActivity", "Fetching FCM registration token failed", task.getException());
@@ -89,8 +136,6 @@ public class DashboardActivity extends AppCompatActivity {
         });
     }
 
-
-    // PHASE 3: Request permission for notifications on Android 13+
     private void askNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
@@ -100,11 +145,9 @@ public class DashboardActivity extends AppCompatActivity {
         }
     }
 
-
     @Override
     protected void onStart() {
         super.onStart();
-        FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser == null) {
             startActivity(new Intent(this, LoginActivity.class));
             finish();
@@ -114,26 +157,35 @@ public class DashboardActivity extends AppCompatActivity {
     }
 
     private void observeViewModel() {
-        viewModel.getUserPairingStatus().observe(this, result -> {
+        viewModel.getUserLiveData().observe(this, result -> {
             if (result instanceof Result.Success) {
-                updateUI(((Result.Success<User>) result).data);
+                User user = ((Result.Success<User>) result).data;
+                if (user.getSpaceIds() != null && !user.getSpaceIds().isEmpty()) {
+                    viewModel.loadSpaces(user.getSpaceIds());
+                } else {
+                    // User has no spaces, clear the list
+                    spacesAdapter.updateSpaces(new ArrayList<>());
+                }
             } else if (result instanceof Result.Error) {
-                Exception e = ((Result.Error<User>) result).exception;
-                Log.e("DashboardActivity", "Error listening to user pairing status", e);
-                Toast.makeText(DashboardActivity.this, "Could not check pairing status.", Toast.LENGTH_SHORT).show();
+                Log.e("DashboardActivity", "Error listening to user", ((Result.Error<User>) result).exception);
             }
         });
-    }
 
-    private void updateUI(User user) {
-        if (user.getPairedWithUID() != null && !user.getPairedWithUID().isEmpty()) {
-            btnGoToTasks.setVisibility(View.VISIBLE);
-            layoutPairedStatus.setVisibility(View.VISIBLE);
-            btnPairWithPartner.setVisibility(View.GONE);
-        } else {
-            btnGoToTasks.setVisibility(View.GONE);
-            layoutPairedStatus.setVisibility(View.GONE);
-            btnPairWithPartner.setVisibility(View.VISIBLE);
-        }
+        viewModel.getSpacesLiveData().observe(this, result -> {
+            if (result instanceof Result.Success) {
+                spacesAdapter.updateSpaces(((Result.Success<List<Space>>) result).data);
+            } else if (result instanceof Result.Error) {
+                Toast.makeText(this, "Error loading spaces.", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        viewModel.getCreateSpaceResult().observe(this, result -> {
+            if (result instanceof Result.Success) {
+                Toast.makeText(this, "Space created!", Toast.LENGTH_SHORT).show();
+                // The user listener will automatically refresh the spaces list
+            } else if (result instanceof Result.Error) {
+                Toast.makeText(this, "Error creating space.", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

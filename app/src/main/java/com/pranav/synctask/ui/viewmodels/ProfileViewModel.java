@@ -15,26 +15,35 @@ public class ProfileViewModel extends ViewModel {
     private final UserRepository userRepository;
     private final TaskRepository taskRepository;
     private final MutableLiveData<Result<User>> userLiveData = new MutableLiveData<>();
-
-    // PHASE 2: LiveData for new features
     private final MutableLiveData<Map<String, Integer>> taskStats = new MutableLiveData<>();
     private final MutableLiveData<Result<String>> photoUpdateResult = new MutableLiveData<>();
-
 
     public ProfileViewModel() {
         this.userRepository = UserRepository.getInstance();
         this.taskRepository = TaskRepository.getInstance();
     }
 
-    public LiveData<Result<User>> getUserLiveData() { return userLiveData; }
-    public LiveData<Map<String, Integer>> getTaskStats() { return taskStats; }
-    public LiveData<Result<String>> getPhotoUpdateResult() { return photoUpdateResult; }
+    public LiveData<Result<User>> getUserLiveData() {
+        return userLiveData;
+    }
+
+    public LiveData<Map<String, Integer>> getTaskStats() {
+        return taskStats;
+    }
+
+    public LiveData<Result<String>> getPhotoUpdateResult() {
+        return photoUpdateResult;
+    }
 
     public void attachUserListener(String uid) {
         userRepository.addUserListener(uid, userLiveData);
     }
 
     public void loadTaskStats() {
+        // TODO: This logic needs to be updated.
+        // Task stats are now per-space, not per-user.
+        // This method should be removed or changed to load stats for ALL spaces.
+        // For now, we leave it, but it will show stats for the last-opened space.
         taskStats.setValue(taskRepository.getTaskStats());
     }
 
@@ -42,9 +51,7 @@ public class ProfileViewModel extends ViewModel {
         userRepository.updateProfilePicture(firebaseUser, imageUri).observeForever(photoUpdateResult::setValue);
     }
 
-    public LiveData<Result<Void>> unpair(String uid) {
-        return userRepository.unpairUsers(uid);
-    }
+    // REMOVED: public LiveData<Result<Void>> unpair(String uid) { ... }
 
     public LiveData<Result<User>> saveProfileChanges(String uid, String newName) {
         return userRepository.updateDisplayName(uid, newName);
