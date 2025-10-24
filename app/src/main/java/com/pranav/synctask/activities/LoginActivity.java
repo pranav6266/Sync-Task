@@ -25,8 +25,10 @@ import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.pranav.synctask.R;
+import com.pranav.synctask.data.Result; // CHANGED: Added import
+import com.pranav.synctask.data.UserRepository; // CHANGED: Added import
 import com.pranav.synctask.models.User;
-import com.pranav.synctask.utils.FirebaseHelper;
+// CHANGED: Removed FirebaseHelper import, it's no longer used here
 
 public class LoginActivity extends AppCompatActivity {
     private static final String TAG = "LoginActivity";
@@ -36,7 +38,6 @@ public class LoginActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private Button signInButton;
 
-    // Modern ActivityResultLauncher instead of deprecated onActivityResult
     private final ActivityResultLauncher<Intent> signInLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == RESULT_OK) {
@@ -58,7 +59,6 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        // Proper Firestore offline persistence setup
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
                 .setPersistenceEnabled(true)
@@ -85,7 +85,6 @@ public class LoginActivity extends AppCompatActivity {
         super.onStart();
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null) {
-            // User is already signed in, go directly to the dashboard.
             startActivity(new Intent(LoginActivity.this, DashboardActivity.class));
             finish();
         }
@@ -112,21 +111,22 @@ public class LoginActivity extends AppCompatActivity {
                 });
     }
 
+    // CHANGED: This method now calls the UserRepository, which is the correct architecture
+    // and fixes the NullPointerException.
     private void createOrUpdateUser(FirebaseUser firebaseUser) {
-        FirebaseHelper.createOrUpdateUser(firebaseUser, new FirebaseHelper.UserCallback() {
-            @Override
-            public void onSuccess(User user) {
+        UserRepository.getInstance().createOrUpdateUser(firebaseUser).observe(this, result -> {
+            if (result instanceof Result.Success) {
                 // After user profile is created or updated, go to the dashboard.
                 startActivity(new Intent(LoginActivity.this, DashboardActivity.class));
                 finish();
-            }
-
-            @Override
-            public void onError(Exception e) {
-                Log.e(TAG, "Error creating/updating user", e);
+            } else if (result instanceof Result.Error) {
+                Log.e(TAG, "Error creating/updating user", ((Result.Error<User>) result).exception);
                 Toast.makeText(LoginActivity.this, "Error setting up user profile.",
                         Toast.LENGTH_SHORT).show();
                 showLoading(false);
+            } else if (result instanceof Result.Loading) {
+                // The repository handles the loading state, so we just show the spinner
+                showLoading(true);
             }
         });
     }

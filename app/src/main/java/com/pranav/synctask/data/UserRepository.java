@@ -16,7 +16,13 @@ public class UserRepository {
     private ListenerRegistration userListenerRegistration;
     private User currentUserCache;
 
-    private UserRepository() {}
+    // CHANGED: Added an instance of FirebaseHelper
+    private final FirebaseHelper firebaseHelper;
+
+    // CHANGED: Constructor is private and initializes FirebaseHelper
+    private UserRepository() {
+        firebaseHelper = new FirebaseHelper();
+    }
 
     public static UserRepository getInstance() {
         if (instance == null) {
@@ -33,7 +39,6 @@ public class UserRepository {
         return currentUserCache;
     }
 
-    // PHASE 2: Method to upload profile picture
     public LiveData<Result<String>> updateProfilePicture(FirebaseUser firebaseUser, Uri imageUri) {
         MutableLiveData<Result<String>> result = new MutableLiveData<>(new Result.Loading<>());
         StorageReference storageRef = FirebaseStorage.getInstance().getReference();
@@ -48,7 +53,8 @@ public class UserRepository {
 
                 firebaseUser.updateProfile(profileUpdates).addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        FirebaseHelper.updatePhotoUrl(firebaseUser.getUid(), photoUrl, new FirebaseHelper.UserCallback() {
+                        // CHANGED: Call instance method
+                        firebaseHelper.updatePhotoUrl(firebaseUser.getUid(), photoUrl, new FirebaseHelper.UserCallback() {
                             @Override
                             public void onSuccess(User user) {
                                 result.setValue(new Result.Success<>(photoUrl));
@@ -71,8 +77,8 @@ public class UserRepository {
     public LiveData<Result<User>> createOrUpdateUser(FirebaseUser firebaseUser) {
         MutableLiveData<Result<User>> result = new MutableLiveData<>();
         result.setValue(new Result.Loading<>());
-        FirebaseHelper firebaseHelper = new FirebaseHelper();
-        FirebaseHelper.createOrUpdateUser(firebaseUser, new FirebaseHelper.UserCallback() {
+        // CHANGED: Call instance method
+        firebaseHelper.createOrUpdateUser(firebaseUser, new FirebaseHelper.UserCallback() {
             @Override
             public void onSuccess(User user) {
                 currentUserCache = user;
@@ -90,7 +96,8 @@ public class UserRepository {
     public LiveData<ListenerRegistration> addUserListener(String uid, MutableLiveData<Result<User>> userLiveData) {
         MutableLiveData<ListenerRegistration> listener = new MutableLiveData<>();
         userLiveData.setValue(new Result.Loading<>());
-        userListenerRegistration = FirebaseHelper.addUserListener(uid, new FirebaseHelper.UserCallback() {
+        // CHANGED: Call instance method
+        userListenerRegistration = firebaseHelper.addUserListener(uid, new FirebaseHelper.UserCallback() {
             @Override
             public void onSuccess(User user) {
                 currentUserCache = user;
@@ -116,7 +123,8 @@ public class UserRepository {
     public LiveData<Result<Void>> pairUsers(String currentUserUID, String partnerCode) {
         MutableLiveData<Result<Void>> result = new MutableLiveData<>();
         result.setValue(new Result.Loading<>());
-        FirebaseHelper.pairUsers(currentUserUID, partnerCode, new FirebaseHelper.PairingCallback() {
+        // CHANGED: Call instance method
+        firebaseHelper.pairUsers(currentUserUID, partnerCode, new FirebaseHelper.PairingCallback() {
             @Override
             public void onSuccess() {
                 result.setValue(new Result.Success<>(null));
@@ -132,7 +140,8 @@ public class UserRepository {
     public LiveData<Result<Void>> unpairUsers(String currentUserUID) {
         MutableLiveData<Result<Void>> result = new MutableLiveData<>();
         result.setValue(new Result.Loading<>());
-        FirebaseHelper.unpairUsers(currentUserUID, new FirebaseHelper.PairingCallback() {
+        // CHANGED: Call instance method
+        firebaseHelper.unpairUsers(currentUserUID, new FirebaseHelper.PairingCallback() {
             @Override
             public void onSuccess() {
                 result.setValue(new Result.Success<>(null));
@@ -148,7 +157,8 @@ public class UserRepository {
     public LiveData<Result<User>> updateDisplayName(String uid, String newName) {
         MutableLiveData<Result<User>> result = new MutableLiveData<>();
         result.setValue(new Result.Loading<>());
-        FirebaseHelper.updateDisplayName(uid, newName, new FirebaseHelper.UserCallback() {
+        // CHANGED: Call instance method
+        firebaseHelper.updateDisplayName(uid, newName, new FirebaseHelper.UserCallback() {
             @Override
             public void onSuccess(User user) {
                 currentUserCache = user;
@@ -163,15 +173,16 @@ public class UserRepository {
         return result;
     }
 
-    // PHASE 3: Method to be called from service or UI to update the token
     public void updateFcmToken(String uid, String token) {
-        FirebaseHelper.updateFcmToken(uid, token);
+        // CHANGED: Call instance method
+        firebaseHelper.updateFcmToken(uid, token);
     }
 
     public LiveData<Result<User>> getUser(String uid) {
         MutableLiveData<Result<User>> result = new MutableLiveData<>();
         result.setValue(new Result.Loading<>());
-        FirebaseHelper.getUser(uid, new FirebaseHelper.UserCallback() {
+        // CHANGED: Call instance method
+        firebaseHelper.getUser(uid, new FirebaseHelper.UserCallback() {
             @Override
             public void onSuccess(User user) {
                 currentUserCache = user;

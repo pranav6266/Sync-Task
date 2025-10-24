@@ -18,18 +18,19 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
     @NonNull
     @Override
     public Fragment createFragment(int position) {
+        // CHANGED: Swapped positions 0 and 1 to match the tab labels in MainActivity
         switch (position) {
             case 0:
-                // Return the fragment for the first tab
-                return new ThisMonthFragment();
-            case 1:
-                // Return the fragment for the second tab
+                // "Today" tab
                 return new TodayFragment();
+            case 1:
+                // "This Month" tab
+                return new ThisMonthFragment();
             case 2:
-                // Return the fragment for the third tab
+                // "All" tab
                 return new AllTasksFragment();
             default:
-                // This should never happen, but it's good practice
+                // "Updates" tab
                 return new UpdatesFragment();
         }
     }

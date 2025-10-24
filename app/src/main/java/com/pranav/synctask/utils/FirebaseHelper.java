@@ -10,7 +10,7 @@ import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.WriteBatch;
-import com.google.firebase.functions.FirebaseFunctions; // ADDED: Import for Firebase Functions
+import com.google.firebase.functions.FirebaseFunctions;
 import com.pranav.synctask.models.Task;
 import com.pranav.synctask.models.User;
 
@@ -19,18 +19,17 @@ import java.util.List;
 import java.util.Map;
 
 // CHANGED: Class is no longer static. This fixes the memory leak warning.
-// You must now create an instance of this class (e.g., new FirebaseHelper()) to use it.
 public class FirebaseHelper {
     private static final String TAG = "FirebaseHelper";
 
-    // CHANGED: Fields are no longer static
-    private static FirebaseFirestore db = null;
-    private static FirebaseFunctions functions = null; // ADDED: Field for Cloud Functions
+    // CHANGED: Fields are no longer static and are final
+    private final FirebaseFirestore db;
+    private final FirebaseFunctions functions;
 
     private static final String USERS_COLLECTION = "users";
     private static final String TASKS_COLLECTION = "tasks";
 
-    // ADDED: Constructor to initialize non-static fields
+    // CHANGED: Constructor initializes non-static fields
     public FirebaseHelper() {
         db = FirebaseFirestore.getInstance();
         functions = FirebaseFunctions.getInstance();
@@ -52,14 +51,13 @@ public class FirebaseHelper {
         void onError(Exception e);
     }
 
-    // ADDED: This interface was missing, causing "Cannot resolve symbol" errors
     public interface NotificationCallback {
         void onSuccess();
         void onError(Exception e);
     }
 
     // CHANGED: Method is no longer static
-    public static void createOrUpdateUser(FirebaseUser firebaseUser, UserCallback callback) {
+    public void createOrUpdateUser(FirebaseUser firebaseUser, UserCallback callback) {
         DocumentReference userDocRef = db.collection(USERS_COLLECTION).document(firebaseUser.getUid());
         userDocRef.get().addOnSuccessListener(document -> {
             if (document.exists()) {
@@ -69,7 +67,7 @@ public class FirebaseHelper {
                         "photoURL", firebaseUser.getPhotoUrl() != null ? firebaseUser.getPhotoUrl().toString() : null
                 ).addOnSuccessListener(aVoid -> {
                     getUser(firebaseUser.getUid(), callback);
-                }).addOnFailureListener(callback::onError); // CHANGED: Replaced lambda with method reference
+                }).addOnFailureListener(callback::onError);
             } else {
                 // This is a new user, create the document
                 User newUser = new User(
@@ -80,29 +78,29 @@ public class FirebaseHelper {
                 );
                 userDocRef.set(newUser)
                         .addOnSuccessListener(aVoid -> callback.onSuccess(newUser))
-                        .addOnFailureListener(callback::onError); // CHANGED: Replaced lambda with method reference
+                        .addOnFailureListener(callback::onError);
             }
-        }).addOnFailureListener(callback::onError); // CHANGED: Replaced lambda with method reference
+        }).addOnFailureListener(callback::onError);
     }
 
     // CHANGED: Method is no longer static
-    public static void updateDisplayName(String uid, String newName, UserCallback callback) {
+    public void updateDisplayName(String uid, String newName, UserCallback callback) {
         db.collection(USERS_COLLECTION).document(uid)
                 .update("displayName", newName)
                 .addOnSuccessListener(aVoid -> getUser(uid, callback))
-                .addOnFailureListener(callback::onError); // CHANGED: Replaced lambda with method reference
+                .addOnFailureListener(callback::onError);
     }
 
     // CHANGED: Method is no longer static
-    public static void updatePhotoUrl(String uid, String newUrl, UserCallback callback) {
+    public void updatePhotoUrl(String uid, String newUrl, UserCallback callback) {
         db.collection(USERS_COLLECTION).document(uid)
                 .update("photoURL", newUrl)
                 .addOnSuccessListener(aVoid -> getUser(uid, callback))
-                .addOnFailureListener(callback::onError); // CHANGED: Replaced lambda with method reference
+                .addOnFailureListener(callback::onError);
     }
 
     // CHANGED: Method is no longer static
-    public static void updateFcmToken(String uid, String token) {
+    public void updateFcmToken(String uid, String token) {
         if (uid == null || token == null) return;
         Map<String, Object> updates = new HashMap<>();
         updates.put("fcmToken", token);
@@ -113,21 +111,21 @@ public class FirebaseHelper {
     }
 
     // CHANGED: Method is no longer static
-    public static void updateTask(String taskId, Map<String, Object> taskMap, TasksCallback callback) {
+    public void updateTask(String taskId, Map<String, Object> taskMap, TasksCallback callback) {
         db.collection(TASKS_COLLECTION)
                 .document(taskId)
                 .update(taskMap)
                 .addOnSuccessListener(aVoid -> {
                     Log.d(TAG, "Task updated successfully");
                     // Send notification about task update
-                    sendTaskNotification(taskId, null, "task_updated", null); // The 'null' here is what causes the "always 'null'" warning. It's fine if you intend to fire-and-forget.
+                    sendTaskNotification(taskId, null, "task_updated", null);
                     callback.onSuccess(null);
                 })
-                .addOnFailureListener(callback::onError); // CHANGED: Replaced lambda with method reference
+                .addOnFailureListener(callback::onError);
     }
 
     // CHANGED: Method is no longer static
-    public static void getUser(String uid, UserCallback callback) {
+    public void getUser(String uid, UserCallback callback) {
         db.collection(USERS_COLLECTION)
                 .document(uid)
                 .get()
@@ -139,11 +137,11 @@ public class FirebaseHelper {
                         callback.onError(new Exception("User not found"));
                     }
                 })
-                .addOnFailureListener(callback::onError); // CHANGED: Replaced lambda with method reference
+                .addOnFailureListener(callback::onError);
     }
 
     // CHANGED: Method is no longer static
-    public static ListenerRegistration addUserListener(String uid, UserCallback callback) {
+    public ListenerRegistration addUserListener(String uid, UserCallback callback) {
         return db.collection(USERS_COLLECTION)
                 .document(uid)
                 .addSnapshotListener((snapshot, e) -> {
@@ -162,7 +160,7 @@ public class FirebaseHelper {
     }
 
     // CHANGED: Method is no longer static
-    public static void pairUsers(String currentUserUID, String partnerCode, PairingCallback callback) {
+    public void pairUsers(String currentUserUID, String partnerCode, PairingCallback callback) {
         db.collection(USERS_COLLECTION)
                 .whereEqualTo("partnerCode", partnerCode.toUpperCase())
                 .get()
@@ -204,11 +202,11 @@ public class FirebaseHelper {
                             }).addOnSuccessListener(aVoid -> callback.onSuccess())
                             .addOnFailureListener(e -> callback.onError(new Exception(e.getMessage())));
                 })
-                .addOnFailureListener(callback::onError); // CHANGED: Replaced lambda with method reference
+                .addOnFailureListener(callback::onError);
     }
 
     // CHANGED: Method is no longer static
-    public static void unpairUsers(String currentUserUID, PairingCallback callback) {
+    public void unpairUsers(String currentUserUID, PairingCallback callback) {
         getUser(currentUserUID, new UserCallback() {
             @Override
             public void onSuccess(User user) {
@@ -238,9 +236,9 @@ public class FirebaseHelper {
 
                             batch.commit()
                                     .addOnSuccessListener(aVoid -> callback.onSuccess())
-                                    .addOnFailureListener(callback::onError); // CHANGED: Replaced lambda with method reference
+                                    .addOnFailureListener(callback::onError);
                         })
-                        .addOnFailureListener(callback::onError); // CHANGED: Replaced lambda with method reference
+                        .addOnFailureListener(callback::onError);
             }
 
             @Override
@@ -251,7 +249,7 @@ public class FirebaseHelper {
     }
 
     // CHANGED: Method is no longer static
-    public static void createTask(Task task, TasksCallback callback) {
+    public void createTask(Task task, TasksCallback callback) {
         db.collection(TASKS_COLLECTION)
                 .add(task.toMap())
                 .addOnSuccessListener(documentReference -> {
@@ -259,14 +257,14 @@ public class FirebaseHelper {
                     Log.d(TAG, "Task created with ID: " + taskId);
 
                     // Send notification to partner
-                    sendTaskNotification(taskId, task, "new_task", null); // The 'null' here is what causes the "always 'null'" warning.
+                    sendTaskNotification(taskId, task, "new_task", null);
                     callback.onSuccess(null);
                 })
-                .addOnFailureListener(callback::onError); // CHANGED: Replaced lambda with method reference
+                .addOnFailureListener(callback::onError);
     }
 
     // CHANGED: Method is no longer static
-    public static ListenerRegistration getTasks(String userUID, TasksCallback callback) {
+    public ListenerRegistration getTasks(String userUID, TasksCallback callback) {
         return db.collection(TASKS_COLLECTION)
                 .whereArrayContains("sharedWith", userUID)
                 .orderBy("createdAt", Query.Direction.DESCENDING)
@@ -288,7 +286,7 @@ public class FirebaseHelper {
     }
 
     // CHANGED: Method is no longer static
-    public static void updateTaskStatus(String taskId, String status) {
+    public void updateTaskStatus(String taskId, String status) {
         db.collection(TASKS_COLLECTION)
                 .document(taskId)
                 .update("status", status)
@@ -301,7 +299,7 @@ public class FirebaseHelper {
     }
 
     // CHANGED: Method is no longer static
-    public static void deleteTask(String taskId) {
+    public void deleteTask(String taskId) {
         // First get the task to send notification
         db.collection(TASKS_COLLECTION)
                 .document(taskId)
@@ -316,7 +314,7 @@ public class FirebaseHelper {
                                 .addOnSuccessListener(aVoid -> {
                                     Log.d(TAG, "Task deleted");
                                     // Send notification about task deletion
-                                    sendTaskNotification(taskId, task, "task_deleted", null); // The 'null' here is what causes the "always 'null'" warning.
+                                    sendTaskNotification(taskId, task, "task_deleted", null);
                                 })
                                 .addOnFailureListener(e -> Log.w(TAG, "Error deleting task", e));
                     }
@@ -325,7 +323,7 @@ public class FirebaseHelper {
     }
 
     // CHANGED: Method is no longer static
-    private static void sendTaskNotification(String taskId, Task task, String action, NotificationCallback callback) {
+    private void sendTaskNotification(String taskId, Task task, String action, NotificationCallback callback) {
         if (task == null) {
             // If task is null, fetch it first
             db.collection(TASKS_COLLECTION)
@@ -346,7 +344,7 @@ public class FirebaseHelper {
     }
 
     // CHANGED: Method is no longer static
-    private static void sendTaskNotificationInternal(String taskId, Task task, String action, NotificationCallback callback) {
+    private void sendTaskNotificationInternal(String taskId, Task task, String action, NotificationCallback callback) {
         if (task == null || task.getSharedWith() == null || task.getSharedWith().size() < 2) {
             if (callback != null) callback.onError(new Exception("Task data is incomplete for notification."));
             return;
@@ -408,7 +406,7 @@ public class FirebaseHelper {
     }
 
     // CHANGED: Method is no longer static
-    private static void sendTaskStatusNotification(String taskId, String newStatus) {
+    private void sendTaskStatusNotification(String taskId, String newStatus) {
         db.collection(TASKS_COLLECTION)
                 .document(taskId)
                 .get()
@@ -419,9 +417,6 @@ public class FirebaseHelper {
                             // Find partner UID
                             String partnerUID = null;
                             for (String uid : task.getSharedWith()) {
-                                // This logic is flawed if the partner is the one changing the status.
-                                // It assumes the creator is the one making the change.
-                                // For now, keeping your original logic.
                                 if (!uid.equals(task.getCreatorUID())) {
                                     partnerUID = uid;
                                     break;

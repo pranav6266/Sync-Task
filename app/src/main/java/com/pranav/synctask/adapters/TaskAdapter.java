@@ -16,9 +16,10 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.pranav.synctask.R;
 import com.pranav.synctask.activities.EditTaskActivity;
+import com.pranav.synctask.data.TaskRepository; // CHANGED: Added import
 import com.pranav.synctask.models.Task;
 import com.pranav.synctask.utils.DateUtils;
-import com.pranav.synctask.utils.FirebaseHelper;
+// CHANGED: Removed FirebaseHelper import, it's no longer used here
 import java.util.List;
 import java.util.Objects;
 
@@ -76,7 +77,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 break;
         }
 
-        // PHASE 4: Set priority icon
         holder.ivPriority.setVisibility(View.VISIBLE);
         switch (task.getPriority()) {
             case "High":
@@ -106,25 +106,25 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         holder.cbStatus.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (buttonView.isPressed()) {
                 String newStatus = isChecked ? Task.STATUS_COMPLETED : Task.STATUS_PENDING;
-                FirebaseHelper.updateTaskStatus(task.getId(), newStatus);
+                // CHANGED: Call the repository, not the helper
+                TaskRepository.getInstance().updateTaskStatus(task.getId(), newStatus);
             }
         });
 
         holder.ivDelete.setVisibility(isMyTask ? View.VISIBLE : View.GONE);
         if (isMyTask) {
-            holder.ivDelete.setOnClickListener(v -> FirebaseHelper.deleteTask(task.getId()));
+            // CHANGED: Call the repository, not the helper
+            holder.ivDelete.setOnClickListener(v -> TaskRepository.getInstance().deleteTask(task.getId()));
         } else {
             holder.ivDelete.setOnClickListener(null);
         }
 
-        // PHASE 4: Set click listener to edit task
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, EditTaskActivity.class);
             intent.putExtra(EditTaskActivity.EXTRA_TASK, task);
             context.startActivity(intent);
         });
 
-        // PHASE 4: Add fade-in animation
         setAnimation(holder.itemView, position);
     }
 
@@ -135,7 +135,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             lastPosition = position;
         }
     }
-
 
     @Override
     public int getItemCount() {
@@ -153,7 +152,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     static class TaskViewHolder extends RecyclerView.ViewHolder {
         TextView tvTitle, tvDescription, tvDueDate, tvCreator;
         CheckBox cbStatus;
-        ImageView ivDelete, ivTaskType, ivPriority; // PHASE 4: Added priority ImageView
+        ImageView ivDelete, ivTaskType, ivPriority;
         View sideBar;
 
         public TaskViewHolder(@NonNull View itemView) {
@@ -165,8 +164,8 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             cbStatus = itemView.findViewById(R.id.cb_task_status);
             ivDelete = itemView.findViewById(R.id.iv_delete_task);
             ivTaskType = itemView.findViewById(R.id.iv_task_type);
-            ivPriority = itemView.findViewById(R.id.iv_task_priority); // PHASE 4
-            sideBar = itemView.findViewById(R.id.side_bar);
+            ivPriority = itemView.findViewById(R.id.iv_task_priority);
+                        sideBar = itemView.findViewById(R.id.side_bar);
         }
     }
 
@@ -200,7 +199,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                     Objects.equals(oldTask.getDescription(), newTask.getDescription()) &&
                     Objects.equals(oldTask.getStatus(), newTask.getStatus()) &&
                     Objects.equals(oldTask.getDueDate(), newTask.getDueDate()) &&
-                    Objects.equals(oldTask.getPriority(), newTask.getPriority()) && // PHASE 4
+                    Objects.equals(oldTask.getPriority(), newTask.getPriority()) &&
                     oldTask.isSynced() == newTask.isSynced();
         }
     }

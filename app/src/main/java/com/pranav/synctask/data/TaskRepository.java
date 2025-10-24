@@ -11,7 +11,6 @@ import com.pranav.synctask.utils.FirebaseHelper;
 import com.pranav.synctask.utils.NetworkUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +24,13 @@ public class TaskRepository {
     private List<Task> firestoreTasks = new ArrayList<>();
     private final MutableLiveData<Result<List<Task>>> combinedTasksResult = new MutableLiveData<>();
 
-    private TaskRepository() {}
+    // CHANGED: Added an instance of FirebaseHelper
+    private final FirebaseHelper firebaseHelper;
+
+    // CHANGED: Constructor is private and initializes FirebaseHelper
+    private TaskRepository() {
+        firebaseHelper = new FirebaseHelper();
+    }
 
     public static TaskRepository getInstance() {
         if (instance == null) {
@@ -42,7 +47,6 @@ public class TaskRepository {
         return combinedTasksResult;
     }
 
-    // PHASE 2: Method to calculate statistics from cached tasks
     public Map<String, Integer> getTaskStats() {
         Map<String, Integer> stats = new HashMap<>();
         int completedCount = 0;
@@ -64,7 +68,8 @@ public class TaskRepository {
             tasksListenerRegistration.remove();
         }
         combinedTasksResult.setValue(new Result.Loading<>());
-        tasksListenerRegistration = FirebaseHelper.getTasks(userUID, new FirebaseHelper.TasksCallback() {
+        // CHANGED: Call instance method
+        tasksListenerRegistration = firebaseHelper.getTasks(userUID, new FirebaseHelper.TasksCallback() {
             @Override
             public void onSuccess(List<Task> tasks) {
                 firestoreTasks = tasks;
@@ -78,11 +83,17 @@ public class TaskRepository {
         });
     }
 
-    // PHASE 4: Method to update a task
+    // ADDED: This method was missing but called by MyFirebaseMessagingService
+    public void refreshTasks() {
+        User user = UserRepository.getInstance().getCurrentUserCache();
+        if (user != null && user.getUid() != null) {
+            attachTasksListener(user.getUid());
+        }
+    }
+
     public LiveData<Result<Void>> updateTask(Task task) {
         MutableLiveData<Result<Void>> result = new MutableLiveData<>();
         if (task.getId() == null || task.getId().isEmpty()) {
-            // This is a local-only task, update it in the local list
             for (int i = 0; i < localTasks.size(); i++) {
                 if (localTasks.get(i).getLocalId().equals(task.getLocalId())) {
                     localTasks.set(i, task);
@@ -92,9 +103,9 @@ public class TaskRepository {
             mergeAndNotify();
             result.setValue(new Result.Success<>(null));
         } else {
-            // This is a synced task, update it in Firestore
             result.setValue(new Result.Loading<>());
-            FirebaseHelper.updateTask(task.getId(), task.toMap(), new FirebaseHelper.TasksCallback() {
+            // CHANGED: Call instance method
+            firebaseHelper.updateTask(task.getId(), task.toMap(), new FirebaseHelper.TasksCallback() {
                 @Override
                 public void onSuccess(List<Task> tasks) {
                     result.setValue(new Result.Success<>(null));
@@ -107,7 +118,6 @@ public class TaskRepository {
         }
         return result;
     }
-
 
     private void mergeAndNotify() {
         List<Task> mergedList = new ArrayList<>(firestoreTasks);
@@ -123,7 +133,6 @@ public class TaskRepository {
                 mergedList.add(localTask);
             }
         }
-        // PHASE 4: Update sorting to include priority
         mergedList.sort((o1, o2) -> {
             int priorityCompare = getPriorityValue(o2.getPriority()) - getPriorityValue(o1.getPriority());
             if (priorityCompare == 0) {
@@ -135,8 +144,6 @@ public class TaskRepository {
         combinedTasksResult.postValue(new Result.Success<>(mergedList));
     }
 
-
-
     public void createTask(Task task, Context context) {
         User currentUser = UserRepository.getInstance().getCurrentUserCache();
         boolean isPaired = currentUser != null && currentUser.getPairedWithUID() != null && !currentUser.getPairedWithUID().isEmpty();
@@ -145,7 +152,8 @@ public class TaskRepository {
         if (isPaired && isOnline) {
             task.setSynced(true);
             task.setSharedWith(Arrays.asList(currentUser.getUid(), currentUser.getPairedWithUID()));
-            FirebaseHelper.createTask(task, new FirebaseHelper.TasksCallback() {
+            // CHANGED: Call instance method
+            firebaseHelper.createTask(task, new FirebaseHelper.TasksCallback() {
                 @Override public void onSuccess(List<Task> tasks) {}
                 @Override public void onError(Exception e) {
                     Log.e("TaskRepository", "Failed to create online task, saving locally.", e);
@@ -176,7 +184,8 @@ public class TaskRepository {
         for (Task localTask : localTasks) {
             if (!localTask.isSynced()) {
                 localTask.setSharedWith(Arrays.asList(currentUser.getUid(), currentUser.getPairedWithUID()));
-                FirebaseHelper.createTask(localTask, new FirebaseHelper.TasksCallback() {
+                // CHANGED: Call instance method
+                firebaseHelper.createTask(localTask, new FirebaseHelper.TasksCallback() {
                     @Override
                     public void onSuccess(List<Task> tasks) {
                         localTasks.remove(localTask);
@@ -197,7 +206,7 @@ public class TaskRepository {
             tasksListenerRegistration = null;
         }
     }
-    // PHASE 4: Helper for priority sorting
+
     private int getPriorityValue(String priority) {
         if (priority == null) return 1;
         switch (priority) {
@@ -207,12 +216,13 @@ public class TaskRepository {
         }
     }
 
-
     public void updateTaskStatus(String taskId, String newStatus) {
-        FirebaseHelper.updateTaskStatus(taskId, newStatus);
+        // CHANGED: Call instance method
+        firebaseHelper.updateTaskStatus(taskId, newStatus);
     }
 
     public void deleteTask(String taskId) {
-        FirebaseHelper.deleteTask(taskId);
+        // CHANGED: Call instance method
+        firebaseHelper.deleteTask(taskId);
     }
 }
