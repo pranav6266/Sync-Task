@@ -156,15 +156,26 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         }
 
         // Apply completion permission
-        holder.cbStatus.setEnabled(canComplete); // MODIFIED: No longer allows bypass for synced tasks
-        holder.cbStatus.setOnCheckedChangeListener(null);
-        holder.cbStatus.setChecked(Task.STATUS_COMPLETED.equals(task.getStatus()));
-        holder.cbStatus.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (buttonView.isPressed()) {
-                String newStatus = isChecked ? Task.STATUS_COMPLETED : Task.STATUS_PENDING;
-                TaskRepository.getInstance().updateTaskStatus(task.getId(), newStatus);
-            }
-        });
+        // Apply completion permission
+        if (canComplete) {
+            // If user can complete, show and enable the checkbox
+            holder.cbStatus.setVisibility(View.VISIBLE);
+            holder.cbStatus.setEnabled(true);
+            holder.cbStatus.setOnCheckedChangeListener(null);
+            holder.cbStatus.setChecked(Task.STATUS_COMPLETED.equals(task.getStatus()));
+            holder.cbStatus.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (buttonView.isPressed()) {
+                    String newStatus = isChecked ? Task.STATUS_COMPLETED : Task.STATUS_PENDING;
+                    TaskRepository.getInstance().updateTaskStatus(task.getId(), newStatus);
+                }
+            });
+        } else {
+            // If user CANNOT complete, hide the checkbox
+            holder.cbStatus.setVisibility(View.INVISIBLE); // Using INVISIBLE keeps the layout aligned
+            holder.cbStatus.setEnabled(false);
+            holder.cbStatus.setOnCheckedChangeListener(null);
+            holder.cbStatus.setChecked(Task.STATUS_COMPLETED.equals(task.getStatus()));
+        }
         // Apply deletion permission
         holder.ivDelete.setVisibility(canDelete ? View.VISIBLE : View.GONE); 
         if (canDelete) {
