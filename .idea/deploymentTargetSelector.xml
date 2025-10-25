@@ -15,7 +15,7 @@
           <targets>
             <Target type="DEFAULT_BOOT">
               <handle>
-                <DeviceId pluginId="PhysicalDevice" identifier="serial=ZD222G5SBH" />
+                <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\prana\.android\avd\Pixel_9a.avd" />
               </handle>
             </Target>
             <Target type="DEFAULT_BOOT">

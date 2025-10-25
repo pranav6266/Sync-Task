@@ -14,12 +14,19 @@ import java.util.List;
 
 public class DashboardViewModel extends ViewModel {
     private final UserRepository userRepository;
+    private final String currentUid;
     private final MutableLiveData<Result<User>> userLiveData = new MutableLiveData<>();
     private final MutableLiveData<Result<List<Space>>> spacesLiveData = new MutableLiveData<>();
     private final MutableLiveData<Result<Space>> createSpaceResult = new MutableLiveData<>();
 
+    // --- NEW ---
+    private final MutableLiveData<Result<Void>> leaveSpaceResult = new MutableLiveData<>();
+    private final MutableLiveData<Result<Void>> deleteSpaceResult = new MutableLiveData<>();
+    // --- END NEW ---
+
     public DashboardViewModel() {
         this.userRepository = UserRepository.getInstance();
+        this.currentUid = FirebaseAuth.getInstance().getUid();
     }
 
     public LiveData<Result<User>> getUserLiveData() {
@@ -34,6 +41,16 @@ public class DashboardViewModel extends ViewModel {
         return createSpaceResult;
     }
 
+    // --- NEW ---
+    public LiveData<Result<Void>> getLeaveSpaceResult() {
+        return leaveSpaceResult;
+    }
+
+    public LiveData<Result<Void>> getDeleteSpaceResult() {
+        return deleteSpaceResult;
+    }
+    // --- END NEW ---
+
     public void attachUserListener(String uid) {
         userRepository.addUserListener(uid, userLiveData);
     }
@@ -43,11 +60,24 @@ public class DashboardViewModel extends ViewModel {
     }
 
     public void createSpace(String spaceName) {
-        String uid = FirebaseAuth.getInstance().getUid();
-        if (uid != null) {
-            userRepository.createSpace(spaceName, uid).observeForever(createSpaceResult::setValue);
+        if (currentUid != null) {
+            userRepository.createSpace(spaceName, currentUid).observeForever(createSpaceResult::setValue);
         }
     }
+
+    // --- NEW ---
+    public void leaveSpace(String spaceId) {
+        if (currentUid != null) {
+            userRepository.leaveSpace(spaceId, currentUid).observeForever(leaveSpaceResult::setValue);
+        }
+    }
+
+    public void deleteSpace(String spaceId) {
+        if (currentUid != null) {
+            userRepository.deleteSpace(spaceId, currentUid).observeForever(deleteSpaceResult::setValue);
+        }
+    }
+    // --- END NEW ---
 
     @Override
     protected void onCleared() {

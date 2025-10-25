@@ -38,7 +38,6 @@ public abstract class BaseTaskFragment extends Fragment {
     private String currentUserId;
     private TasksViewModel viewModel;
     private ConnectivityManager.NetworkCallback networkCallback;
-
     // PHASE 4: Local copies of data for filtering
     private List<Task> currentTaskList = new ArrayList<>();
     private String currentSearchQuery = "";
@@ -57,7 +56,12 @@ public abstract class BaseTaskFragment extends Fragment {
         emptyView = view.findViewById(R.id.empty_view);
 
         setupRecyclerView();
-        swipeRefreshLayout.setOnRefreshListener(() -> viewModel.loadTasks(currentUserId));
+
+        // MODIFIED: We get the spaceId from the activity, so this should not use currentUserId
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            // This will just re-trigger the existing listener in the ViewModel
+            viewModel.refreshTasks();
+        });
         swipeRefreshLayout.setColorSchemeResources(R.color.primary_color, R.color.accent_color);
 
         return view;
@@ -79,9 +83,13 @@ public abstract class BaseTaskFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-        if (currentUserId != null) {
-            viewModel.loadTasks(currentUserId);
-        }
+
+        // --- THIS IS THE FIX ---
+        // The call 'viewModel.loadTasks(currentUserId)' was REMOVED from here.
+        // MainActivity is now responsible for telling the ViewModel which spaceId to load.
+        // This fragment just observes the results.
+        // --- END FIX ---
+
         registerNetworkCallback();
     }
 
@@ -106,7 +114,6 @@ public abstract class BaseTaskFragment extends Fragment {
                 Toast.makeText(getContext(), "Error loading tasks.", Toast.LENGTH_SHORT).show();
             }
         });
-
         // PHASE 4: Observe search query changes
         viewModel.getSearchQuery().observe(getViewLifecycleOwner(), query -> {
             currentSearchQuery = query;
@@ -118,7 +125,6 @@ public abstract class BaseTaskFragment extends Fragment {
     private void filterAndDisplayTasks() {
         // 1. Apply time-based filter (Today, All, etc.)
         List<Task> timeFilteredTasks = filterTasks(currentTaskList);
-
         // 2. Apply search filter
         List<Task> finalFilteredTasks;
         if (currentSearchQuery.isEmpty()) {

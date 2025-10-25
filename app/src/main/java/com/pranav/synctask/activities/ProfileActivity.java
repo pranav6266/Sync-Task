@@ -1,7 +1,6 @@
 package com.pranav.synctask.activities;
 
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -15,7 +14,6 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import com.bumptech.glide.Glide;
@@ -29,10 +27,8 @@ import com.pranav.synctask.R;
 import com.pranav.synctask.data.Result;
 import com.pranav.synctask.models.User;
 import com.pranav.synctask.ui.viewmodels.ProfileViewModel;
-import com.pranav.synctask.utils.NetworkUtils;
-import de.hdodenhof.circleimageview.CircleImageView;
-import java.util.Map;
 
+import de.hdodenhof.circleimageview.CircleImageView;
 public class ProfileActivity extends AppCompatActivity {
 
     private CircleImageView ivProfileImage;
@@ -47,7 +43,7 @@ public class ProfileActivity extends AppCompatActivity {
     private ProfileViewModel viewModel;
     private ActivityResultLauncher<String> mGetContent;
 
-    private TextView tvTasksCreated, tvTasksCompleted;
+    // REMOVED: private TextView tvTasksCreated, tvTasksCompleted;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,12 +64,9 @@ public class ProfileActivity extends AppCompatActivity {
         ivEditName = findViewById(R.id.iv_edit_name);
         ivEditPhoto = findViewById(R.id.iv_edit_photo);
         tvEmail = findViewById(R.id.tv_email);
-        // REMOVED: btnUnpair = findViewById(R.id.btn_unpair);
         btnLogout = findViewById(R.id.btn_logout);
         btnSaveChanges = findViewById(R.id.btn_save_changes);
         progressBar = findViewById(R.id.profile_progress_bar);
-        tvTasksCreated = findViewById(R.id.tv_tasks_created);
-        tvTasksCompleted = findViewById(R.id.tv_tasks_completed);
 
         if (currentUser != null) {
             loadUserProfile();
@@ -88,18 +81,15 @@ public class ProfileActivity extends AppCompatActivity {
         ivEditPhoto.setOnClickListener(v -> mGetContent.launch("image/*"));
         btnSaveChanges.setOnClickListener(v -> saveProfileChanges());
         btnLogout.setOnClickListener(v -> logoutUser());
-        // REMOVED: btnUnpair.setOnClickListener(v -> showUnpairConfirmationDialog());
 
         observeViewModel();
     }
 
     private void observeViewModel() {
-        // This observer no longer needs to check for pairing status
         viewModel.getUserLiveData().observe(this, result -> {
             if (isFinishing()) return;
             if (result instanceof Result.Success) {
-                User user = ((Result.Success<User>) result).data;
-                // REMOVED: btnUnpair.setVisibility((user.getPairedWithUID() != null && !user.getPairedWithUID().isEmpty()) ? View.VISIBLE : View.GONE);
+                // User user = ((Result.Success<User>) result).data; // No longer needed
             } else if (result instanceof Result.Error) {
                 Log.e("ProfileActivity", "Error listening to user pairing status", ((Result.Error<User>) result).exception);
             }
@@ -116,12 +106,7 @@ public class ProfileActivity extends AppCompatActivity {
             }
         });
 
-        viewModel.getTaskStats().observe(this, stats -> {
-            if (stats != null) {
-                tvTasksCreated.setText(String.valueOf(stats.getOrDefault("total", 0)));
-                tvTasksCompleted.setText(String.valueOf(stats.getOrDefault("completed", 0)));
-            }
-        });
+
     }
 
     @Override
@@ -129,7 +114,7 @@ public class ProfileActivity extends AppCompatActivity {
         super.onStart();
         if (currentUser != null) {
             viewModel.attachUserListener(currentUser.getUid());
-            viewModel.loadTaskStats();
+            // REMOVED: viewModel.loadTaskStats();
             updateUiBasedOnNetworkStatus();
         } else {
             goToLogin();
@@ -137,9 +122,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void updateUiBasedOnNetworkStatus() {
-        boolean isOnline = NetworkUtils.isNetworkAvailable(this);
-        // REMOVED: btnUnpair.setEnabled(isOnline);
-        // ... (rest of the method is no longer needed)
+        // boolean isOnline = NetworkUtils.isNetworkAvailable(this); // No longer needed
     }
 
     private void loadUserProfile() {
@@ -196,11 +179,6 @@ public class ProfileActivity extends AppCompatActivity {
                 });
     }
 
-    // --- ENTIRELY REMOVED ---
-    // private void showUnpairConfirmationDialog() { ... }
-    // private void unpairPartner() { ... }
-    // --- END REMOVED ---
-
     private void logoutUser() {
         mAuth.signOut();
         mGoogleSignInClient.signOut().addOnCompleteListener(this, task -> goToLogin());
@@ -225,6 +203,5 @@ public class ProfileActivity extends AppCompatActivity {
         btnSaveChanges.setEnabled(!isLoading);
         btnLogout.setEnabled(!isLoading);
         ivEditPhoto.setEnabled(!isLoading);
-        // REMOVED: btnUnpair logic
     }
 }

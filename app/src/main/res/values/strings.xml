@@ -12,7 +12,7 @@
 
     <string name="pair_with_partner_title">Join a Space</string>
     <string name="your_partner_code_label">Your Partner Code</string>
-    <string name="share_code_instruction">Tap code to copy. Share it with your partner.</string>
+    <string name="share_code_instruction">Share this code with your partner.</string>
     <string name="enter_partner_code_label">Enter Invite Code</string>
     <string name="partner_code_hint">6-Digit Invite Code</string>
     <string name="pair_button_text">Join Space</string>
@@ -23,7 +23,8 @@
     <string name="type_hint">Type</string>
     <string name="due_date_hint">Due Date (Optional)</string>
     <string name="create_task_button">Create Task</string>
-    <string name="scope_hint">Task Scope</string> <string name="due_date_label">Due:</string>
+    <string name="scope_hint">Task Scope</string>
+    <string name="due_date_label">Due:</string>
     <string name="task_creator_label_you">You</string>
     <string name="task_creator_label_partner">Partner</string>
     <string name="task_creator_label_local">Not Synced</string>
@@ -40,7 +41,7 @@
     <string name="logout_button">Logout</string>
 
     <string name="scope_shared">Shared Task (Both can edit)</string>
-    <string name="scope_individual">Individual Task (Only I can see)</string>
+    <string name="scope_individual">Individual Task (Only I can edit)</string>
     <string name="scope_assigned">Assign to Partner (They complete it)</string>
 
 </resources>

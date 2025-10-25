@@ -6,30 +6,28 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 import com.google.firebase.auth.FirebaseUser;
 import com.pranav.synctask.data.Result;
-import com.pranav.synctask.data.TaskRepository;
+// REMOVED: TaskRepository import
 import com.pranav.synctask.data.UserRepository;
 import com.pranav.synctask.models.User;
-import java.util.Map;
+// REMOVED: Map import
 
 public class ProfileViewModel extends ViewModel {
     private final UserRepository userRepository;
-    private final TaskRepository taskRepository;
+    // REMOVED: private final TaskRepository taskRepository;
     private final MutableLiveData<Result<User>> userLiveData = new MutableLiveData<>();
-    private final MutableLiveData<Map<String, Integer>> taskStats = new MutableLiveData<>();
+    // REMOVED: private final MutableLiveData<Map<String, Integer>> taskStats = new MutableLiveData<>();
     private final MutableLiveData<Result<String>> photoUpdateResult = new MutableLiveData<>();
 
     public ProfileViewModel() {
         this.userRepository = UserRepository.getInstance();
-        this.taskRepository = TaskRepository.getInstance();
+        // REMOVED: this.taskRepository = TaskRepository.getInstance();
     }
 
     public LiveData<Result<User>> getUserLiveData() {
         return userLiveData;
     }
 
-    public LiveData<Map<String, Integer>> getTaskStats() {
-        return taskStats;
-    }
+    // REMOVED: public LiveData<Map<String, Integer>> getTaskStats() { ... }
 
     public LiveData<Result<String>> getPhotoUpdateResult() {
         return photoUpdateResult;
@@ -39,19 +37,11 @@ public class ProfileViewModel extends ViewModel {
         userRepository.addUserListener(uid, userLiveData);
     }
 
-    public void loadTaskStats() {
-        // TODO: This logic needs to be updated.
-        // Task stats are now per-space, not per-user.
-        // This method should be removed or changed to load stats for ALL spaces.
-        // For now, we leave it, but it will show stats for the last-opened space.
-        taskStats.setValue(taskRepository.getTaskStats());
-    }
+    // REMOVED: public void loadTaskStats() { ... }
 
     public void uploadProfilePicture(FirebaseUser firebaseUser, Uri imageUri) {
         userRepository.updateProfilePicture(firebaseUser, imageUri).observeForever(photoUpdateResult::setValue);
     }
-
-    // REMOVED: public LiveData<Result<Void>> unpair(String uid) { ... }
 
     public LiveData<Result<User>> saveProfileChanges(String uid, String newName) {
         return userRepository.updateDisplayName(uid, newName);

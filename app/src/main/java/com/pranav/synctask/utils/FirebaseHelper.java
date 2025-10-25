@@ -42,33 +42,28 @@ public class FirebaseHelper {
     // Callbacks
     public interface UserCallback {
         void onSuccess(User user);
-
         void onError(Exception e);
     }
 
     public interface TasksCallback {
         void onSuccess(List<Task> tasks);
-
         void onError(Exception e);
     }
 
     // ADDED
     public interface SpaceCallback {
         void onSuccess(Space space);
-
         void onError(Exception e);
     }
 
     // ADDED
     public interface SpacesCallback {
         void onSuccess(List<Space> spaces);
-
         void onError(Exception e);
     }
 
     public interface NotificationCallback {
         void onSuccess();
-
         void onError(Exception e);
     }
 
@@ -84,7 +79,8 @@ public class FirebaseHelper {
                     getUser(firebaseUser.getUid(), callback);
                 }).addOnFailureListener(callback::onError);
             } else {
-                // This is a new user, create the document
+                // This is a
+                // new user, create the document
                 User newUser = new User(
                         firebaseUser.getUid(),
                         firebaseUser.getEmail(),
@@ -159,7 +155,8 @@ public class FirebaseHelper {
                         callback.onError(e);
                         return;
                     }
-                    if (snapshot != null && snapshot.exists()) {
+                    if (snapshot != null && snapshot.exists())
+                    {
                         User user = snapshot.toObject(User.class);
                         callback.onSuccess(user);
                     } else {
@@ -182,10 +179,8 @@ public class FirebaseHelper {
                 Arrays.asList(creatorUID),
                 inviteCode
         );
-
         // Get the user document
         DocumentReference userDocRef = db.collection(USERS_COLLECTION).document(creatorUID);
-
         // Run a batch write to create the space AND update the user
         WriteBatch batch = db.batch();
         batch.set(spaceDocRef, newSpace);
@@ -207,7 +202,8 @@ public class FirebaseHelper {
                         return;
                     }
 
-                    DocumentSnapshot spaceDoc = querySnapshot.getDocuments().get(0);
+                    DocumentSnapshot
+                            spaceDoc = querySnapshot.getDocuments().get(0);
                     String spaceId = spaceDoc.getId();
                     Space space = spaceDoc.toObject(Space.class);
 
@@ -223,11 +219,9 @@ public class FirebaseHelper {
                     WriteBatch batch = db.batch();
                     batch.update(spaceDocRef, "members", FieldValue.arrayUnion(userUID));
                     batch.update(userDocRef, "spaceIds", FieldValue.arrayUnion(spaceId));
-
                     batch.commit()
                             .addOnSuccessListener(aVoid -> callback.onSuccess(space))
                             .addOnFailureListener(callback::onError);
-
                 })
                 .addOnFailureListener(callback::onError);
     }
@@ -312,7 +306,6 @@ public class FirebaseHelper {
                 .addOnFailureListener(e -> Log.w(TAG, "Error deleting task", e));
     }
 
-    // ADD THIS METHOD TO FirebaseHelper.java
     public void leaveSpace(String spaceId, String userUID, SpaceCallback callback) {
         DocumentReference spaceDocRef = db.collection(SPACES_COLLECTION).document(spaceId);
         DocumentReference userDocRef = db.collection(USERS_COLLECTION).document(userUID);
@@ -339,6 +332,7 @@ public class FirebaseHelper {
             return null; // User left, but space remains
         }).addOnSuccessListener(result -> {
             if (result != null) {
+                //
                 // This was the last user. Delete all tasks for this space.
                 Space spaceToDelete = (Space) result;
                 deleteTasksForSpace(spaceToDelete.getSpaceId(), () -> {
@@ -354,12 +348,59 @@ public class FirebaseHelper {
         }).addOnFailureListener(callback::onError);
     }
 
-    // ADD THIS HELPER METHOD TO FirebaseHelper.java
+    // --- NEW ---
+    public void deleteSpace(String spaceId, String userUID, SpaceCallback callback) {
+        DocumentReference spaceDocRef = db.collection(SPACES_COLLECTION).document(spaceId);
+
+        db.runTransaction(transaction -> {
+            DocumentSnapshot spaceDoc = transaction.get(spaceDocRef);
+            if (!spaceDoc.exists()) {
+                throw new FirebaseFirestoreException("Space not found.", FirebaseFirestoreException.Code.NOT_FOUND);
+            }
+
+            Space space = spaceDoc.toObject(Space.class);
+            if (space == null || space.getMembers().isEmpty() || !space.getMembers().get(0).equals(userUID)) {
+                throw new FirebaseFirestoreException("Permission denied. Only the creator can delete a space.", FirebaseFirestoreException.Code.PERMISSION_DENIED);
+            }
+
+            // If checks pass, return the list of members to update
+            return space.getMembers();
+        }).addOnSuccessListener(members -> {
+            if (members == null) {
+                callback.onError(new Exception("An unknown error occurred."));
+                return;
+            }
+
+            // 1. Delete all tasks for the space
+            deleteTasksForSpace(spaceId, () -> {
+                // 2. After tasks are deleted, delete the space and update all users
+                WriteBatch batch = db.batch();
+
+                // 2a. Delete the space doc
+                batch.delete(spaceDocRef);
+
+                // 2b. Remove the spaceId from all members
+                List<String> memberList = (List<String>) members;
+                for (String memberId : memberList) {
+                    DocumentReference userDocRef = db.collection(USERS_COLLECTION).document(memberId);
+                    batch.update(userDocRef, "spaceIds", FieldValue.arrayRemove(spaceId));
+                }
+
+                // 2c. Commit the final batch
+                batch.commit()
+                        .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                        .addOnFailureListener(callback::onError);
+            });
+        }).addOnFailureListener(callback::onError);
+    }
+    // --- END NEW ---
+
     private void deleteTasksForSpace(String spaceId, Runnable onComplete) {
         db.collection(TASKS_COLLECTION).whereEqualTo("spaceId", spaceId).get()
                 .addOnSuccessListener(querySnapshot -> {
                     WriteBatch batch = db.batch();
-                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                    for
+                    (DocumentSnapshot doc : querySnapshot.getDocuments()) {
                         batch.delete(doc.getReference());
                     }
                     batch.commit().addOnCompleteListener(task -> onComplete.run());

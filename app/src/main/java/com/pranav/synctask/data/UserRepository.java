@@ -1,5 +1,4 @@
 package com.pranav.synctask.data;
-
 import android.net.Uri;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -210,7 +209,6 @@ public class UserRepository {
         return result;
     }
 
-    // ADD THIS METHOD TO UserRepository.java
     public LiveData<Result<Void>> leaveSpace(String spaceId, String userUID) {
         MutableLiveData<Result<Void>> result = new MutableLiveData<>();
         result.setValue(new Result.Loading<>());
@@ -227,4 +225,24 @@ public class UserRepository {
         });
         return result;
     }
+
+    // --- NEW ---
+    public LiveData<Result<Void>> deleteSpace(String spaceId, String userUID) {
+        MutableLiveData<Result<Void>> result = new MutableLiveData<>();
+        result.setValue(new Result.Loading<>());
+        firebaseHelper.deleteSpace(spaceId, userUID, new FirebaseHelper.SpaceCallback() {
+            @Override
+            public void onSuccess(Space space) {
+                // Space will be null on success, which is fine
+                result.setValue(new Result.Success<>(null));
+            }
+
+            @Override
+            public void onError(Exception e) {
+                result.setValue(new Result.Error<>(e));
+            }
+        });
+        return result;
+    }
+    // --- END NEW ---
 }

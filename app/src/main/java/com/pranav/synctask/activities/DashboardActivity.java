@@ -7,6 +7,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -170,7 +171,6 @@ public class DashboardActivity extends AppCompatActivity {
                 Log.e("DashboardActivity", "Error listening to user", ((Result.Error<User>) result).exception);
             }
         });
-
         viewModel.getSpacesLiveData().observe(this, result -> {
             if (result instanceof Result.Success) {
                 spacesAdapter.updateSpaces(((Result.Success<List<Space>>) result).data);
@@ -181,11 +181,62 @@ public class DashboardActivity extends AppCompatActivity {
 
         viewModel.getCreateSpaceResult().observe(this, result -> {
             if (result instanceof Result.Success) {
-                Toast.makeText(this, "Space created!", Toast.LENGTH_SHORT).show();
+                // Get the newly created space from the result
+                Space newSpace = ((Result.Success<Space>) result).data;
+                if (newSpace != null && newSpace.getInviteCode() != null) {
+                    // Show a dialog with the invite code
+                    showInviteCodeDialog(newSpace.getSpaceName(), newSpace.getInviteCode());
+                } else {
+                    Toast.makeText(this, "Space created!", Toast.LENGTH_SHORT).show();
+                }
                 // The user listener will automatically refresh the spaces list
             } else if (result instanceof Result.Error) {
                 Toast.makeText(this, "Error creating space.", Toast.LENGTH_SHORT).show();
             }
         });
+
+        // --- NEW ---
+        viewModel.getLeaveSpaceResult().observe(this, result -> {
+            if (result instanceof Result.Success) {
+                Toast.makeText(this, "Successfully left space.", Toast.LENGTH_SHORT).show();
+                // List will refresh automatically
+            } else if (result instanceof Result.Error) {
+                Toast.makeText(this, "Error leaving space.", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        viewModel.getDeleteSpaceResult().observe(this, result -> {
+            if (result instanceof Result.Success) {
+                Toast.makeText(this, "Space deleted.", Toast.LENGTH_SHORT).show();
+                // List will refresh automatically
+            } else if (result instanceof Result.Error) {
+                String message = "Error deleting space.";
+                Exception e = ((Result.Error<Void>) result).exception;
+                if (e != null && e.getMessage() != null) {
+                    message = e.getMessage();
+                }
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+            }
+        });
+        // --- END NEW ---
+    }
+
+    private void showInviteCodeDialog(String spaceName, String inviteCode) {
+        String title = "Space '" + spaceName + "' Created!";
+
+        // Create a TextView for the code to make it selectable
+        final TextView codeView = new TextView(this);
+        codeView.setText(inviteCode);
+        codeView.setTextSize(24);
+        codeView.setTextIsSelectable(true);
+        codeView.setGravity(Gravity.CENTER);
+        codeView.setPadding(40, 40, 40, 40);
+
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(getString(R.string.share_code_instruction))
+                .setView(codeView) // Add the selectable code here
+                .setPositiveButton("OK", null)
+                .show();
     }
 }
