@@ -24,10 +24,10 @@
         <item name="colorSurfaceVariant">@color/md_theme_light_surfaceVariant</item>
         <item name="colorOnSurfaceVariant">@color/md_theme_light_onSurfaceVariant</item>
         <item name="colorOutline">@color/md_theme_light_outline</item>
-        <item name="colorInverseOnSurface">@color/md_theme_light_inverseOnSurface</item>
-        <item name="colorInverseSurface">@color/md_theme_light_inverseSurface</item>
-        <item name="colorInversePrimary">@color/md_theme_light_inversePrimary</item>
-        <item name="colorSurfaceTint">@color/md_theme_light_surfaceTint</item>
+        <item name="colorOnSurfaceInverse">@color/md_theme_light_inverseOnSurface</item>
+        <item name="colorSurfaceInverse">@color/md_theme_light_inverseSurface</item>
+        <item name="colorPrimaryInverse">@color/md_theme_light_inversePrimary</item>
+        <item name="colorSurfaceBright">@color/md_theme_light_surfaceTint</item>
 
         <item name="android:statusBarColor">@color/md_theme_light_background</item>
         <item name="android:windowLightStatusBar">true</item>
@@ -38,11 +38,11 @@
         <item name="materialAlertDialogTheme">@style/Theme.Material3.DayNight.Dialog.Alert</item>
 
         <item name="android:windowActivityTransitions">true</item>
-        <item name="android:windowSharedElementEnterTransition">@transition/m3_container_transform</item>
-        <item name="android:windowSharedElementExitTransition">@transition/m3_container_transform</item>
+<!--        <item name="android:windowSharedElementEnterTransition">@transition/m3_container_transform</item>-->
+<!--        <item name="android:windowSharedElementExitTransition">@transition/m3_container_transform</item>-->
     </style>
 
-    <style name="Widget.App.CardView" parent="Widget.Material3.Card.Elevated">
+    <style name="Widget.App.CardView" parent="Widget.Material3.CardView.Elevated">
         <item name="cardElevation">2dp</item>
     </style>
 

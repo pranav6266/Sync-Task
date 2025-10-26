@@ -1,4 +1,5 @@
 package com.pranav.synctask.activities;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View; // ADDED
@@ -43,7 +44,7 @@ public class CreateTaskActivity extends AppCompatActivity {
         View view = findViewById(android.R.id.content);
         setExitSharedElementCallback(new MaterialContainerTransformSharedElementCallback());
         MaterialContainerTransform transition = new MaterialContainerTransform();
-        transition.setScrimColor(View.TRANSPARENT);
+        transition.setScrimColor(Color.TRANSPARENT);
         transition.setDuration(400);
         transition.addTarget(view);
         getWindow().setSharedElementEnterTransition(transition);
