@@ -1,5 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary_color">#004D40</color> <color name="primary_dark_color">#00251A</color> <color name="accent_color">#00BFA5</color> <color name="background_color">#121212</color> <color name="card_background_color">#1E1E1E</color> <color name="primary_text">#E0E0E0</color> <color name="secondary_text">#BDBDBD</color> <color name="divider_color">#424242</color> <color name="tab_text_unselected">#80CBC4</color>
+    <color name="md_theme_dark_primary">#AFC6FF</color>
+    <color name="md_theme_dark_onPrimary">#002D6C</color>
+    <color name="md_theme_dark_primaryContainer">#19438D</color>
+    <color name="md_theme_dark_onPrimaryContainer">#D9E2FF</color>
+    <color name="md_theme_dark_secondary">#4FD8EB</color>
+    <color name="md_theme_dark_onSecondary">#00363D</color>
+    <color name="md_theme_dark_secondaryContainer">#004F58</color>
+    <color name="md_theme_dark_onSecondaryContainer">#97F0FF</color>
+    <color name="md_theme_dark_tertiary">#FABD00</color>
+    <color name="md_theme_dark_onTertiary">#412D00</color>
+    <color name="md_theme_dark_tertiaryContainer">#5E4200</color>
+    <color name="md_theme_dark_onTertiaryContainer">#FFDEA8</color>
+    <color name="md_theme_dark_error">#FFB4AB</color>
+    <color name="md_theme_dark_errorContainer">#93000A</color>
+    <color name="md_theme_dark_onError">#690005</color>
+    <color name="md_theme_dark_onErrorContainer">#FFDAD6</color>
+    <color name="md_theme_dark_background">#1A1C1E</color>
+    <color name="md_theme_dark_onBackground">#E3E2E6</color>
+    <color name="md_theme_dark_surface">#1A1C1E</color>
+    <color name="md_theme_dark_onSurface">#E3E2E6</color>
+    <color name="md_theme_dark_surfaceVariant">#44474E</color>
+    <color name="md_theme_dark_onSurfaceVariant">#C4C6D0</color>
+    <color name="md_theme_dark_outline">#8E9099</color>
+    <color name="md_theme_dark_inverseOnSurface">#1A1C1E</color>
+    <color name="md_theme_dark_inverseSurface">#E3E2E6</color>
+    <color name="md_theme_dark_inversePrimary">#345DA7</color>
+    <color name="md_theme_dark_shadow">#000000</color>
+    <color name="md_theme_dark_surfaceTint">#AFC6FF</color>
+    <color name="md_theme_dark_outlineVariant">#44474E</color>
+    <color name="md_theme_dark_scrim">#000000</color>
+
     <color name="google_btn_color">#4285F4</color>
-    <color name="delete_icon_color">#EF5350</color> </resources>
+    <color name="delete_icon_color">@color/md_theme_dark_error</color>
+
+    <color name="my_task_bg">@color/md_theme_dark_primary</color>
+    <color name="partner_task_bg">@color/md_theme_dark_tertiary</color>
+</resources>

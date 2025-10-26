@@ -14,11 +14,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
+// MODIFIED: Changed import
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.pranav.synctask.R;
@@ -54,6 +54,7 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
         Space space = spaceList.get(position);
         if (space == null) return;
 
+        // FIX: Use the camelCase variable name 'tvSpaceName'
         holder.tvSpaceName.setText(space.getSpaceName());
 
         holder.itemView.setOnClickListener(v -> {
@@ -62,13 +63,12 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
             context.startActivity(intent);
         });
 
-        // --- NEW LOGIC ---
         boolean isCreator = currentUserId != null && !space.getMembers().isEmpty() && space.getMembers().get(0).equals(currentUserId);
 
+        // FIX: Use the camelCase variable name 'ivSpaceOptions'
         holder.ivSpaceOptions.setOnClickListener(v -> {
             showOptionsDialog(space, isCreator);
         });
-        // --- END NEW LOGIC ---
     }
 
     private void showOptionsDialog(Space space, boolean isCreator) {
@@ -78,27 +78,31 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
 
         ArrayList<String> options = new ArrayList<>();
         options.add(shareOption);
-
         if (isCreator) {
             options.add(deleteOption);
         } else {
             options.add(leaveOption);
         }
 
-        new AlertDialog.Builder(context)
+        // MODIFIED: Use MaterialAlertDialogBuilder
+        new MaterialAlertDialogBuilder(context)
                 .setItems(options.toArray(new String[0]), (dialog, which) -> {
                     String selectedOption = options.get(which);
                     switch (selectedOption) {
-                        case shareOption:
+                        case
+                                shareOption:
                             showInviteCodeDialog(space);
                             break;
                         case leaveOption:
+
                             showConfirmationDialog("Leave", "Are you sure you want to leave this space?",
                                     () -> getViewModel().leaveSpace(space.getSpaceId()));
                             break;
+
                         case deleteOption:
                             showConfirmationDialog("Delete", "Are you sure? This will delete the space and all its tasks for EVERYONE.",
                                     () -> getViewModel().deleteSpace(space.getSpaceId()));
+
                             break;
                     }
                 })
@@ -108,7 +112,6 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
     private void showInviteCodeDialog(Space space) {
         String title = "Share Invite Code";
         String message = "Share this code with a partner to let them join your space.";
-
         // Create a TextView for the code
         final TextView codeView = new TextView(context);
         codeView.setText(space.getInviteCode());
@@ -117,27 +120,32 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
         codeView.setGravity(Gravity.CENTER);
         codeView.setPadding(40, 40, 40, 40);
 
-        new AlertDialog.Builder(context)
+        // MODIFIED: Use MaterialAlertDialogBuilder
+        new MaterialAlertDialogBuilder(context)
                 .setTitle(title)
                 .setMessage(message)
                 .setView(codeView)
                 .setPositiveButton("Share", (dialog, which) -> {
-                    Intent sendIntent = new Intent();
+                    Intent sendIntent =
+                            new Intent();
                     sendIntent.setAction(Intent.ACTION_SEND);
                     sendIntent.putExtra(Intent.EXTRA_TEXT, "Join my '" + space.getSpaceName() + "' space on SyncTask! \n\nInvite Code: " + space.getInviteCode());
                     sendIntent.setType("text/plain");
                     context.startActivity(Intent.createChooser(sendIntent, "Share code via"));
+
                 })
                 .setNegativeButton("Close", null)
                 .show();
     }
 
     private void showConfirmationDialog(String title, String message, Runnable onConfirm) {
-        new AlertDialog.Builder(context)
+        // MODIFIED: Use MaterialAlertDialogBuilder
+        new MaterialAlertDialogBuilder(context)
                 .setTitle(title)
                 .setMessage(message)
                 .setPositiveButton(title, (dialog, which) -> onConfirm.run())
                 .setNegativeButton("Cancel", null)
+
                 .show();
     }
 
@@ -160,12 +168,12 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
 
     static class SpaceViewHolder extends RecyclerView.ViewHolder {
         TextView tvSpaceName;
-        ImageView ivSpaceOptions; // --- NEW ---
+        ImageView ivSpaceOptions;
 
         public SpaceViewHolder(@NonNull View itemView) {
             super(itemView);
             tvSpaceName = itemView.findViewById(R.id.tv_space_name);
-            ivSpaceOptions = itemView.findViewById(R.id.iv_space_options); // --- NEW ---
+            ivSpaceOptions = itemView.findViewById(R.id.iv_space_options);
         }
     }
 }

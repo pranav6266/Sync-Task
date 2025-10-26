@@ -1,7 +1,7 @@
 package com.pranav.synctask.activities;
-
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.view.View; // ADDED
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
@@ -10,6 +10,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.transition.platform.MaterialContainerTransform; // ADDED
+import com.google.android.material.transition.platform.MaterialContainerTransformSharedElementCallback; // ADDED
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -25,11 +27,10 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
-
 public class CreateTaskActivity extends AppCompatActivity {
 
     private TextInputEditText etTitle, etDescription, etDueDate;
-    private AutoCompleteTextView acTaskType, acTaskPriority, acTaskScope; // MODIFIED
+    private AutoCompleteTextView acTaskType, acTaskPriority, acTaskScope;
     private Button btnCreateTask;
     private Calendar selectedDueDate = Calendar.getInstance();
     private String currentSpaceId;
@@ -38,6 +39,16 @@ public class CreateTaskActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // --- ADDED: Container Transform Setup ---
+        View view = findViewById(android.R.id.content);
+        setExitSharedElementCallback(new MaterialContainerTransformSharedElementCallback());
+        MaterialContainerTransform transition = new MaterialContainerTransform();
+        transition.setScrimColor(View.TRANSPARENT);
+        transition.setDuration(400);
+        transition.addTarget(view);
+        getWindow().setSharedElementEnterTransition(transition);
+        // --- END ADDED ---
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_task);
 
@@ -55,7 +66,7 @@ public class CreateTaskActivity extends AppCompatActivity {
         etDueDate = findViewById(R.id.et_task_due_date);
         acTaskType = findViewById(R.id.ac_task_type);
         acTaskPriority = findViewById(R.id.ac_task_priority);
-        acTaskScope = findViewById(R.id.ac_task_scope); // ADDED
+        acTaskScope = findViewById(R.id.ac_task_scope);
         btnCreateTask = findViewById(R.id.btn_create_task);
 
         setupDropdowns();
@@ -65,33 +76,26 @@ public class CreateTaskActivity extends AppCompatActivity {
     }
 
     private void setupDropdowns() {
-        // Task Type
+        // ... (no changes in this method)
         String[] taskTypes = {Task.TYPE_TASK, Task.TYPE_REMINDER, Task.TYPE_UPDATE};
         ArrayAdapter<String> typeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, taskTypes);
         acTaskType.setAdapter(typeAdapter);
         acTaskType.setText(Task.TYPE_TASK, false);
-
-        // Priority
         String[] priorities = {"Low", "Normal", "High"};
         ArrayAdapter<String> priorityAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, priorities);
         acTaskPriority.setAdapter(priorityAdapter);
         acTaskPriority.setText("Normal", false);
-
-        // --- ADDED: Task Scope ---
-        // Using a map to decouple display text from the constant
         scopeMap.put(getString(R.string.scope_shared), Task.SCOPE_SHARED);
         scopeMap.put(getString(R.string.scope_individual), Task.SCOPE_INDIVIDUAL);
         scopeMap.put(getString(R.string.scope_assigned), Task.SCOPE_ASSIGNED);
-
         String[] scopeDisplayNames = scopeMap.keySet().toArray(new String[0]);
         ArrayAdapter<String> scopeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, scopeDisplayNames);
         acTaskScope.setAdapter(scopeAdapter);
-        // Default to "Shared Task"
         acTaskScope.setText(getString(R.string.scope_shared), false);
-        // --- END ADDED ---
     }
 
     private void setupDatePicker() {
+        // ... (no changes in this method)
         etDueDate.setOnClickListener(v -> {
             MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
                     .setTitleText("Select Due Date")
@@ -110,12 +114,13 @@ public class CreateTaskActivity extends AppCompatActivity {
     }
 
     private void createTask() {
+        // ... (no changes in this method)
         String title = etTitle.getText().toString().trim();
         String description = etDescription.getText().toString().trim();
         String taskType = acTaskType.getText().toString().trim();
         String priority = acTaskPriority.getText().toString().trim();
-        String scopeDisplayName = acTaskScope.getText().toString().trim(); // ADDED
-        String ownershipScope = scopeMap.get(scopeDisplayName); // ADDED
+        String scopeDisplayName = acTaskScope.getText().toString().trim();
+        String ownershipScope = scopeMap.get(scopeDisplayName);
 
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (TextUtils.isEmpty(title) || TextUtils.isEmpty(taskType) || TextUtils.isEmpty(ownershipScope) || currentUser == null) {
@@ -131,13 +136,14 @@ public class CreateTaskActivity extends AppCompatActivity {
         Task newTask = new Task(currentUser.getUid(), title, description, dueDateTimestamp, taskType);
         newTask.setPriority(priority);
         newTask.setSpaceId(currentSpaceId);
-        newTask.setOwnershipScope(ownershipScope); // --- ADDED ---
+        newTask.setOwnershipScope(ownershipScope);
 
         viewModel.createTask(newTask, this).observe(this, result -> {
             if (result instanceof Result.Success) {
                 Toast.makeText(this, "Task created!", Toast.LENGTH_SHORT).show();
                 finish();
             } else if (result instanceof Result.Error) {
+
                 Toast.makeText(CreateTaskActivity.this, "Error creating task.", Toast.LENGTH_SHORT).show();
             }
         });

@@ -1,5 +1,6 @@
 pluginManagement {
     repositories {
+
         google {
             content {
                 includeGroupByRegex("com\\.android.*")
@@ -8,6 +9,7 @@ pluginManagement {
             }
         }
         mavenCentral()
+
         gradlePluginPortal()
     }
 }
@@ -21,4 +23,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "Sync Task"
 include(":app")
- 

@@ -10,7 +10,8 @@ android {
     defaultConfig {
         applicationId = "com.pranav.synctask"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 36
+
         versionCode = 1
         versionName = "1.0"
 
@@ -38,10 +39,11 @@ android {
 dependencies {
 
     implementation(libs.appcompat)
-    implementation(libs.material)
+    implementation(libs.material) // This is now the single M3 dependency
     implementation(libs.activity)
     implementation(libs.constraintlayout)
     implementation(libs.firebase.common)
+
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.storage)
@@ -50,7 +52,7 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.swiperefreshlayout)
-    implementation(libs.google.material)
+    // implementation(libs.google.material) // REMOVED - Redundant
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
@@ -64,7 +66,6 @@ dependencies {
     implementation(libs.lifecycle.livedata)
 
     implementation(libs.firebase.functions)
-
-
+    implementation(libs.lottie)
 }
 apply(plugin = "com.google.gms.google-services")

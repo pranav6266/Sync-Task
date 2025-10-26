@@ -3,23 +3,24 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+
     android:padding="16dp"
-    android:background="@color/background_color">
+    android:background="?attr/colorSurface">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Edit Item"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="@color/primary_text"
+        android:textAppearance="?attr/textAppearanceHeadlineMedium"
+        android:textColor="?attr/colorOnSurface"
         android:layout_marginBottom="24dp" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+        style="?attr/textInputStyle">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/et_task_title"
             android:layout_width="match_parent"
@@ -31,8 +32,9 @@
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+
         android:layout_marginBottom="16dp"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        style="?attr/textInputStyle">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/et_task_description"
             android:layout_width="match_parent"
@@ -40,6 +42,7 @@
             android:hint="@string/description_hint"
             android:inputType="textCapSentences|textMultiLine"
             android:minLines="3"
+
             android:gravity="top" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -47,11 +50,12 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
         <AutoCompleteTextView
             android:id="@+id/ac_task_type"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+
             android:hint="@string/type_hint"
             android:inputType="none" />
     </com.google.android.material.textfield.TextInputLayout>
@@ -60,11 +64,12 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
         <AutoCompleteTextView
             android:id="@+id/ac_task_priority"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+
             android:hint="Priority"
             android:inputType="none" />
     </com.google.android.material.textfield.TextInputLayout>
@@ -73,22 +78,22 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        style="?attr/textInputStyle">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/et_task_due_date"
             android:layout_width="match_parent"
+
             android:layout_height="wrap_content"
             android:hint="@string/due_date_hint"
             android:focusable="false"
             android:clickable="true" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_save_task"
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:text="Save Changes"
-        android:background="@drawable/btn_primary"
-        android:textColor="@android:color/white"
+
         android:textSize="16sp" />
 </LinearLayout>

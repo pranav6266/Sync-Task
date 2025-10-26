@@ -1,60 +1,147 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginStart="16dp"
-    android:layout_marginTop="8dp"
-    android:layout_marginEnd="16dp"
-    android:layout_marginBottom="8dp"
+    android:layout_marginStart="8dp"
+    android:layout_marginTop="4dp"
+    android:layout_marginEnd="8dp"
+    android:layout_marginBottom="4dp"
     app:cardCornerRadius="12dp"
-    app:cardElevation="4dp">
+    app:cardElevation="1dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="?attr/colorOutlineVariant">
 
-    <RelativeLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="20dp">
+        android:orientation="horizontal">
+
+
+        <View
+            android:id="@+id/side_bar"
+            android:layout_width="6dp"
+            android:layout_height="match_parent"
+            tools:background="@color/my_task_bg" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+
             android:orientation="horizontal"
-            android:layout_toStartOf="@+id/iv_space_options"
-            android:layout_centerVertical="true"
-            android:gravity="center_vertical">
+            android:padding="12dp">
 
-            <ImageView
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@drawable/ic_sync_task_logo"
-                app:tint="@color/primary_color"
-                android:layout_marginEnd="16dp"/>
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/cb_task_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp" />
 
-            <TextView
-                android:id="@+id/tv_space_name"
+
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Space Name"
-                android:textColor="@color/primary_text"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+                android:orientation="vertical">
+
+                <TextView
+
+                    android:id="@+id/tv_task_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="2dp"
+                    android:textColor="?attr/colorOnSurface"
+
+                    android:textAppearance="?attr/textAppearanceBodyLarge"
+                    tools:text="Buy Groceries" />
+
+                <TextView
+                    android:id="@+id/tv_task_description"
+
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="4dp"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+
+                    tools:text="Milk, Bread, Eggs, and Cheese" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tv_task_due_date"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+
+                        android:layout_marginEnd="8dp"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textAppearance="?attr/textAppearanceLabelMedium"
+                        tools:text="Sep 25, 2025" />
+
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="12dp"
+                        android:layout_marginEnd="8dp"
+
+                        android:background="?attr/colorOutline" />
+
+                    <TextView
+                        android:id="@+id/tv_task_creator"
+                        android:layout_width="wrap_content"
+
+                        android:layout_height="wrap_content"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textAppearance="?attr/textAppearanceLabelMedium"
+                        android:textStyle="italic"
+
+                        tools:text="Partner" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/iv_task_priority"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+
+                android:layout_marginStart="8dp"
+                android:contentDescription="Task Priority"
+                android:visibility="gone"
+                tools:src="@drawable/ic_priority_high"
+                tools:visibility="visible" />
+
+
+            <ImageView
+
+                android:id="@+id/iv_task_type"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="8dp"
+                android:contentDescription="@string/task_type_icon_desc"
+                app:tint="?attr/colorOnSurfaceVariant"
+                tools:src="@drawable/ic_task_type_task" />
+
+
+            <ImageView
+                android:id="@+id/iv_delete_task"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+
+                android:contentDescription="@string/delete_task_content_description"
+                android:padding="4dp"
+                android:src="@drawable/ic_delete"
+                app:tint="?attr/colorError" />
 
         </LinearLayout>
-
-        <ImageView
-            android:id="@+id/iv_space_options"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"
-            android:layout_marginStart="16dp"
-            android:src="@drawable/ic_more_vert"
-            app:tint="@color/secondary_text"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true"
-            android:contentDescription="Space Options"/>
-
-    </RelativeLayout>
+    </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

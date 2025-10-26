@@ -3,9 +3,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_color">
+    android:background="?attr/colorSurface">
 
     <LinearLayout
+
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
@@ -17,36 +18,37 @@
 
             <TextView
                 android:id="@+id/tv_welcome_message"
+
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentStart="true"
                 android:layout_centerVertical="true"
                 android:layout_toStartOf="@+id/btn_view_profile"
                 android:text="Welcome!"
-                android:textColor="@color/primary_text"
-                android:textSize="24sp"
-                android:textStyle="bold" />
+                android:textColor="?attr/colorOnSurface"
+                android:textAppearance="?attr/textAppearanceTitleLarge" />
 
             <Button
                 android:id="@+id/btn_view_profile"
                 style="?attr/materialButtonOutlinedStyle"
                 android:layout_width="wrap_content"
+
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
                 android:text="Profile"
-                android:textColor="@color/primary_text"
                 app:icon="@drawable/ic_profile_settings"
-                app:strokeColor="@color/divider_color" />
+
+                app:strokeColor="?attr/colorOutline" />
         </RelativeLayout>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Your Spaces"
-            android:textSize="18sp"
-            android:textColor="@color/primary_text"
-            android:textStyle="bold"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textColor="?attr/colorOnSurface"
+
             android:layout_marginStart="24dp"
             android:layout_marginBottom="8dp"/>
 
@@ -56,19 +58,20 @@
             android:layout_height="0dp"
             android:layout_weight="1"
             android:clipToPadding="false"
-            android:paddingBottom="88dp" />
+            android:paddingBottom="88dp"
+            />
 
     </LinearLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_add_space"
+        style="@style/Widget.Material3.FloatingActionButton.Primary"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
         android:src="@drawable/ic_add"
         android:contentDescription="Add Space"
-        app:backgroundTint="@color/accent_color"
-        app:tint="@android:color/white" />
+        app:tint="?attr/colorOnPrimary" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

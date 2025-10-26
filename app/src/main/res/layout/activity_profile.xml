@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_color"
+    android:background="?attr/colorSurface"
     android:padding="24dp">
 
     <ScrollView
@@ -15,6 +15,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+
             android:gravity="center_horizontal"
             android:orientation="vertical">
 
@@ -24,30 +25,42 @@
                 android:layout_marginBottom="16dp">
 
                 <de.hdodenhof.circleimageview.CircleImageView
+
                     android:id="@+id/iv_profile_image"
                     android:layout_width="120dp"
                     android:layout_height="120dp"
                     android:layout_gravity="center"
                     android:src="@drawable/ic_profile"
-                    app:civ_border_color="@color/primary_color"
+
+                    app:civ_border_color="?attr/colorPrimary"
                     app:civ_border_width="2dp" />
 
-                <ImageView
+                <com.google.android.material.card.MaterialCardView
                     android:id="@+id/iv_edit_photo"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:layout_gravity="bottom|end"
-                    android:background="@drawable/code_background"
                     android:clickable="true"
-                    android:contentDescription="Edit Profile Photo"
                     android:focusable="true"
-                    android:padding="8dp"
-                    android:src="@drawable/ic_edit_photo"
-                    app:tint="@color/primary_text" />
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="2dp"
+                    app:contentPadding="8dp"
+                    app:strokeColor="?attr/colorOutline"
+                    app:strokeWidth="1dp">
+
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:contentDescription="Edit Profile Photo"
+                        android:src="@drawable/ic_edit_photo"
+                        app:tint="?attr/colorOnSurfaceVariant" />
+
+                </com.google.android.material.card.MaterialCardView>
 
             </FrameLayout>
 
             <RelativeLayout
+
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
@@ -55,38 +68,42 @@
 
                 <TextView
                     android:id="@+id/tv_display_name"
+
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerVertical="true"
-                    android:textColor="@color/primary_text"
-                    android:textSize="22sp"
-                    android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textAppearance="?attr/textAppearanceTitleLarge"
+
                     tools:text="User Name" />
 
                 <EditText
                     android:id="@+id/et_display_name"
                     android:layout_width="wrap_content"
+
                     android:layout_height="wrap_content"
                     android:layout_centerVertical="true"
                     android:minWidth="200dp"
                     android:selectAllOnFocus="true"
-                    android:textColor="@color/primary_text"
-                    android:textSize="22sp"
-                    android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textAppearance="?attr/textAppearanceTitleLarge"
                     android:visibility="gone" />
 
                 <ImageView
                     android:id="@+id/iv_edit_name"
+
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_centerVertical="true"
                     android:layout_marginStart="12dp"
                     android:layout_toEndOf="@id/tv_display_name"
+
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true"
                     android:focusable="true"
                     android:src="@drawable/ic_edit"
-                    app:tint="@color/secondary_text" />
+                    app:tint="?attr/colorOnSurfaceVariant" />
+
 
             </RelativeLayout>
 
@@ -95,18 +112,18 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="32dp"
-                android:textColor="@color/secondary_text"
-                android:textSize="16sp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+
+                android:textAppearance="?attr/textAppearanceBodyMedium"
                 tools:text="user.email@example.com" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_save_changes"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
+
                 android:layout_marginBottom="16dp"
-                android:backgroundTint="@color/accent_color"
                 android:text="@string/save_changes_button"
-                android:textColor="@color/white"
                 android:visibility="gone" />
 
         </LinearLayout>
@@ -116,6 +133,7 @@
     <LinearLayout
         android:id="@+id/danger_zone_layout"
         android:layout_width="match_parent"
+
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:orientation="vertical">
@@ -126,16 +144,19 @@
             android:layout_marginStart="4dp"
             android:layout_marginBottom="4dp"
             android:text="Account Actions"
-            android:textColor="@color/secondary_text"
-            android:textSize="14sp" />
 
-        <Button
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textAppearance="?attr/textAppearanceLabelMedium" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_logout"
+            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:backgroundTint="@color/primary_dark_color"
             android:text="@string/logout_button"
-            android:textColor="@color/white" />
+            android:textColor="?attr/colorError"
+            app:strokeColor="?attr/colorError" />
+
 
     </LinearLayout>
 

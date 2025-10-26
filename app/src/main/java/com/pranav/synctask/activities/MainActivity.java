@@ -1,10 +1,12 @@
 package com.pranav.synctask.activities;
 
+import android.app.ActivityOptions; // ADDED
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.Window;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -15,6 +17,7 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
+import com.google.android.material.transition.platform.MaterialFadeThrough;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.pranav.synctask.R;
@@ -25,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
     private TasksViewModel viewModel;
-    private String currentSpaceId; // ADDED
+    private String currentSpaceId;
 
     @Override
     protected void onNewIntent(@NonNull Intent intent) {
@@ -35,18 +38,20 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        getWindow().requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS);
+        getWindow().setEnterTransition(new MaterialFadeThrough());
+        getWindow().setExitTransition(new MaterialFadeThrough());
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         handleNotificationIntent(getIntent());
 
-        // --- ADDED ---
         currentSpaceId = getIntent().getStringExtra("SPACE_ID");
         if (currentSpaceId == null || currentSpaceId.isEmpty()) {
             Toast.makeText(this, "Error: No Space ID provided.", Toast.LENGTH_LONG).show();
             finish();
             return;
         }
-        // --- END ADDED ---
 
         mAuth = FirebaseAuth.getInstance();
         viewModel = new ViewModelProvider(this).get(TasksViewModel.class);
@@ -78,15 +83,22 @@ public class MainActivity extends AppCompatActivity {
                 }
         ).attach();
 
+        // --- MODIFIED: Launch with Animation ---
         fab.setOnClickListener(v -> {
-            // --- MODIFIED ---
             Intent intent = new Intent(MainActivity.this, CreateTaskActivity.class);
             intent.putExtra("SPACE_ID", currentSpaceId);
-            startActivity(intent);
-            // --- END MODIFIED ---
+
+            ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(
+                    this,
+                    fab,
+                    "fab_to_create_task" // The transitionName
+            );
+            startActivity(intent, options.toBundle());
         });
+        // --- END MODIFIED ---
     }
 
+    // ... (rest of the file is unchanged) ...
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_menu, menu);
@@ -101,6 +113,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public boolean onQueryTextChange(String newText) {
+
                 viewModel.setSearchQuery(newText);
                 return true;
             }
@@ -125,7 +138,6 @@ public class MainActivity extends AppCompatActivity {
             goToLogin();
             return;
         }
-        // MODIFIED: Pass spaceId to load tasks
         viewModel.loadTasks(currentSpaceId);
     }
 
@@ -136,21 +148,16 @@ public class MainActivity extends AppCompatActivity {
         finish();
     }
 
-    // This method is no longer needed in this activity
-    // private void goToDashboard() { ... }
-
     private void handleNotificationIntent(Intent intent) {
         if (intent != null) {
             String taskId = intent.getStringExtra("taskId");
             String action = intent.getStringExtra("action");
 
             if (taskId != null && action != null) {
-                // Handle the specific task action
                 switch (action) {
                     case "view":
                     case "new_task":
                     case "task_updated":
-                        // Navigate to the specific task or refresh the view
                         Toast.makeText(this, "Opening task: " + taskId, Toast.LENGTH_SHORT).show();
                         break;
                     case "status_changed":

@@ -9,6 +9,7 @@ import android.text.InputType;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -17,7 +18,8 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AlertDialog;
+// MODIFIED: Changed import
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
@@ -25,6 +27,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.transition.platform.MaterialFadeThrough;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -53,14 +56,21 @@ public class DashboardActivity extends AppCompatActivity {
                 if (isGranted) {
                     Toast.makeText(this, "Notifications enabled!", Toast.LENGTH_SHORT).show();
                 } else {
+
                     Toast.makeText(this, "Notifications are disabled.", Toast.LENGTH_SHORT).show();
                 }
             });
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // ADDED: Material Motion Transition
+        getWindow().requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS);
+        getWindow().setEnterTransition(new MaterialFadeThrough());
+        getWindow().setExitTransition(new MaterialFadeThrough());
+        // END ADDED
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dashboard);
+
         mAuth = FirebaseAuth.getInstance();
         currentUser = mAuth.getCurrentUser();
         viewModel = new ViewModelProvider(this).get(DashboardViewModel.class);
@@ -92,11 +102,13 @@ public class DashboardActivity extends AppCompatActivity {
 
     private void showAddSpaceDialog() {
         final String[] options = {"Create a new Space", "Join a Space"};
-        new AlertDialog.Builder(this)
+        // MODIFIED: Use MaterialAlertDialogBuilder
+        new MaterialAlertDialogBuilder(this)
                 .setTitle("Add Space")
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) {
                         showCreateSpaceDialog();
+
                     } else {
                         startActivity(new Intent(DashboardActivity.this, PairingActivity.class));
                     }
@@ -109,15 +121,18 @@ public class DashboardActivity extends AppCompatActivity {
         input.setHint("Space Name (e.g. Home Tasks)");
         input.setInputType(InputType.TYPE_CLASS_TEXT);
 
-        new AlertDialog.Builder(this)
+        // MODIFIED: Use MaterialAlertDialogBuilder
+        new MaterialAlertDialogBuilder(this)
                 .setTitle("Create New Space")
                 .setView(input)
                 .setPositiveButton("Create", (dialog, which) -> {
                     String spaceName = input.getText().toString().trim();
+
                     if (!spaceName.isEmpty()) {
                         viewModel.createSpace(spaceName);
                     } else {
                         Toast.makeText(this, "Space name cannot be empty.", Toast.LENGTH_SHORT).show();
+
                     }
                 })
                 .setNegativeButton("Cancel", null)
@@ -133,6 +148,7 @@ public class DashboardActivity extends AppCompatActivity {
             }
             String token = task.getResult();
             Log.d("DashboardActivity", "FCM Token: " + token);
+
             UserRepository.getInstance().updateFcmToken(currentUser.getUid(), token);
         });
     }
@@ -163,11 +179,13 @@ public class DashboardActivity extends AppCompatActivity {
                 User user = ((Result.Success<User>) result).data;
                 if (user.getSpaceIds() != null && !user.getSpaceIds().isEmpty()) {
                     viewModel.loadSpaces(user.getSpaceIds());
+
                 } else {
                     // User has no spaces, clear the list
                     spacesAdapter.updateSpaces(new ArrayList<>());
                 }
             } else if (result instanceof Result.Error) {
+
                 Log.e("DashboardActivity", "Error listening to user", ((Result.Error<User>) result).exception);
             }
         });
@@ -178,52 +196,52 @@ public class DashboardActivity extends AppCompatActivity {
                 Toast.makeText(this, "Error loading spaces.", Toast.LENGTH_SHORT).show();
             }
         });
-
         viewModel.getCreateSpaceResult().observe(this, result -> {
             if (result instanceof Result.Success) {
                 // Get the newly created space from the result
                 Space newSpace = ((Result.Success<Space>) result).data;
                 if (newSpace != null && newSpace.getInviteCode() != null) {
+
                     // Show a dialog with the invite code
                     showInviteCodeDialog(newSpace.getSpaceName(), newSpace.getInviteCode());
                 } else {
                     Toast.makeText(this, "Space created!", Toast.LENGTH_SHORT).show();
                 }
+
                 // The user listener will automatically refresh the spaces list
             } else if (result instanceof Result.Error) {
                 Toast.makeText(this, "Error creating space.", Toast.LENGTH_SHORT).show();
             }
         });
-
         // --- NEW ---
         viewModel.getLeaveSpaceResult().observe(this, result -> {
             if (result instanceof Result.Success) {
                 Toast.makeText(this, "Successfully left space.", Toast.LENGTH_SHORT).show();
                 // List will refresh automatically
             } else if (result instanceof Result.Error) {
+
                 Toast.makeText(this, "Error leaving space.", Toast.LENGTH_SHORT).show();
             }
         });
-
         viewModel.getDeleteSpaceResult().observe(this, result -> {
             if (result instanceof Result.Success) {
                 Toast.makeText(this, "Space deleted.", Toast.LENGTH_SHORT).show();
                 // List will refresh automatically
             } else if (result instanceof Result.Error) {
                 String message = "Error deleting space.";
+
                 Exception e = ((Result.Error<Void>) result).exception;
                 if (e != null && e.getMessage() != null) {
                     message = e.getMessage();
                 }
                 Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+
             }
         });
-        // --- END NEW ---
     }
 
     private void showInviteCodeDialog(String spaceName, String inviteCode) {
         String title = "Space '" + spaceName + "' Created!";
-
         // Create a TextView for the code to make it selectable
         final TextView codeView = new TextView(this);
         codeView.setText(inviteCode);
@@ -232,7 +250,8 @@ public class DashboardActivity extends AppCompatActivity {
         codeView.setGravity(Gravity.CENTER);
         codeView.setPadding(40, 40, 40, 40);
 
-        new AlertDialog.Builder(this)
+        // MODIFIED: Use MaterialAlertDialogBuilder
+        new MaterialAlertDialogBuilder(this)
                 .setTitle(title)
                 .setMessage(getString(R.string.share_code_instruction))
                 .setView(codeView) // Add the selectable code here

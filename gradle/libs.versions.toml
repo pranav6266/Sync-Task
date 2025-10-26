@@ -10,7 +10,7 @@ espressoCore = "3.7.0"
 appcompat = "1.7.1"
 lifecycleLivedata = "2.9.3"
 lifecycleViewmodel = "2.9.3"
-material = "1.12.0"
+material = "1.13.0"
 activity = "1.10.1"
 constraintlayout = "2.2.1"
 firebaseCommon = "22.0.0"
@@ -21,7 +21,7 @@ firebaseMessaging = "24.0.0"
 playServicesAuth = "21.4.0"
 googleGmsGoogleServices = "4.4.3"
 swiperefreshlayout = "1.1.0"
-materialVersion = "1.13.0"
+lottie = "6.4.1" # ADDED
 
 [libraries]
 circleimageview = { module = "de.hdodenhof:circleimageview", version.ref = "circleimageview" }
@@ -45,9 +45,8 @@ firebase-storage = { group = "com.google.firebase", name = "firebase-storage", v
 firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging", version.ref = "firebaseMessaging" }
 play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
 swiperefreshlayout = { group = "androidx.swiperefreshlayout", name = "swiperefreshlayout", version.ref = "swiperefreshlayout" }
-google-material = { group = "com.google.android.material", name = "material", version.ref = "materialVersion" }
+lottie = { module = "com.airbnb.android:lottie", version.ref = "lottie" } # ADDED
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 google-gms-google-services = { id = "com.google.gms.google-services", version.ref = "googleGmsGoogleServices" }
-

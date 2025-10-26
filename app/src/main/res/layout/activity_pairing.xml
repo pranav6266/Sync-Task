@@ -4,7 +4,7 @@
     android:id="@+id/pairing_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_color"
+    android:background="?attr/colorSurface"
     android:orientation="vertical"
     android:padding="24dp">
 
@@ -13,15 +13,14 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
         android:text="@string/pair_with_partner_title"
-        android:textColor="@color/primary_text"
-        android:textSize="24sp"
-        android:textStyle="bold" />
+        android:textColor="?attr/colorOnSurface"
+        android:textAppearance="?attr/textAppearanceHeadlineMedium" />
+
 
     <com.google.android.material.card.MaterialCardView
+        style="?attr/materialCardViewStyle"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="4dp">
+        android:layout_height="wrap_content">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -29,26 +28,28 @@
             android:orientation="vertical"
             android:padding="20dp">
 
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
                 android:text="@string/enter_partner_code_label"
-                android:textColor="@color/primary_text"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:textColor="?attr/colorOnSurface"
+                android:textAppearance="?attr/textAppearanceTitleMedium" />
 
             <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="?attr/textInputStyle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp">
+
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/et_partner_code"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/partner_code_hint"
+
                     android:inputType="textCapCharacters"
                     android:maxLength="6" />
 
@@ -58,18 +59,18 @@
                 android:layout_width="match_parent"
                 android:layout_height="56dp">
 
-                <Button
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_pair"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:background="@drawable/btn_primary"
                     android:text="@string/pair_button_text"
+
                     android:textAllCaps="false"
-                    android:textColor="@android:color/white"
                     android:textSize="16sp" />
 
                 <ProgressBar
                     android:id="@+id/pairing_progress_bar"
+
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"

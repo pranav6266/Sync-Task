@@ -9,7 +9,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
+// import android.widget.TextView; // REMOVED
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -18,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import com.airbnb.lottie.LottieAnimationView; // ADDED
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.pranav.synctask.R;
@@ -34,11 +35,10 @@ public abstract class BaseTaskFragment extends Fragment {
     protected RecyclerView recyclerView;
     protected TaskAdapter adapter;
     protected SwipeRefreshLayout swipeRefreshLayout;
-    protected TextView emptyView;
+    protected LottieAnimationView emptyView; // MODIFIED: Changed from TextView
     private String currentUserId;
     private TasksViewModel viewModel;
     private ConnectivityManager.NetworkCallback networkCallback;
-    // PHASE 4: Local copies of data for filtering
     private List<Task> currentTaskList = new ArrayList<>();
     private String currentSearchQuery = "";
 
@@ -53,16 +53,13 @@ public abstract class BaseTaskFragment extends Fragment {
 
         recyclerView = view.findViewById(R.id.recycler_view);
         swipeRefreshLayout = view.findViewById(R.id.swipe_refresh_layout);
-        emptyView = view.findViewById(R.id.empty_view);
+        emptyView = view.findViewById(R.id.empty_view); // This now finds the LottieAnimationView
 
         setupRecyclerView();
-
-        // MODIFIED: We get the spaceId from the activity, so this should not use currentUserId
         swipeRefreshLayout.setOnRefreshListener(() -> {
-            // This will just re-trigger the existing listener in the ViewModel
             viewModel.refreshTasks();
         });
-        swipeRefreshLayout.setColorSchemeResources(R.color.primary_color, R.color.accent_color);
+        swipeRefreshLayout.setColorSchemeResources(R.color.md_theme_light_primary, R.color.md_theme_light_secondary); // MODIFIED: M3 Colors
 
         return view;
     }
@@ -83,13 +80,6 @@ public abstract class BaseTaskFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-
-        // --- THIS IS THE FIX ---
-        // The call 'viewModel.loadTasks(currentUserId)' was REMOVED from here.
-        // MainActivity is now responsible for telling the ViewModel which spaceId to load.
-        // This fragment just observes the results.
-        // --- END FIX ---
-
         registerNetworkCallback();
     }
 
@@ -100,7 +90,6 @@ public abstract class BaseTaskFragment extends Fragment {
     }
 
     private void observeViewModel() {
-        // Observe task list changes
         viewModel.getTasksResult().observe(getViewLifecycleOwner(), result -> {
             if (!isAdded()) return;
 
@@ -108,24 +97,21 @@ public abstract class BaseTaskFragment extends Fragment {
 
             if (result instanceof Result.Success) {
                 currentTaskList = ((Result.Success<List<Task>>) result).data;
-                filterAndDisplayTasks(); // PHASE 4
+
+                filterAndDisplayTasks();
             } else if (result instanceof Result.Error) {
                 Log.e(getClass().getSimpleName(), "Error loading tasks", ((Result.Error<List<Task>>) result).exception);
                 Toast.makeText(getContext(), "Error loading tasks.", Toast.LENGTH_SHORT).show();
             }
         });
-        // PHASE 4: Observe search query changes
         viewModel.getSearchQuery().observe(getViewLifecycleOwner(), query -> {
             currentSearchQuery = query;
             filterAndDisplayTasks();
         });
     }
 
-    // PHASE 4: Centralized filtering logic
     private void filterAndDisplayTasks() {
-        // 1. Apply time-based filter (Today, All, etc.)
         List<Task> timeFilteredTasks = filterTasks(currentTaskList);
-        // 2. Apply search filter
         List<Task> finalFilteredTasks;
         if (currentSearchQuery.isEmpty()) {
             finalFilteredTasks = timeFilteredTasks;
@@ -163,7 +149,13 @@ public abstract class BaseTaskFragment extends Fragment {
     }
 
     private void updateEmptyView(boolean isEmpty) {
-        emptyView.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+        if (isEmpty) {
+            emptyView.setVisibility(View.VISIBLE);
+            emptyView.playAnimation(); // ADDED
+        } else {
+            emptyView.setVisibility(View.GONE);
+            emptyView.cancelAnimation(); // ADDED
+        }
         recyclerView.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
     }
 
