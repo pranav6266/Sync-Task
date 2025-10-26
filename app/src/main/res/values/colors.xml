@@ -34,7 +34,8 @@
     <color name="md_theme_light_outlineVariant">#C4C6D0</color>
     <color name="md_theme_light_scrim">#000000</color>
 
-    <color name="google_btn_color">#4285F4</color> <color name="delete_icon_color">@color/md_theme_light_error</color>
+    <color name="google_btn_color">#4285F4</color>
+    <color name="delete_icon_color">@color/md_theme_light_error</color>
 
     <color name="my_task_bg">@color/md_theme_light_primary</color>
     <color name="partner_task_bg">@color/md_theme_light_tertiary</color>

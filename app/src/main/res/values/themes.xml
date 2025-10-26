@@ -24,7 +24,6 @@
         <item name="colorSurfaceVariant">@color/md_theme_light_surfaceVariant</item>
         <item name="colorOnSurfaceVariant">@color/md_theme_light_onSurfaceVariant</item>
         <item name="colorOutline">@color/md_theme_light_outline</item>
-
         <item name="colorInverseOnSurface">@color/md_theme_light_inverseOnSurface</item>
         <item name="colorInverseSurface">@color/md_theme_light_inverseSurface</item>
         <item name="colorInversePrimary">@color/md_theme_light_inversePrimary</item>
@@ -36,8 +35,11 @@
         <item name="materialCardViewStyle">@style/Widget.App.CardView</item>
         <item name="materialButtonOutlinedStyle">@style/Widget.App.Button.OutlinedButton</item>
         <item name="textInputStyle">@style/Widget.App.TextInputLayout</item>
-
         <item name="materialAlertDialogTheme">@style/Theme.Material3.DayNight.Dialog.Alert</item>
+
+        <item name="android:windowActivityTransitions">true</item>
+        <item name="android:windowSharedElementEnterTransition">@transition/m3_container_transform</item>
+        <item name="android:windowSharedElementExitTransition">@transition/m3_container_transform</item>
     </style>
 
     <style name="Widget.App.CardView" parent="Widget.Material3.Card.Elevated">
