@@ -34,8 +34,6 @@ public class CreateTaskActivity extends AppCompatActivity {
     private Calendar selectedDueDate = Calendar.getInstance();
     private String currentSpaceId;
     private CreateTaskViewModel viewModel;
-
-    // ADDED: Map to hold scope display names and constants
     private final Map<String, String> scopeMap = new HashMap<>();
 
     @Override
