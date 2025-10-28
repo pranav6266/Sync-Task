@@ -20,6 +20,7 @@ import com.bumptech.glide.Glide;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.material.card.MaterialCardView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
@@ -34,7 +35,8 @@ public class ProfileActivity extends AppCompatActivity {
     private CircleImageView ivProfileImage;
     private TextView tvDisplayName, tvEmail;
     private EditText etDisplayName;
-    private ImageView ivEditName, ivEditPhoto;
+    private ImageView ivEditName;
+    private MaterialCardView ivEditPhoto;
     private Button btnLogout, btnSaveChanges; // REMOVED btnUnpair
     private ProgressBar progressBar;
     private FirebaseAuth mAuth;

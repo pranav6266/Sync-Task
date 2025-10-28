@@ -37,13 +37,9 @@ public class TasksViewModel extends ViewModel {
         taskRepository.attachTasksListener(spaceId);
     }
 
-    // --- NEW METHOD ---
     public void refreshTasks() {
-        // This will tell the repository to re-trigger the listener
-        // with the spaceId it already has.
         taskRepository.refreshTasks();
     }
-    // --- END NEW METHOD ---
 
     public void syncLocalTasks(Context context) {
         taskRepository.syncLocalTasks(context);
@@ -52,6 +48,6 @@ public class TasksViewModel extends ViewModel {
     @Override
     protected void onCleared() {
         super.onCleared();
-        taskRepository.removeTasksListener();
+        taskRepository.removeTasksListListener(); // MODIFIED to call renamed method
     }
 }
