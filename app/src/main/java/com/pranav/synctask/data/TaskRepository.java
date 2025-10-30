@@ -25,6 +25,12 @@ public class TaskRepository {
     private final MutableLiveData<Result<Task>> singleTaskResult = new MutableLiveData<>();
     private final FirebaseHelper firebaseHelper;
     private String currentSpaceId;
+
+    // --- ADDED IN PHASE 2 ---
+    private ListenerRegistration completedTasksListener;
+    private final MutableLiveData<Result<List<Task>>> completedTasksResult = new MutableLiveData<>();
+    // --- END ADDED ---
+
     private TaskRepository() {
         firebaseHelper = new FirebaseHelper();
     }
@@ -40,12 +46,13 @@ public class TaskRepository {
         return instance;
     }
 
-    // --- Task List Methods ---
+    // --- Task List Methods (Now Pending Only) ---
 
     public LiveData<Result<List<Task>>> getTasks() {
         return combinedTasksResult;
     }
 
+    // MODIFIED IN PHASE 2: This now fetches PENDING tasks
     public void attachTasksListener(String spaceId) {
         if (!spaceId.equals(currentSpaceId)) {
             firestoreTasks.clear();
@@ -58,6 +65,7 @@ public class TaskRepository {
         }
 
         combinedTasksResult.setValue(new Result.Loading<>());
+        // This FirebaseHelper method now only fetches pending tasks
         tasksListListenerRegistration = firebaseHelper.getTasks(spaceId, new FirebaseHelper.TasksCallback() {
             @Override
             public void onSuccess(List<Task> tasks) {
@@ -84,6 +92,40 @@ public class TaskRepository {
             tasksListListenerRegistration = null;
         }
     }
+
+    // --- ADDED IN PHASE 2: Completed Task (Archive) Methods ---
+
+    public LiveData<Result<List<Task>>> getCompletedTasks() {
+        return completedTasksResult;
+    }
+
+    public void attachCompletedTasksListener(String spaceId) {
+        if (completedTasksListener != null) {
+            completedTasksListener.remove();
+        }
+        completedTasksResult.setValue(new Result.Loading<>());
+        completedTasksListener = firebaseHelper.getCompletedTasks(spaceId, new FirebaseHelper.TasksCallback() {
+            @Override
+            public void onSuccess(List<Task> tasks) {
+                completedTasksResult.setValue(new Result.Success<>(tasks));
+            }
+
+            @Override
+            public void onError(Exception e) {
+                completedTasksResult.setValue(new Result.Error<>(e));
+            }
+        });
+    }
+
+    public void removeCompletedTasksListener() {
+        if (completedTasksListener != null) {
+            completedTasksListener.remove();
+            completedTasksListener = null;
+        }
+    }
+
+    // --- END ADDED ---
+
 
     // --- Single Task Methods ---
 
@@ -280,10 +322,7 @@ public class TaskRepository {
 
     public void updateTaskStatus(String taskId, String newStatus) {
         firebaseHelper.updateTaskStatus(taskId, newStatus);
-        // REMOVED logic to update progress IN PHASE 1
     }
-
-    // REMOVED updateTaskProgress METHOD IN PHASE 1
 
     public void deleteTask(String taskId) {
         firebaseHelper.deleteTask(taskId);

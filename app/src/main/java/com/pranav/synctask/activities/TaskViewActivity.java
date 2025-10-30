@@ -3,7 +3,6 @@ package com.pranav.synctask.activities;
 import android.app.ActivityOptions; // ADDED
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Window;
@@ -24,12 +23,12 @@ import com.pranav.synctask.R;
 import com.pranav.synctask.adapters.ViewPagerAdapter;
 import com.pranav.synctask.ui.viewmodels.TasksViewModel;
 
-public class MainActivity extends AppCompatActivity {
+// MODIFIED IN PHASE 2: Renamed from MainActivity
+public class TaskViewActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
     private TasksViewModel viewModel;
     private String currentSpaceId;
-
     @Override
     protected void onNewIntent(@NonNull Intent intent) {
         super.onNewIntent(intent);
@@ -43,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
         getWindow().setExitTransition(new MaterialFadeThrough());
 
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_task_view); // MODIFIED IN PHASE 2
         handleNotificationIntent(getIntent());
 
         currentSpaceId = getIntent().getStringExtra("SPACE_ID");
@@ -55,9 +54,9 @@ public class MainActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
         viewModel = new ViewModelProvider(this).get(TasksViewModel.class);
-
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        // TODO: Set toolbar title to space name
 
         ViewPager2 viewPager = findViewById(R.id.view_pager);
         TabLayout tabLayout = findViewById(R.id.tab_layout);
@@ -82,10 +81,9 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
         ).attach();
-
         // --- MODIFIED: Launch with Animation ---
         fab.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, CreateTaskActivity.class);
+            Intent intent = new Intent(TaskViewActivity.this, CreateTaskActivity.class);
             intent.putExtra("SPACE_ID", currentSpaceId);
 
             ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(
@@ -113,7 +111,6 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public boolean onQueryTextChange(String newText) {
-
                 viewModel.setSearchQuery(newText);
                 return true;
             }
@@ -123,8 +120,12 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == R.id.action_profile) {
-            startActivity(new Intent(this, ProfileActivity.class));
+        // MODIFIED IN PHASE 2
+        int itemId = item.getItemId();
+        if (itemId == R.id.action_archive) {
+            Intent intent = new Intent(this, CompletedTasksActivity.class);
+            intent.putExtra("SPACE_ID", currentSpaceId);
+            startActivity(intent);
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -138,11 +139,12 @@ public class MainActivity extends AppCompatActivity {
             goToLogin();
             return;
         }
+        // This viewmodel now only loads PENDING tasks
         viewModel.loadTasks(currentSpaceId);
     }
 
     private void goToLogin() {
-        Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+        Intent intent = new Intent(TaskViewActivity.this, LoginActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();

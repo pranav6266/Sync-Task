@@ -10,8 +10,8 @@
         app:actionViewClass="androidx.appcompat.widget.SearchView" />
 
     <item
-        android:id="@+id/action_profile"
-        android:icon="@drawable/ic_profile"
-        android:title="Profile"
+        android:id="@+id/action_archive"
+        android:icon="@drawable/ic_archive"
+        android:title="Archive"
         app:showAsAction="ifRoom" />
 </menu>

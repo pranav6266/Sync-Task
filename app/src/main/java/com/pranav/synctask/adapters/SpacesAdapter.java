@@ -22,13 +22,12 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.pranav.synctask.R;
-import com.pranav.synctask.activities.MainActivity;
+import com.pranav.synctask.activities.TaskViewActivity; // MODIFIED IN PHASE 2
 import com.pranav.synctask.models.Space;
 import com.pranav.synctask.ui.DashboardViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
-
 public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewHolder> {
 
     private final Context context;
@@ -56,15 +55,12 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
 
         // FIX: Use the camelCase variable name 'tvSpaceName'
         holder.tvSpaceName.setText(space.getSpaceName());
-
         holder.itemView.setOnClickListener(v -> {
-            Intent intent = new Intent(context, MainActivity.class);
+            Intent intent = new Intent(context, TaskViewActivity.class); // MODIFIED IN PHASE 2
             intent.putExtra("SPACE_ID", space.getSpaceId());
             context.startActivity(intent);
         });
-
         boolean isCreator = currentUserId != null && !space.getMembers().isEmpty() && space.getMembers().get(0).equals(currentUserId);
-
         // FIX: Use the camelCase variable name 'ivSpaceOptions'
         holder.ivSpaceOptions.setOnClickListener(v -> {
             showOptionsDialog(space, isCreator);
@@ -102,7 +98,6 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
                         case deleteOption:
                             showConfirmationDialog("Delete", "Are you sure? This will delete the space and all its tasks for EVERYONE.",
                                     () -> getViewModel().deleteSpace(space.getSpaceId()));
-
                             break;
                     }
                 })

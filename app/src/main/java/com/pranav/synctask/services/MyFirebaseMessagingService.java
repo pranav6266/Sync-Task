@@ -17,7 +17,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 import com.pranav.synctask.R;
-import com.pranav.synctask.activities.MainActivity;
+import com.pranav.synctask.activities.CompletedTasksActivity;
 import com.pranav.synctask.data.TaskRepository;
 import com.pranav.synctask.data.UserRepository;
 import java.util.Map;
@@ -101,7 +101,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     private void sendTaskActionNotification(String title, String body, String taskId, String action) {
-        Intent intent = new Intent(this, MainActivity.class);
+        Intent intent = new Intent(this, CompletedTasksActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
         // Add task-specific data to intent
@@ -128,7 +128,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         // Add action buttons for certain notification types
         if ("new_task".equals(action) && taskId != null) {
             // Add "View Task" action
-            Intent viewIntent = new Intent(this, MainActivity.class);
+            Intent viewIntent = new Intent(this, CompletedTasksActivity.class);
             viewIntent.putExtra("taskId", taskId);
             viewIntent.putExtra("action", "view");
             PendingIntent viewPendingIntent = PendingIntent.getActivity(this,
@@ -150,7 +150,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     private void sendNotification(String title, String body, Map<String, String> data) {
-        Intent intent = new Intent(this, MainActivity.class);
+        Intent intent = new Intent(this, CompletedTasksActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
         // Add any extra data from the notification

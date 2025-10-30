@@ -271,9 +271,11 @@ public class FirebaseHelper {
     }
 
 
+    // MODIFIED IN PHASE 2: Now only fetches PENDING tasks
     public ListenerRegistration getTasks(String spaceId, TasksCallback callback) {
         return db.collection(TASKS_COLLECTION)
                 .whereEqualTo("spaceId", spaceId)
+                .whereEqualTo("status", Task.STATUS_PENDING) // ADDED IN PHASE 2
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .addSnapshotListener((value, error) -> {
                     if (error != null)
@@ -296,6 +298,35 @@ public class FirebaseHelper {
                     }
                 });
     }
+
+    // ADDED IN PHASE 2: Fetches COMPLETED tasks for the archive
+    public ListenerRegistration getCompletedTasks(String spaceId, TasksCallback callback) {
+        return db.collection(TASKS_COLLECTION)
+                .whereEqualTo("spaceId", spaceId)
+                .whereEqualTo("status", Task.STATUS_COMPLETED) // ADDED IN PHASE 2
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .addSnapshotListener((value, error) -> {
+                    if (error != null)
+                    {
+                        Log.w(TAG, "Listen failed.", error);
+                        callback.onError(error);
+                        return;
+                    }
+
+                    if (value != null) {
+                        List<Task> tasks = value.toObjects(Task.class);
+                        for (int i = 0; i < tasks.size(); i++) {
+                            // Assign the document ID to the task object
+                            tasks.get(i).setId(value.getDocuments().get(i).getId());
+                        }
+                        callback.onSuccess(tasks);
+                    } else {
+                        Log.d(TAG, "Current task list data: null");
+                        callback.onSuccess(new ArrayList<>()); // Return empty list if null
+                    }
+                });
+    }
+
 
     public ListenerRegistration getTaskById(String taskId, TaskCallback callback) {
         return db.collection(TASKS_COLLECTION).document(taskId)
@@ -331,8 +362,6 @@ public class FirebaseHelper {
                 })
                 .addOnFailureListener(e -> Log.w(TAG, "Error updating task status", e));
     }
-
-    // REMOVED updateTaskProgressAndStatus METHOD IN PHASE 1
 
     public void deleteTask(String taskId) {
         db.collection(TASKS_COLLECTION)
