@@ -26,10 +26,14 @@ public class TaskRepository {
     private final FirebaseHelper firebaseHelper;
     private String currentSpaceId;
 
-    // --- ADDED IN PHASE 2 ---
     private ListenerRegistration completedTasksListener;
     private final MutableLiveData<Result<List<Task>>> completedTasksResult = new MutableLiveData<>();
+
+    // --- ADDED IN PHASE 3D ---
+    private static ListenerRegistration allTasksListener;
+    private final MutableLiveData<Result<List<Task>>> allTasksResult = new MutableLiveData<>();
     // --- END ADDED ---
+
 
     private TaskRepository() {
         firebaseHelper = new FirebaseHelper();
@@ -46,13 +50,12 @@ public class TaskRepository {
         return instance;
     }
 
-    // --- Task List Methods (Now Pending Only) ---
+    // --- Task List Methods (Pending Only) ---
 
     public LiveData<Result<List<Task>>> getTasks() {
         return combinedTasksResult;
     }
 
-    // MODIFIED IN PHASE 2: This now fetches PENDING tasks
     public void attachTasksListener(String spaceId) {
         if (!spaceId.equals(currentSpaceId)) {
             firestoreTasks.clear();
@@ -65,7 +68,6 @@ public class TaskRepository {
         }
 
         combinedTasksResult.setValue(new Result.Loading<>());
-        // This FirebaseHelper method now only fetches pending tasks
         tasksListListenerRegistration = firebaseHelper.getTasks(spaceId, new FirebaseHelper.TasksCallback() {
             @Override
             public void onSuccess(List<Task> tasks) {
@@ -93,7 +95,7 @@ public class TaskRepository {
         }
     }
 
-    // --- ADDED IN PHASE 2: Completed Task (Archive) Methods ---
+    // --- Completed Task (Archive) Methods ---
 
     public LiveData<Result<List<Task>>> getCompletedTasks() {
         return completedTasksResult;
@@ -121,6 +123,37 @@ public class TaskRepository {
         if (completedTasksListener != null) {
             completedTasksListener.remove();
             completedTasksListener = null;
+        }
+    }
+
+    // --- ADDED IN PHASE 3D: All Tasks (for Progress) Methods ---
+
+    public LiveData<Result<List<Task>>> getAllTasksResult() {
+        return allTasksResult;
+    }
+
+    public void attachAllTasksListener(List<String> spaceIds) {
+        if (allTasksListener != null) {
+            allTasksListener.remove();
+        }
+        allTasksResult.setValue(new Result.Loading<>());
+        allTasksListener = firebaseHelper.getAllTasksForSpaces(spaceIds, new FirebaseHelper.TasksCallback() {
+            @Override
+            public void onSuccess(List<Task> tasks) {
+                allTasksResult.setValue(new Result.Success<>(tasks));
+            }
+
+            @Override
+            public void onError(Exception e) {
+                allTasksResult.setValue(new Result.Error<>(e));
+            }
+        });
+    }
+
+    public static void removeAllTasksListener() {
+        if (allTasksListener != null) {
+            allTasksListener.remove();
+            allTasksListener = null;
         }
     }
 

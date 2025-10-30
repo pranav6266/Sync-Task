@@ -69,4 +69,23 @@
     <string name="effort_label">Effort (1=Low, 5=High)</string>
     <string name="effort_value_label">Effort</string>
 
+    <string name="shared_spaces_title">Shared Spaces</string>
+    <string name="personal_links_title">Personal Links</string>
+    <string name="add_space_fab_desc">Add Space</string>
+    <string name="view_profile_button">Profile</string>
+    <string name="welcome_message">Welcome, %s!</string>
+    <string name="tasks_with_partner">Tasks with %s</string>
+    <string name="personal_link_options">Link Options</string>
+    <string name="unlink_partner_title">Unlink Partner?</string>
+    <string name="unlink_partner_message">Are you sure you want to unlink from this partner? This will delete all tasks in this link.</string>
+    <string name="unlink">Unlink</string>
+
+    <string name="link_new_partner">Link New Partner</string>
+    <string name="create_shared_space">Create Shared Space</string>
+    <string name="join_shared_space">Join Shared Space</string>
+    <string name="your_user_id">Your User ID (Share this with your partner)</string>
+    <string name="enter_partner_uid">Enter your partner\'s User ID</string>
+    <string name="partner_uid_hint">Partner\'s UID</string>
+    <string name="link_button">Link</string>
+
 </resources>

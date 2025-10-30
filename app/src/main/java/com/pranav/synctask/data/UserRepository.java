@@ -12,7 +12,6 @@ import com.pranav.synctask.models.User;
 import com.pranav.synctask.utils.FirebaseHelper;
 
 import java.util.List;
-
 public class UserRepository {
     private static volatile UserRepository instance;
     private ListenerRegistration userListenerRegistration;
@@ -134,6 +133,25 @@ public class UserRepository {
         });
         return result;
     }
+
+    // ADDED IN PHASE 3A
+    public LiveData<Result<Space>> createPersonalLink(String creatorUID, String partnerUID, String spaceName) {
+        MutableLiveData<Result<Space>> result = new MutableLiveData<>();
+        result.setValue(new Result.Loading<>());
+        firebaseHelper.createPersonalLink(creatorUID, partnerUID, spaceName, new FirebaseHelper.SpaceCallback() {
+            @Override
+            public void onSuccess(Space space) {
+                result.setValue(new Result.Success<>(space));
+            }
+
+            @Override
+            public void onError(Exception e) {
+                result.setValue(new Result.Error<>(e));
+            }
+        });
+        return result;
+    }
+
 
     public LiveData<Result<Space>> joinSpace(String inviteCode, String userUID) {
         MutableLiveData<Result<Space>> result = new MutableLiveData<>();

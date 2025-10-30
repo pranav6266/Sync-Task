@@ -37,15 +37,13 @@ public class ProfileActivity extends AppCompatActivity {
     private EditText etDisplayName;
     private ImageView ivEditName;
     private MaterialCardView ivEditPhoto;
-    private Button btnLogout, btnSaveChanges; // REMOVED btnUnpair
+    private Button btnLogout, btnSaveChanges;
     private ProgressBar progressBar;
     private FirebaseAuth mAuth;
     private GoogleSignInClient mGoogleSignInClient;
     private FirebaseUser currentUser;
     private ProfileViewModel viewModel;
     private ActivityResultLauncher<String> mGetContent;
-
-    // REMOVED: private TextView tvTasksCreated, tvTasksCompleted;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,7 +67,6 @@ public class ProfileActivity extends AppCompatActivity {
         btnLogout = findViewById(R.id.btn_logout);
         btnSaveChanges = findViewById(R.id.btn_save_changes);
         progressBar = findViewById(R.id.profile_progress_bar);
-
         if (currentUser != null) {
             loadUserProfile();
         }
@@ -96,7 +93,6 @@ public class ProfileActivity extends AppCompatActivity {
                 Log.e("ProfileActivity", "Error listening to user pairing status", ((Result.Error<User>) result).exception);
             }
         });
-
         viewModel.getPhotoUpdateResult().observe(this, result -> {
             showLoading(result instanceof Result.Loading);
             if (result instanceof Result.Success) {
@@ -107,8 +103,6 @@ public class ProfileActivity extends AppCompatActivity {
                 Toast.makeText(this, "Failed to update photo.", Toast.LENGTH_SHORT).show();
             }
         });
-
-
     }
 
     @Override
@@ -116,7 +110,6 @@ public class ProfileActivity extends AppCompatActivity {
         super.onStart();
         if (currentUser != null) {
             viewModel.attachUserListener(currentUser.getUid());
-            // REMOVED: viewModel.loadTaskStats();
             updateUiBasedOnNetworkStatus();
         } else {
             goToLogin();
@@ -124,7 +117,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void updateUiBasedOnNetworkStatus() {
-        // boolean isOnline = NetworkUtils.isNetworkAvailable(this); // No longer needed
+        // No longer needed
     }
 
     private void loadUserProfile() {
@@ -171,7 +164,8 @@ public class ProfileActivity extends AppCompatActivity {
                                 tvDisplayName.setText(newName);
                                 toggleEditMode(false);
                             } else if (result instanceof Result.Error) {
-                                Toast.makeText(ProfileActivity.this, "Error updating profile in database.", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(ProfileActivity.this, "Error updating profile in database.",
+                                        Toast.LENGTH_SHORT).show();
                             }
                         });
                     } else {
@@ -194,6 +188,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void goToDashboard() {
+        // MODIFIED IN PHASE 3B
         Intent intent = new Intent(ProfileActivity.this, DashboardActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         startActivity(intent);

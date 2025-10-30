@@ -15,15 +15,17 @@
 
         <activity
             android:name=".activities.LoginActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:exported="false" /> <activity
+        android:name=".activities.DashboardActivity"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+    </activity>
 
         <activity
-            android:name=".activities.DashboardActivity"
+            android:name=".activities.SpaceListActivity"
             android:exported="false" />
 
         <activity
@@ -47,10 +49,17 @@
         <activity
             android:name=".activities.TaskDetailActivity"
             android:exported="false"
-            android:parentActivityName=".activities.TaskViewActivity" /> <activity
-        android:name=".activities.CompletedTasksActivity"
-        android:exported="false"
-        android:parentActivityName=".activities.TaskViewActivity" />
+            android:parentActivityName=".activities.TaskViewActivity" />
+
+        <activity
+            android:name=".activities.CompletedTasksActivity"
+            android:exported="false"
+            android:parentActivityName=".activities.TaskViewActivity" />
+
+        <activity
+            android:name=".activities.PersonalLinksActivity"
+            android:exported="false" />
+
 
         <service
             android:name=".services.MyFirebaseMessagingService"
