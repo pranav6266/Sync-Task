@@ -10,9 +10,11 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.datepicker.MaterialDatePicker;
+import com.google.android.material.slider.Slider; // ADDED IN PHASE 1
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.transition.platform.MaterialContainerTransform; // ADDED
-import com.google.android.material.transition.platform.MaterialContainerTransformSharedElementCallback; // ADDED
+import com.google.android.material.transition.platform.MaterialContainerTransformSharedElementCallback;
+// ADDED
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -32,6 +34,7 @@ public class CreateTaskActivity extends AppCompatActivity {
 
     private TextInputEditText etTitle, etDescription, etDueDate;
     private AutoCompleteTextView acTaskType, acTaskPriority, acTaskScope;
+    private Slider effortSlider; // ADDED IN PHASE 1
     private Button btnCreateTask;
     private Calendar selectedDueDate = Calendar.getInstance();
     private String currentSpaceId;
@@ -68,6 +71,7 @@ public class CreateTaskActivity extends AppCompatActivity {
         acTaskType = findViewById(R.id.ac_task_type);
         acTaskPriority = findViewById(R.id.ac_task_priority);
         acTaskScope = findViewById(R.id.ac_task_scope);
+        effortSlider = findViewById(R.id.slider_task_effort); // ADDED IN PHASE 1
         btnCreateTask = findViewById(R.id.btn_create_task);
 
         setupDropdowns();
@@ -122,7 +126,7 @@ public class CreateTaskActivity extends AppCompatActivity {
         String priority = acTaskPriority.getText().toString().trim();
         String scopeDisplayName = acTaskScope.getText().toString().trim();
         String ownershipScope = scopeMap.get(scopeDisplayName);
-
+        int effort = (int) effortSlider.getValue(); // ADDED IN PHASE 1
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (TextUtils.isEmpty(title) || TextUtils.isEmpty(taskType) || TextUtils.isEmpty(ownershipScope) || currentUser == null) {
             Toast.makeText(this, "Title, Type, and Scope are required.", Toast.LENGTH_SHORT).show();
@@ -138,7 +142,7 @@ public class CreateTaskActivity extends AppCompatActivity {
         newTask.setPriority(priority);
         newTask.setSpaceId(currentSpaceId);
         newTask.setOwnershipScope(ownershipScope);
-
+        newTask.setEffort(effort); // ADDED IN PHASE 1
         viewModel.createTask(newTask, this).observe(this, result -> {
             if (result instanceof Result.Success) {
                 Toast.makeText(this, "Task created!", Toast.LENGTH_SHORT).show();

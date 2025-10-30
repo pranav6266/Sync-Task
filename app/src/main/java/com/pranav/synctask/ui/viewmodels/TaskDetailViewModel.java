@@ -5,11 +5,9 @@ import androidx.lifecycle.ViewModel;
 import com.pranav.synctask.data.Result;
 import com.pranav.synctask.data.TaskRepository;
 import com.pranav.synctask.models.Task;
-
 public class TaskDetailViewModel extends ViewModel {
 
     private final TaskRepository taskRepository;
-
     public TaskDetailViewModel() {
         this.taskRepository = TaskRepository.getInstance();
     }
@@ -30,10 +28,7 @@ public class TaskDetailViewModel extends ViewModel {
         taskRepository.updateTaskStatus(taskId, newStatus);
     }
 
-    // NEW METHOD for Phase 3
-    public void updateTaskProgress(String taskId, int newProgress) { //
-        taskRepository.updateTaskProgress(taskId, newProgress); //
-    } //
+    // REMOVED updateTaskProgress METHOD for Phase 1
 
     public void deleteTask(String taskId) {
         taskRepository.deleteTask(taskId);

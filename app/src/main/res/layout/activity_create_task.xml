@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -23,7 +24,6 @@
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/et_task_title"
             android:layout_width="match_parent"
-
             android:layout_height="wrap_content"
             android:hint="@string/title_hint"
             android:inputType="textCapSentences" />
@@ -36,7 +36,6 @@
         style="?attr/textInputStyle">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/et_task_description"
-
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/description_hint"
@@ -49,7 +48,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
         <AutoCompleteTextView
             android:id="@+id/ac_task_scope"
@@ -62,7 +60,6 @@
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-
         android:layout_marginBottom="16dp"
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
         <AutoCompleteTextView
@@ -75,7 +72,6 @@
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
-
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
@@ -87,8 +83,25 @@
             android:inputType="none" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <com.google.android.material.textfield.TextInputLayout
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:layout_marginBottom="4dp"
+        android:text="@string/effort_label"
+        android:textAppearance="?attr/textAppearanceLabelLarge"
+        android:textColor="?attr/colorOnSurfaceVariant" />
 
+    <com.google.android.material.slider.Slider
+        android:id="@+id/slider_task_effort"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:valueFrom="1"
+        android:valueTo="5"
+        android:stepSize="1"
+        app:labelBehavior="gone" />
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
@@ -99,7 +112,6 @@
             android:layout_height="wrap_content"
             android:hint="@string/due_date_hint"
             android:focusable="true"
-
             android:clickable="true" />
     </com.google.android.material.textfield.TextInputLayout>
 

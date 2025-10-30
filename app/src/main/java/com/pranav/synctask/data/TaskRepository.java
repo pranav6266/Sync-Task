@@ -15,7 +15,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 public class TaskRepository {
     private static volatile TaskRepository instance;
     private ListenerRegistration tasksListListenerRegistration;
@@ -26,7 +25,6 @@ public class TaskRepository {
     private final MutableLiveData<Result<Task>> singleTaskResult = new MutableLiveData<>();
     private final FirebaseHelper firebaseHelper;
     private String currentSpaceId;
-
     private TaskRepository() {
         firebaseHelper = new FirebaseHelper();
     }
@@ -150,9 +148,8 @@ public class TaskRepository {
         } else {
             // Update Firestore task
             result.setValue(new Result.Loading<>());
-            // Prepare map, ensuring progress is included
+            // Prepare map, which now includes effort
             Map<String, Object> taskMap = task.toMap();
-
             firebaseHelper.updateTask(task.getId(), taskMap, new FirebaseHelper.TasksCallback() { // Use generic callback for simplicity
                 @Override
                 public void onSuccess(List<Task> tasks) { // Parameter ignored
@@ -204,7 +201,8 @@ public class TaskRepository {
     public void createTask(Task task, Context context) {
         boolean isOnline = NetworkUtils.isNetworkAvailable(context);
         if (isOnline) {
-            task.setSynced(true); // Mark as synced assuming online creation succeeds initially
+            task.setSynced(true);
+            // Mark as synced assuming online creation succeeds initially
             firebaseHelper.createTask(task, new FirebaseHelper.TasksCallback() {
                 @Override
                 public void onSuccess(List<Task> tasks) {
@@ -226,16 +224,19 @@ public class TaskRepository {
     }
 
     private void createLocalTask(Task task) {
-        task.setSynced(false); // Ensure it's marked as not synced
+        task.setSynced(false);
+        // Ensure it's marked as not synced
         localTasks.add(task);
-        mergeAndNotify(); // Update the LiveData with the new local task
+        mergeAndNotify();
+        // Update the LiveData with the new local task
     }
 
     // Sync local tasks when network becomes available
     public void syncLocalTasks(Context context) {
         boolean isOnline = NetworkUtils.isNetworkAvailable(context);
         if (!isOnline || localTasks.isEmpty()) {
-            return; // No network or nothing to sync
+            return;
+            // No network or nothing to sync
         }
 
         Log.d("TaskRepository", "Starting sync for " + localTasks.size() + " local tasks.");
@@ -265,7 +266,8 @@ public class TaskRepository {
 
     // Helper to get numerical priority value for sorting
     private int getPriorityValue(String priority) {
-        if (priority == null) return 1; // Default to Normal
+        if (priority == null) return 1;
+        // Default to Normal
         switch (priority) {
             case "High":
                 return 2;
@@ -278,24 +280,13 @@ public class TaskRepository {
 
     public void updateTaskStatus(String taskId, String newStatus) {
         firebaseHelper.updateTaskStatus(taskId, newStatus);
-        // Also update progress if status changes
-        if (Task.STATUS_COMPLETED.equals(newStatus)) {
-            updateTaskProgress(taskId, 100); // Set progress to 100% when completed
-        } else if (Task.STATUS_PENDING.equals(newStatus)) {
-            // Optional: Reset progress to 0% when marked pending? Or leave as is?
-            // updateTaskProgress(taskId, 0);
-        }
+        // REMOVED logic to update progress IN PHASE 1
     }
 
-    // NEW METHOD for Phase 3
-    public void updateTaskProgress(String taskId, int newProgress) { //
-        // Ensure progress is within bounds
-        int progress = Math.max(0, Math.min(100, newProgress)); //
-        String status = (progress == 100) ? Task.STATUS_COMPLETED : Task.STATUS_PENDING; //
-        firebaseHelper.updateTaskProgressAndStatus(taskId, progress, status); //
-    } //
+    // REMOVED updateTaskProgress METHOD IN PHASE 1
 
     public void deleteTask(String taskId) {
-        firebaseHelper.deleteTask(taskId); // Firestore listener will handle UI update
+        firebaseHelper.deleteTask(taskId);
+        // Firestore listener will handle UI update
     }
 }

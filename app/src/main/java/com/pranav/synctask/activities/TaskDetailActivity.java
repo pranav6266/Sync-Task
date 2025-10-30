@@ -1,5 +1,6 @@
 package com.pranav.synctask.activities;
 
+import android.animation.Animator;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -14,10 +15,13 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.airbnb.lottie.LottieAnimationView;
+import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.slider.Slider; // NEW IMPORT
+// import com.google.android.material.slider.Slider; // REMOVED IN PHASE 1
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.pranav.synctask.R;
@@ -26,7 +30,7 @@ import com.pranav.synctask.models.Task;
 import com.pranav.synctask.ui.viewmodels.TaskDetailViewModel;
 import com.pranav.synctask.utils.DateUtils;
 
-import java.util.Locale; // NEW IMPORT
+import java.util.Locale;
 
 public class TaskDetailActivity extends AppCompatActivity {
 
@@ -37,18 +41,18 @@ public class TaskDetailActivity extends AppCompatActivity {
     private String taskId;
     private Task currentTask;
     private FirebaseUser currentUser;
-
-    private TextView tvTitle, tvDescription, tvDueDate, tvPriority, tvScope, tvCreator, tvProgressPercentage; // Added tvProgressPercentage
+    private TextView tvTitle, tvDescription, tvDueDate, tvPriority, tvScope, tvCreator, tvEffort; // MODIFIED IN PHASE 1
     private CheckBox cbStatus;
-    private Slider progressSlider; // NEW
+    // private Slider progressSlider; // REMOVED IN PHASE 1
     private ProgressBar progressBar;
     private View contentLayout;
     private Toolbar toolbar;
-
+    private AppBarLayout appBarLayout; // ADDED IN PHASE 1
+    private LottieAnimationView lottieAnimationView; // ADDED IN PHASE 1
     private boolean canEdit = false;
     private boolean canDelete = false;
     private boolean canComplete = false;
-    private boolean canUpdateProgress = false; // NEW permission flag
+    // private boolean canUpdateProgress = false; // REMOVED IN PHASE 1
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,22 +74,24 @@ public class TaskDetailActivity extends AppCompatActivity {
         initializeViews();
         setupToolbar();
         observeViewModel();
-        setupProgressSliderListener(); // NEW listener setup
+        // setupProgressSliderListener(); // REMOVED IN PHASE 1
     }
 
     private void initializeViews() {
         toolbar = findViewById(R.id.toolbar_task_detail);
+        appBarLayout = findViewById(R.id.app_bar_layout); // ADDED IN PHASE 1
         tvTitle = findViewById(R.id.tv_task_title_detail);
         tvDescription = findViewById(R.id.tv_task_description_detail);
         tvDueDate = findViewById(R.id.tv_task_due_date_detail);
         tvPriority = findViewById(R.id.tv_task_priority_detail);
         tvScope = findViewById(R.id.tv_task_scope_detail);
         tvCreator = findViewById(R.id.tv_task_creator_detail);
+        tvEffort = findViewById(R.id.tv_task_effort_detail); // ADDED IN PHASE 1
         cbStatus = findViewById(R.id.cb_task_status_detail);
         progressBar = findViewById(R.id.progress_bar_detail);
         contentLayout = findViewById(R.id.content_layout_detail);
-        progressSlider = findViewById(R.id.slider_task_progress); // NEW
-        tvProgressPercentage = findViewById(R.id.tv_task_progress_percentage); // NEW
+        lottieAnimationView = findViewById(R.id.lottie_complete_animation); // ADDED IN PHASE 1
+        // REMOVED progressSlider and tvProgressPercentage
     }
 
     private void setupToolbar() {
@@ -136,17 +142,15 @@ public class TaskDetailActivity extends AppCompatActivity {
 
     private void calculatePermissions() {
         if (currentTask == null || currentUser == null) return;
-
         String scope = currentTask.getOwnershipScope();
         if (scope == null) scope = Task.SCOPE_SHARED;
 
         boolean isCreator = currentUser.getUid().equals(currentTask.getCreatorUID());
-
         // Reset flags
         canEdit = false;
         canDelete = false;
         canComplete = false;
-        canUpdateProgress = false; // Reset progress permission
+        // canUpdateProgress = false; // REMOVED IN PHASE 1
 
         switch (scope) {
             case Task.SCOPE_INDIVIDUAL:
@@ -154,26 +158,22 @@ public class TaskDetailActivity extends AppCompatActivity {
                     canEdit = true;
                     canDelete = true;
                     canComplete = true;
-                    canUpdateProgress = true; //
                 }
                 break;
             case Task.SCOPE_SHARED:
                 canEdit = true;
                 canDelete = true;
                 canComplete = true;
-                canUpdateProgress = true; //
                 break;
             case Task.SCOPE_ASSIGNED:
                 if (isCreator) {
                     canEdit = true;
                     canDelete = true;
                     canComplete = false;
-                    canUpdateProgress = false; // Creator cannot update progress
                 } else {
                     canEdit = false;
                     canDelete = false;
                     canComplete = true;
-                    canUpdateProgress = true; // Assignee can update progress
                 }
                 break;
         }
@@ -182,7 +182,6 @@ public class TaskDetailActivity extends AppCompatActivity {
 
     private void populateUi() {
         tvTitle.setText(currentTask.getTitle());
-
         if (currentTask.getDescription() != null && !currentTask.getDescription().isEmpty()) {
             tvDescription.setText(currentTask.getDescription());
             tvDescription.setVisibility(View.VISIBLE);
@@ -198,84 +197,67 @@ public class TaskDetailActivity extends AppCompatActivity {
         }
 
         tvPriority.setText(currentTask.getPriority());
+        tvEffort.setText(String.valueOf(currentTask.getEffort())); // ADDED IN PHASE 1
         tvScope.setText(getScopeDisplayString(currentTask.getOwnershipScope()));
 
         boolean isCreator = currentUser.getUid().equals(currentTask.getCreatorUID());
         tvCreator.setText(isCreator ? getString(R.string.task_creator_label_you) : currentTask.getCreatorDisplayName());
 
-        // Status Checkbox (Reflects slider state, might be redundant visually)
-        cbStatus.setOnCheckedChangeListener(null);
+        // MODIFIED Checkbox logic IN PHASE 1
+        cbStatus.setOnCheckedChangeListener(null); // Remove listener to set initial state
         cbStatus.setChecked(Task.STATUS_COMPLETED.equals(currentTask.getStatus()));
-        // Disable direct interaction if slider manages status
-        cbStatus.setEnabled(false); // Or keep enabled if it's a secondary way to mark complete/incomplete
-        /*
+        cbStatus.setEnabled(canComplete); // Enable/disable based on permission
+
+        // Add new listener
         cbStatus.setOnCheckedChangeListener((buttonView, isChecked) -> {
-        if (buttonView.isPressed() && canComplete) { // Check permission
-        String newStatus = isChecked ? Task.STATUS_COMPLETED : Task.STATUS_PENDING;
-        viewModel.updateTaskStatus(taskId, newStatus);
-        // Also update progress slider if checkbox changes status
-        if (isChecked && progressSlider.getValue() != 100) {
-        progressSlider.setValue(100); // Set slider to 100%
-        viewModel.updateTaskProgress(taskId, 100); // Also update DB
-        } else if (!isChecked && progressSlider.getValue() == 100) {
-        progressSlider.setValue(0); // Optionally reset slider to 0%
-        viewModel.updateTaskProgress(taskId, 0); // Also update DB
-        }
-        } else if (!canComplete && buttonView.isPressed()){
-        // Prevent change if no permission
-        buttonView.setChecked(!isChecked);
-        Toast.makeText(this, R.string.cannot_complete_task, Toast.LENGTH_SHORT).show();
-        }
+            if (!buttonView.isPressed()) {
+                return; // Ignore programmatic changes
+            }
+
+            if (isChecked) {
+                // User checked the box
+                playCompleteAnimation();
+            } else {
+                // User unchecked the box
+                viewModel.updateTaskStatus(taskId, Task.STATUS_PENDING);
+            }
         });
-        */
 
-
-        // Progress Slider (NEW)
-        // Remove listener temporarily to prevent triggering while setting value
-        progressSlider.removeOnChangeListener(progressChangeListener); //
-        progressSlider.setValue(currentTask.getProgressPercentage()); //
-        tvProgressPercentage.setText(String.format(Locale.getDefault(), "%d%%", currentTask.getProgressPercentage())); //
-        progressSlider.setEnabled(canUpdateProgress); // Enable/disable based on permission
-        // Re-attach listener
-        progressSlider.addOnChangeListener(progressChangeListener); //
-
+        // REMOVED All progress slider logic IN PHASE 1
     }
 
-    // NEW Slider listener
-    private final Slider.OnChangeListener progressChangeListener = (slider, value, fromUser) -> { //
-        if (fromUser) {
-            int progress = (int) value;
-            tvProgressPercentage.setText(String.format(Locale.getDefault(), "%d%%", progress)); //
-            // Update the status checkbox based on slider value
-            boolean isCompleted = (progress == 100); //
-            if (cbStatus.isChecked() != isCompleted) { //
-                cbStatus.setChecked(isCompleted); //
-            }
-        }
-    };
+    // ADDED IN PHASE 1
+    private void playCompleteAnimation() {
+        // Disable UI
+        contentLayout.setVisibility(View.GONE);
+        appBarLayout.setVisibility(View.GONE);
 
-    // NEW Method to handle saving progress when user stops sliding
-    private void setupProgressSliderListener() {    progressSlider.addOnSliderTouchListener(new Slider.OnSliderTouchListener() {
-        @Override
-        public void onStartTrackingTouch(@NonNull Slider slider) {
-            // No action needed when user starts sliding
-        }
+        // Play animation
+        lottieAnimationView.setVisibility(View.VISIBLE);
+        lottieAnimationView.playAnimation();
 
-        @Override
-        public void onStopTrackingTouch(@NonNull Slider slider) {
-            // Action needed when user stops sliding
-            if (canUpdateProgress && currentTask != null) {
-                int newProgress = (int) slider.getValue(); // Get value from the slider instance
-                // Only update if the progress has actually changed
-                if (newProgress != currentTask.getProgressPercentage()) {
-                    viewModel.updateTaskProgress(taskId, newProgress);
-                }
+        // Update status in Firestore
+        viewModel.updateTaskStatus(taskId, Task.STATUS_COMPLETED);
+
+        // Add listener to finish activity on animation end
+        lottieAnimationView.addAnimatorListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(@NonNull Animator animation) {}
+
+            @Override
+            public void onAnimationEnd(@NonNull Animator animation) {
+                finish();
             }
-        }
-    });
+
+            @Override
+            public void onAnimationCancel(@NonNull Animator animation) {}
+
+            @Override
+            public void onAnimationRepeat(@NonNull Animator animation) {}
+        });
     }
 
-
+    // REMOVED progressChangeListener and setupProgressSliderListener IN PHASE 1
 
     private String getScopeDisplayString(String scope) {
         if (scope == null) return getString(R.string.scope_shared_short);

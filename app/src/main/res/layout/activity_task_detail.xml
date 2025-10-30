@@ -8,6 +8,7 @@
     tools:context=".activities.TaskDetailActivity">
 
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/app_bar_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?attr/colorSurface">
@@ -33,6 +34,17 @@
             android:visibility="gone"
             tools:visibility="visible" />
 
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/lottie_complete_animation"
+            android:layout_width="250dp"
+            android:layout_height="250dp"
+            android:layout_centerInParent="true"
+            app:lottie_rawRes="@raw/lottie_empty"
+            app:lottie_autoPlay="false"
+            app:lottie_loop="false"
+            android:visibility="gone" />
+
+
         <androidx.core.widget.NestedScrollView
             android:id="@+id/content_layout_detail"
             android:layout_width="match_parent"
@@ -55,44 +67,6 @@
                     android:textAppearance="?attr/textAppearanceHeadlineMedium"
                     android:textColor="?attr/colorOnSurface"
                     tools:text="Buy Groceries" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="4dp"
-                    android:text="@string/progress_label"
-                    android:textAppearance="?attr/textAppearanceLabelLarge"
-                    android:textColor="?attr/colorOnSurfaceVariant" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.slider.Slider
-                        android:id="@+id/slider_task_progress"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:valueFrom="0"
-                        android:valueTo="100"
-                        android:stepSize="10"
-                        app:labelBehavior="gone" />
-
-                    <TextView
-                        android:id="@+id/tv_task_progress_percentage"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="16dp"
-                        android:minWidth="40dp"
-                        android:gravity="end"
-                        android:textAppearance="?attr/textAppearanceBodyLarge"
-                        android:textColor="?attr/colorOnSurface"
-                        tools:text="50%" />
-
-                </LinearLayout>
 
                 <com.google.android.material.checkbox.MaterialCheckBox
                     android:id="@+id/cb_task_status_detail"
@@ -141,15 +115,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:columnCount="2"
-                    android:rowCount="3">
-
-                    <TextView
-                        android:layout_columnWeight="1"
-                        android:layout_gravity="fill_horizontal"
-                        android:layout_marginBottom="16dp"
-                        android:text="@string/due_date_label_detail"
-                        android:textAppearance="?attr/textAppearanceLabelLarge"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
+                    android:rowCount="4"> <TextView
+                    android:layout_columnWeight="1"
+                    android:layout_gravity="fill_horizontal"
+                    android:layout_marginBottom="16dp"
+                    android:text="@string/due_date_label_detail"
+                    android:textAppearance="?attr/textAppearanceLabelLarge"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
 
                     <TextView
                         android:id="@+id/tv_task_due_date_detail"
@@ -177,6 +149,22 @@
                         android:textColor="?attr/colorOnSurface"
                         tools:text="High" />
 
+                    <TextView
+                        android:layout_columnWeight="1"
+                        android:layout_gravity="fill_horizontal"
+                        android:layout_marginBottom="16dp"
+                        android:text="@string/effort_value_label"
+                        android:textAppearance="?attr/textAppearanceLabelLarge"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <TextView
+                        android:id="@+id/tv_task_effort_detail"
+                        android:layout_columnWeight="1"
+                        android:layout_gravity="fill_horizontal"
+                        android:gravity="end"
+                        android:textAppearance="?attr/textAppearanceBodyLarge"
+                        android:textColor="?attr/colorOnSurface"
+                        tools:text="3" />
                     <TextView
                         android:layout_columnWeight="1"
                         android:layout_gravity="fill_horizontal"

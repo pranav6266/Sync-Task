@@ -17,6 +17,7 @@
     <string name="partner_code_hint">6-Digit Invite Code</string>
     <string name="pair_button_text">Join Space</string>
 
+
     <string name="create_new_item">Create New Item</string>
     <string name="title_hint">Title</string>
     <string name="description_hint">Description (Optional)</string>
@@ -64,5 +65,8 @@
 
     <string name="cannot_complete_task">You do not have permission to change the status of this task.</string>
     <string name="cannot_update_progress">You do not have permission to update the progress of this task.</string>
+
+    <string name="effort_label">Effort (1=Low, 5=High)</string>
+    <string name="effort_value_label">Effort</string>
 
 </resources>

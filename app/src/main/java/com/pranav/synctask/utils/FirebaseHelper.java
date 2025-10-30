@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
 public class FirebaseHelper {
     private static final String TAG = "FirebaseHelper";
     private final FirebaseFirestore db;
@@ -171,6 +170,7 @@ public class FirebaseHelper {
                 Arrays.asList(creatorUID),
                 inviteCode
         );
+        newSpace.setSpaceType(Space.TYPE_SHARED); // Explicitly set as shared
         // Get the user document
         DocumentReference userDocRef = db.collection(USERS_COLLECTION).document(creatorUID);
         // Run a batch write to create the space AND update the user
@@ -204,7 +204,8 @@ public class FirebaseHelper {
                         return;
                     }
 
-                    // Add user to the space and add space to the user's list
+                    // Add user to the space and add space
+                    // to the user's list
                     DocumentReference spaceDocRef = spaceDoc.getReference();
                     DocumentReference userDocRef = db.collection(USERS_COLLECTION).document(userUID);
 
@@ -242,11 +243,11 @@ public class FirebaseHelper {
     }
 
 
-    // --- TASK METHODS (Updated for Progress) ---
+    // --- TASK METHODS (Updated for Effort) ---
 
     public void createTask(Task task, TasksCallback callback) {
         db.collection(TASKS_COLLECTION)
-                .add(task.toMap()) // task.toMap() now includes spaceId AND progressPercentage
+                .add(task.toMap()) // task.toMap() now includes spaceId AND effort
                 .addOnSuccessListener(documentReference -> {
                     String taskId = documentReference.getId();
                     Log.d(TAG, "Task created with ID: " + taskId);
@@ -257,10 +258,10 @@ public class FirebaseHelper {
     }
 
     public void updateTask(String taskId, Map<String, Object> taskMap, TasksCallback callback) {
-        // Ensure progressPercentage is included if provided
+        // taskMap should come from task.toMap() which now includes effort
         db.collection(TASKS_COLLECTION)
                 .document(taskId)
-                .update(taskMap) // taskMap should come from task.toMap() which includes progress
+                .update(taskMap)
                 .addOnSuccessListener(aVoid -> {
                     Log.d(TAG, "Task updated successfully");
                     // TODO: Re-implement notification logic based on spaceId
@@ -275,7 +276,8 @@ public class FirebaseHelper {
                 .whereEqualTo("spaceId", spaceId)
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .addSnapshotListener((value, error) -> {
-                    if (error != null) {
+                    if (error != null)
+                    {
                         Log.w(TAG, "Listen failed.", error);
                         callback.onError(error);
                         return;
@@ -330,18 +332,7 @@ public class FirebaseHelper {
                 .addOnFailureListener(e -> Log.w(TAG, "Error updating task status", e));
     }
 
-    // NEW METHOD for Phase 3 - Updates both progress and status atomically
-    public void updateTaskProgressAndStatus(String taskId, int progress, String status) { //
-        Map<String, Object> updates = new HashMap<>(); //
-        updates.put("progressPercentage", progress); //
-        updates.put("status", status); // Update status based on progress
-
-        db.collection(TASKS_COLLECTION) //
-                .document(taskId) //
-                .update(updates) //
-                .addOnSuccessListener(aVoid -> Log.d(TAG, "Task progress and status updated")) //
-                .addOnFailureListener(e -> Log.w(TAG, "Error updating task progress/status", e)); //
-    } //
+    // REMOVED updateTaskProgressAndStatus METHOD IN PHASE 1
 
     public void deleteTask(String taskId) {
         db.collection(TASKS_COLLECTION)
@@ -367,7 +358,8 @@ public class FirebaseHelper {
             }
 
             Space space = spaceDoc.toObject(Space.class);
-            if (space == null || space.getMembers() == null) {
+            if (space == null ||
+                    space.getMembers() == null) {
                 throw new FirebaseFirestoreException("Space data invalid.", FirebaseFirestoreException.Code.DATA_LOSS);
             }
             List<String> members = space.getMembers();
@@ -382,7 +374,8 @@ public class FirebaseHelper {
                 return space;
             }
 
-            return null; // User left, but space remains
+            return null;
+            // User left, but space remains
         }).addOnSuccessListener(result -> {
             if (result != null) {
                 // This was the last user. Delete all tasks for this space.
@@ -402,7 +395,6 @@ public class FirebaseHelper {
 
     public void deleteSpace(String spaceId, String userUID, SpaceCallback callback) {
         DocumentReference spaceDocRef = db.collection(SPACES_COLLECTION).document(spaceId);
-
         db.runTransaction(transaction -> {
             DocumentSnapshot spaceDoc = transaction.get(spaceDocRef);
             if (!spaceDoc.exists()) {
@@ -410,7 +402,8 @@ public class FirebaseHelper {
             }
 
             Space space = spaceDoc.toObject(Space.class);
-            // Check if user is the creator (assuming creator is the first member)
+            // Check if user is the creator (assuming creator
+            // is the first member)
             if (space == null || space.getMembers() == null || space.getMembers().isEmpty() || !space.getMembers().get(0).equals(userUID)) {
                 throw new FirebaseFirestoreException("Permission denied. Only the creator can delete a space.", FirebaseFirestoreException.Code.PERMISSION_DENIED);
             }
@@ -425,8 +418,6 @@ public class FirebaseHelper {
             }
             @SuppressWarnings("unchecked") // Suppress warning for casting Object to List<String>
             List<String> members = (List<String>) membersObject;
-
-
             // 1. Delete all tasks associated with the space
             deleteTasksForSpace(spaceId, () -> {
                 // 2. After tasks are deleted, delete the space document and update all members' user documents
@@ -464,7 +455,8 @@ public class FirebaseHelper {
                         } else {
                             Log.e(TAG, "Failed to delete tasks for space: " + spaceId, task.getException());
                         }
-                        onComplete.run(); // Proceed whether task deletion succeeded or failed
+                        onComplete.run();
+                        // Proceed whether task deletion succeeded or failed
                     });
                 })
                 .addOnFailureListener(e -> {
