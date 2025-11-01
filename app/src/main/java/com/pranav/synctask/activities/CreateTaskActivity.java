@@ -12,7 +12,9 @@ import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.slider.Slider; // ADDED IN PHASE 1
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.android.material.transition.platform.MaterialContainerTransform; // ADDED
+import com.google.android.material.textfield.TextInputLayout; // ADDED
+import com.google.android.material.transition.platform.MaterialContainerTransform;
+// ADDED
 import com.google.android.material.transition.platform.MaterialContainerTransformSharedElementCallback;
 // ADDED
 import com.google.firebase.Timestamp;
@@ -20,6 +22,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.pranav.synctask.R;
 import com.pranav.synctask.data.Result;
+import com.pranav.synctask.models.Space; // ADDED
 import com.pranav.synctask.models.Task;
 import com.pranav.synctask.models.User;
 import com.pranav.synctask.ui.CreateTaskViewModel;
@@ -34,13 +37,14 @@ public class CreateTaskActivity extends AppCompatActivity {
 
     private TextInputEditText etTitle, etDescription, etDueDate;
     private AutoCompleteTextView acTaskType, acTaskPriority, acTaskScope;
+    private TextInputLayout layoutTaskScope; // ADDED
     private Slider effortSlider; // ADDED IN PHASE 1
     private Button btnCreateTask;
     private Calendar selectedDueDate = Calendar.getInstance();
     private String currentSpaceId;
+    private String contextType; // ADDED
     private CreateTaskViewModel viewModel;
     private final Map<String, String> scopeMap = new HashMap<>();
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // --- ADDED: Container Transform Setup ---
@@ -57,6 +61,13 @@ public class CreateTaskActivity extends AppCompatActivity {
         setContentView(R.layout.activity_create_task);
 
         currentSpaceId = getIntent().getStringExtra("SPACE_ID");
+        // --- ADDED ---
+        contextType = getIntent().getStringExtra("CONTEXT_TYPE");
+        if (contextType == null) {
+            contextType = Space.TYPE_SHARED; // Default to shared
+        }
+        // --- END ADDED ---
+
         if (currentSpaceId == null || currentSpaceId.isEmpty()) {
             Toast.makeText(this, "Error: No Space ID provided.", Toast.LENGTH_LONG).show();
             finish();
@@ -71,7 +82,9 @@ public class CreateTaskActivity extends AppCompatActivity {
         acTaskType = findViewById(R.id.ac_task_type);
         acTaskPriority = findViewById(R.id.ac_task_priority);
         acTaskScope = findViewById(R.id.ac_task_scope);
-        effortSlider = findViewById(R.id.slider_task_effort); // ADDED IN PHASE 1
+        layoutTaskScope = findViewById(R.id.layout_task_scope); // ADDED
+        effortSlider = findViewById(R.id.slider_task_effort);
+        // ADDED IN PHASE 1
         btnCreateTask = findViewById(R.id.btn_create_task);
 
         setupDropdowns();
@@ -81,22 +94,44 @@ public class CreateTaskActivity extends AppCompatActivity {
     }
 
     private void setupDropdowns() {
-        // ... (no changes in this method)
+        // --- Task Type ---
         String[] taskTypes = {Task.TYPE_TASK, Task.TYPE_REMINDER, Task.TYPE_UPDATE};
         ArrayAdapter<String> typeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, taskTypes);
         acTaskType.setAdapter(typeAdapter);
         acTaskType.setText(Task.TYPE_TASK, false);
+
+        // --- Priority ---
         String[] priorities = {"Low", "Normal", "High"};
         ArrayAdapter<String> priorityAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, priorities);
         acTaskPriority.setAdapter(priorityAdapter);
         acTaskPriority.setText("Normal", false);
-        scopeMap.put(getString(R.string.scope_shared), Task.SCOPE_SHARED);
-        scopeMap.put(getString(R.string.scope_individual), Task.SCOPE_INDIVIDUAL);
-        scopeMap.put(getString(R.string.scope_assigned), Task.SCOPE_ASSIGNED);
-        String[] scopeDisplayNames = scopeMap.keySet().toArray(new String[0]);
+
+        // --- MODIFIED: Context-Aware Scope ---
+        scopeMap.clear();
+        String[] scopeDisplayNames;
+        String defaultScope;
+
+        if (Space.TYPE_PERSONAL.equals(contextType)) {
+            // Personal Context: Owner
+            layoutTaskScope.setHint(getString(R.string.owner_hint));
+            scopeMap.put(getString(R.string.owner_me), Task.SCOPE_INDIVIDUAL);
+            scopeMap.put(getString(R.string.owner_partner), Task.SCOPE_ASSIGNED);
+            scopeDisplayNames = scopeMap.keySet().toArray(new String[0]);
+            defaultScope = getString(R.string.owner_me);
+        } else {
+            // Shared Context: Scope
+            layoutTaskScope.setHint(getString(R.string.scope_hint));
+            scopeMap.put(getString(R.string.scope_shared), Task.SCOPE_SHARED);
+            scopeMap.put(getString(R.string.scope_individual), Task.SCOPE_INDIVIDUAL);
+            scopeMap.put(getString(R.string.scope_assigned), Task.SCOPE_ASSIGNED);
+            scopeDisplayNames = scopeMap.keySet().toArray(new String[0]);
+            defaultScope = getString(R.string.scope_shared);
+        }
+
         ArrayAdapter<String> scopeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, scopeDisplayNames);
         acTaskScope.setAdapter(scopeAdapter);
-        acTaskScope.setText(getString(R.string.scope_shared), false);
+        acTaskScope.setText(defaultScope, false);
+        // --- END MODIFIED ---
     }
 
     private void setupDatePicker() {
@@ -105,6 +140,7 @@ public class CreateTaskActivity extends AppCompatActivity {
             MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
                     .setTitleText("Select Due Date")
                     .setSelection(MaterialDatePicker.todayInUtcMilliseconds())
+
                     .build();
 
             datePicker.addOnPositiveButtonClickListener(selection -> {
@@ -112,6 +148,7 @@ public class CreateTaskActivity extends AppCompatActivity {
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
                 sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                 etDueDate.setText(sdf.format(new Date(selection)));
+
             });
 
             datePicker.show(getSupportFragmentManager(), "MATERIAL_DATE_PICKER");
@@ -119,19 +156,20 @@ public class CreateTaskActivity extends AppCompatActivity {
     }
 
     private void createTask() {
-        // ... (no changes in this method)
+        // --- MODIFIED: Read from scopeMap ---
         String title = etTitle.getText().toString().trim();
         String description = etDescription.getText().toString().trim();
         String taskType = acTaskType.getText().toString().trim();
         String priority = acTaskPriority.getText().toString().trim();
         String scopeDisplayName = acTaskScope.getText().toString().trim();
-        String ownershipScope = scopeMap.get(scopeDisplayName);
+        String ownershipScope = scopeMap.get(scopeDisplayName); // Get mapped value
         int effort = (int) effortSlider.getValue(); // ADDED IN PHASE 1
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (TextUtils.isEmpty(title) || TextUtils.isEmpty(taskType) || TextUtils.isEmpty(ownershipScope) || currentUser == null) {
-            Toast.makeText(this, "Title, Type, and Scope are required.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Title, Type, and Scope/Owner are required.", Toast.LENGTH_SHORT).show(); // MODIFIED
             return;
         }
+        // --- END MODIFIED ---
 
         Timestamp dueDateTimestamp = null;
         if (!etDueDate.getText().toString().isEmpty()) {
@@ -148,6 +186,7 @@ public class CreateTaskActivity extends AppCompatActivity {
                 Toast.makeText(this, "Task created!", Toast.LENGTH_SHORT).show();
                 finish();
             } else if (result instanceof Result.Error) {
+
 
                 Toast.makeText(CreateTaskActivity.this, "Error creating task.", Toast.LENGTH_SHORT).show();
             }

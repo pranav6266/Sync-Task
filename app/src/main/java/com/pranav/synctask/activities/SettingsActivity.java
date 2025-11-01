@@ -27,29 +27,29 @@ import com.google.firebase.auth.UserProfileChangeRequest;
 import com.pranav.synctask.R;
 import com.pranav.synctask.data.Result;
 import com.pranav.synctask.models.User;
-import com.pranav.synctask.ui.viewmodels.ProfileViewModel;
+import com.pranav.synctask.ui.viewmodels.SettingsViewModel; // CHANGED
 
 import de.hdodenhof.circleimageview.CircleImageView;
-public class ProfileActivity extends AppCompatActivity {
+public class SettingsActivity extends AppCompatActivity { // RENAMED
 
     private CircleImageView ivProfileImage;
     private TextView tvDisplayName, tvEmail;
     private EditText etDisplayName;
     private ImageView ivEditName;
     private MaterialCardView ivEditPhoto;
-    private Button btnLogout, btnSaveChanges;
+    private Button btnLogout, btnSaveChanges, btnViewAllCompleted; // MODIFIED
     private ProgressBar progressBar;
     private FirebaseAuth mAuth;
     private GoogleSignInClient mGoogleSignInClient;
     private FirebaseUser currentUser;
-    private ProfileViewModel viewModel;
+    private SettingsViewModel viewModel; // CHANGED
     private ActivityResultLauncher<String> mGetContent;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_profile);
-        viewModel = new ViewModelProvider(this).get(ProfileViewModel.class);
+        setContentView(R.layout.activity_settings); // CHANGED
+
+        viewModel = new ViewModelProvider(this).get(SettingsViewModel.class); // CHANGED
         mAuth = FirebaseAuth.getInstance();
         currentUser = mAuth.getCurrentUser();
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -58,6 +58,7 @@ public class ProfileActivity extends AppCompatActivity {
                 .build();
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
 
+        // --- View Initialization ---
         ivProfileImage = findViewById(R.id.iv_profile_image);
         tvDisplayName = findViewById(R.id.tv_display_name);
         etDisplayName = findViewById(R.id.et_display_name);
@@ -67,6 +68,9 @@ public class ProfileActivity extends AppCompatActivity {
         btnLogout = findViewById(R.id.btn_logout);
         btnSaveChanges = findViewById(R.id.btn_save_changes);
         progressBar = findViewById(R.id.profile_progress_bar);
+        btnViewAllCompleted = findViewById(R.id.btn_view_all_completed); // ADDED
+        // --- End View Initialization ---
+
         if (currentUser != null) {
             loadUserProfile();
         }
@@ -81,6 +85,14 @@ public class ProfileActivity extends AppCompatActivity {
         btnSaveChanges.setOnClickListener(v -> saveProfileChanges());
         btnLogout.setOnClickListener(v -> logoutUser());
 
+        // --- ADDED ---
+        btnViewAllCompleted.setOnClickListener(v -> {
+            // Navigate to CompletedTasksActivity but pass no filter ID
+            Intent intent = new Intent(SettingsActivity.this, CompletedTasksActivity.class);
+            startActivity(intent);
+        });
+        // --- END ADDED ---
+
         observeViewModel();
     }
 
@@ -90,7 +102,8 @@ public class ProfileActivity extends AppCompatActivity {
             if (result instanceof Result.Success) {
                 // User user = ((Result.Success<User>) result).data; // No longer needed
             } else if (result instanceof Result.Error) {
-                Log.e("ProfileActivity", "Error listening to user pairing status", ((Result.Error<User>) result).exception);
+
+                Log.e("SettingsActivity", "Error listening to user pairing status", ((Result.Error<User>) result).exception); // CHANGED
             }
         });
         viewModel.getPhotoUpdateResult().observe(this, result -> {
@@ -99,6 +112,7 @@ public class ProfileActivity extends AppCompatActivity {
                 String newUrl = ((Result.Success<String>) result).data;
                 Glide.with(this).load(newUrl).placeholder(R.drawable.ic_profile).into(ivProfileImage);
                 Toast.makeText(this, "Profile picture updated!", Toast.LENGTH_SHORT).show();
+
             } else if (result instanceof Result.Error) {
                 Toast.makeText(this, "Failed to update photo.", Toast.LENGTH_SHORT).show();
             }
@@ -159,18 +173,22 @@ public class ProfileActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         viewModel.saveProfileChanges(currentUser.getUid(), newName).observe(this, result -> {
                             showLoading(false);
+
                             if (result instanceof Result.Success) {
-                                Toast.makeText(ProfileActivity.this, "Profile updated successfully!", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(SettingsActivity.this, "Profile updated successfully!", Toast.LENGTH_SHORT).show(); // CHANGED
                                 tvDisplayName.setText(newName);
+
                                 toggleEditMode(false);
                             } else if (result instanceof Result.Error) {
-                                Toast.makeText(ProfileActivity.this, "Error updating profile in database.",
+                                Toast.makeText(SettingsActivity.this, "Error updating profile in database.", // CHANGED
+
                                         Toast.LENGTH_SHORT).show();
                             }
                         });
+
                     } else {
                         showLoading(false);
-                        Toast.makeText(ProfileActivity.this, "Failed to update profile.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(SettingsActivity.this, "Failed to update profile.", Toast.LENGTH_SHORT).show(); // CHANGED
                     }
                 });
     }
@@ -181,7 +199,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void goToLogin() {
-        Intent intent = new Intent(ProfileActivity.this, LoginActivity.class);
+        Intent intent = new Intent(SettingsActivity.this, LoginActivity.class); // CHANGED
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
@@ -189,7 +207,7 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void goToDashboard() {
         // MODIFIED IN PHASE 3B
-        Intent intent = new Intent(ProfileActivity.this, DashboardActivity.class);
+        Intent intent = new Intent(SettingsActivity.this, DashboardActivity.class); // CHANGED
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         startActivity(intent);
         finish();

@@ -1,6 +1,7 @@
 package com.pranav.synctask.activities;
 
 import android.os.Bundle;
+import android.view.View; // ADDED
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -10,6 +11,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.airbnb.lottie.LottieAnimationView; // ADDED
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -24,13 +26,13 @@ import com.pranav.synctask.ui.DashboardViewModel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-
 public class PersonalLinksActivity extends AppCompatActivity {
 
     private DashboardViewModel viewModel;
     private PersonalLinksAdapter adapter;
     private RecyclerView recyclerView;
     private FirebaseUser currentUser;
+    private LottieAnimationView emptyView; // ADDED
 
     // --- MODIFIED IN PHASE 3C: Use MediatorLiveData ---
     private MediatorLiveData<CombinedResult> combinedData = new MediatorLiveData<>();
@@ -45,7 +47,8 @@ public class PersonalLinksActivity extends AppCompatActivity {
 
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser == null) {
-            finish(); // Should not happen if coming from dashboard
+            finish();
+            // Should not happen if coming from dashboard
             return;
         }
 
@@ -53,8 +56,8 @@ public class PersonalLinksActivity extends AppCompatActivity {
 
         MaterialToolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setNavigationOnClickListener(v -> finish());
-
         recyclerView = findViewById(R.id.personal_links_recycler_view);
+        emptyView = findViewById(R.id.empty_view); // ADDED
         setupRecyclerView();
         observeViewModel();
     }
@@ -72,31 +75,46 @@ public class PersonalLinksActivity extends AppCompatActivity {
             if (result instanceof Result.Success) {
                 currentLinks = ((Result.Success<List<Space>>) result).data;
                 combinedData.setValue(new CombinedResult(currentLinks, currentPartners));
+
             } else if (result instanceof Result.Error) {
                 Toast.makeText(this, "Error loading personal links.", Toast.LENGTH_SHORT).show();
+                updateEmptyView(true); // ADDED
             }
         });
-
         combinedData.addSource(viewModel.getPartnerDetails(), result -> {
             if (result instanceof Result.Success) {
                 currentPartners = ((Result.Success<List<User>>) result).data;
                 combinedData.setValue(new CombinedResult(currentLinks, currentPartners));
             } else if (result instanceof Result.Error) {
                 Toast.makeText(this, "Error loading partner details.", Toast.LENGTH_SHORT).show();
+
             }
         });
-
         // This observer fires when *both* data sources have reported success
         combinedData.observe(this, combinedResult -> {
             if (combinedResult != null && !combinedResult.links.isEmpty() && !combinedResult.partners.isEmpty()) {
                 adapter.updateLinks(combinedResult.links, combinedResult.partners);
+                updateEmptyView(false); // ADDED
             } else if (combinedResult != null && combinedResult.links.isEmpty()) {
                 adapter.updateLinks(new ArrayList<>(), new ArrayList<>());
-                // TODO: Show empty state
+                updateEmptyView(true); // ADDED
             }
         });
     }
     // --- END MODIFIED ---
+
+    // --- ADDED ---
+    private void updateEmptyView(boolean isEmpty) {
+        if (isEmpty) {
+            emptyView.setVisibility(View.VISIBLE);
+            emptyView.playAnimation();
+        } else {
+            emptyView.setVisibility(View.GONE);
+            emptyView.cancelAnimation();
+        }
+        recyclerView.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+    }
+    // --- END ADDED ---
 
     @Override
     protected void onStart() {

@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.airbnb.lottie.LottieAnimationView; // ADDED
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.snackbar.Snackbar; // ADDED
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.pranav.synctask.R;
@@ -33,7 +34,6 @@ import com.pranav.synctask.ui.viewmodels.TasksViewModel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
 // --- MODIFIED IN PHASE 4A: Implements listener ---
 public abstract class BaseTaskFragment extends Fragment implements TaskAdapter.OnTaskActionListener {
 
@@ -41,7 +41,8 @@ public abstract class BaseTaskFragment extends Fragment implements TaskAdapter.O
     protected TaskAdapter adapter;
     protected SwipeRefreshLayout swipeRefreshLayout;
     protected LottieAnimationView emptyView; // MODIFIED: Changed from TextView
-    protected String currentUserId; // MODIFIED: Made protected
+    protected String currentUserId;
+    // MODIFIED: Made protected
     protected TasksViewModel viewModel; // MODIFIED: Made protected
     private ConnectivityManager.NetworkCallback networkCallback;
     private List<Task> currentTaskList = new ArrayList<>();
@@ -104,6 +105,7 @@ public abstract class BaseTaskFragment extends Fragment implements TaskAdapter.O
             if (result instanceof Result.Success) {
                 currentTaskList = ((Result.Success<List<Task>>) result).data;
                 filterAndDisplayTasks();
+
             } else if (result instanceof Result.Error) {
                 Log.e(getClass().getSimpleName(), "Error loading tasks", ((Result.Error<List<Task>>) result).exception);
                 Toast.makeText(getContext(), "Error loading tasks.", Toast.LENGTH_SHORT).show();
@@ -187,6 +189,8 @@ public abstract class BaseTaskFragment extends Fragment implements TaskAdapter.O
         boolean canEdit = false;
         boolean canDelete = false;
 
+        if (scope == null) scope = Task.SCOPE_SHARED; // Handle null scope
+
         switch (scope) {
             case Task.SCOPE_INDIVIDUAL:
                 if (isCreator) {
@@ -203,18 +207,20 @@ public abstract class BaseTaskFragment extends Fragment implements TaskAdapter.O
                     canEdit = true;
                     canDelete = true;
                 }
+                // Note: Non-creator (assignee) can't edit/delete from the list,
+                // they can only complete it in TaskDetailActivity.
                 break;
         }
 
         popup.getMenu().findItem(R.id.action_edit_task).setVisible(canEdit);
         popup.getMenu().findItem(R.id.action_delete_task).setVisible(canDelete);
-
         popup.setOnMenuItemClickListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.action_edit_task) {
                 Intent intent = new Intent(getContext(), EditTaskActivity.class);
                 intent.putExtra(EditTaskActivity.EXTRA_TASK, task);
                 startActivity(intent);
+
                 return true;
             } else if (itemId == R.id.action_delete_task) {
                 showDeleteConfirmation(task);
@@ -225,17 +231,29 @@ public abstract class BaseTaskFragment extends Fragment implements TaskAdapter.O
         popup.show();
     }
 
+    // --- MODIFIED ---
     private void showDeleteConfirmation(Task task) {
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.delete_task_dialog_title)
                 .setMessage(R.string.delete_task_dialog_message)
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.delete, (dialog, which) -> {
-                    viewModel.deleteTask(task.getId());
-                    // Phase 4C will add an "Undo" Snackbar
-                    Toast.makeText(getContext(), "Task deleted", Toast.LENGTH_SHORT).show();
+
+                    // --- Undo Logic Added ---
+                    Task taskToDelete = task; // Save task to a temp variable
+                    viewModel.deleteTask(taskToDelete.getId());
+
+                    Snackbar.make(requireView(), "Task deleted", Snackbar.LENGTH_LONG)
+                            .setAction("Undo", v -> {
+                                // Re-create the task. We clear ID and status to ensure it's a new pending task.
+                                taskToDelete.setId(null);
+                                taskToDelete.setStatus(Task.STATUS_PENDING);
+                                viewModel.createTask(taskToDelete, requireContext());
+                            })
+                            .show();
+                    // --- End Undo Logic ---
                 })
                 .show();
     }
-    // --- END ADDED ---
+    // --- END MODIFIED ---
 }

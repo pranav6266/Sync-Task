@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+
     android:padding="16dp"
     android:background="?attr/colorSurface"
     android:transitionName="fab_to_create_task">
@@ -21,6 +22,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
         style="?attr/textInputStyle">
+
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/et_task_title"
             android:layout_width="match_parent"
@@ -33,6 +35,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
+
         style="?attr/textInputStyle">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/et_task_description"
@@ -42,9 +45,11 @@
             android:inputType="textCapSentences|textMultiLine"
             android:minLines="3"
             android:gravity="top" />
+
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layout_task_scope"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
@@ -54,9 +59,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/scope_hint"
+
             android:inputType="none" />
     </com.google.android.material.textfield.TextInputLayout>
-
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -66,6 +71,7 @@
             android:id="@+id/ac_task_type"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+
             android:hint="@string/type_hint"
             android:inputType="none" />
     </com.google.android.material.textfield.TextInputLayout>
@@ -78,6 +84,7 @@
         <AutoCompleteTextView
             android:id="@+id/ac_task_priority"
             android:layout_width="match_parent"
+
             android:layout_height="wrap_content"
             android:hint="Priority"
             android:inputType="none" />
@@ -93,6 +100,7 @@
         android:textColor="?attr/colorOnSurfaceVariant" />
 
     <com.google.android.material.slider.Slider
+
         android:id="@+id/slider_task_effort"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -106,17 +114,19 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
         style="?attr/textInputStyle">
+
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/et_task_due_date"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/due_date_hint"
-            android:focusable="true"
+            android.focusable="true"
             android:clickable="true" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_create_task"
+
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:text="@string/create_task_button"

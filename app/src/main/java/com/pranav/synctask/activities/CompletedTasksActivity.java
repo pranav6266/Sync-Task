@@ -1,5 +1,4 @@
 package com.pranav.synctask.activities;
-
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -11,7 +10,6 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
-
 import com.airbnb.lottie.LottieAnimationView;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -33,7 +31,8 @@ public class CompletedTasksActivity extends AppCompatActivity {
     private CompletedTaskAdapter adapter;
     private SwipeRefreshLayout swipeRefreshLayout;
     private LottieAnimationView emptyView;
-    private String currentSpaceId;
+    private String currentSpaceId; // Can be null
+    private MaterialToolbar toolbar;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -41,16 +40,17 @@ public class CompletedTasksActivity extends AppCompatActivity {
         setContentView(R.layout.activity_completed_tasks);
 
         currentSpaceId = getIntent().getStringExtra("SPACE_ID");
-        if (currentSpaceId == null || currentSpaceId.isEmpty()) {
-            Toast.makeText(this, "Error: No Space ID provided.", Toast.LENGTH_LONG).show();
-            finish();
-            return;
-        }
 
         viewModel = new ViewModelProvider(this).get(CompletedTasksViewModel.class);
 
-        MaterialToolbar toolbar = findViewById(R.id.toolbar);
+        toolbar = findViewById(R.id.toolbar);
         toolbar.setNavigationOnClickListener(v -> finish());
+
+        if (currentSpaceId == null) {
+            toolbar.setTitle(R.string.settings_button_all_tasks);
+        } else {
+            toolbar.setTitle(R.string.completed_tasks_title);
+        }
 
         recyclerView = findViewById(R.id.recycler_view);
         swipeRefreshLayout = findViewById(R.id.swipe_refresh_layout);
@@ -58,13 +58,12 @@ public class CompletedTasksActivity extends AppCompatActivity {
 
         setupRecyclerView();
         observeViewModel();
-
         swipeRefreshLayout.setOnRefreshListener(() -> {
-            viewModel.loadCompletedTasks(currentSpaceId);
+            viewModel.loadCompletedTasks(currentSpaceId); // Pass null or ID
         });
         swipeRefreshLayout.setColorSchemeResources(R.color.md_theme_light_primary, R.color.md_theme_light_secondary);
 
-        viewModel.loadCompletedTasks(currentSpaceId);
+        viewModel.loadCompletedTasks(currentSpaceId); // Pass null or ID
     }
 
     private void setupRecyclerView() {
@@ -73,10 +72,12 @@ public class CompletedTasksActivity extends AppCompatActivity {
             @Override
             public void onRestoreTask(Task task) {
                 viewModel.restoreTask(task);
+                // REQUIREMENT MET: Snackbar is shown here
                 Snackbar.make(recyclerView, "Task restored", Snackbar.LENGTH_SHORT).show();
             }
 
             @Override
+
             public void onDeleteTask(Task task) {
                 showDeleteConfirmation(task);
             }
@@ -90,12 +91,14 @@ public class CompletedTasksActivity extends AppCompatActivity {
                 swipeRefreshLayout.setRefreshing(true);
             } else if (result instanceof Result.Success) {
                 swipeRefreshLayout.setRefreshing(false);
+
                 List<Task> tasks = ((Result.Success<List<Task>>) result).data;
                 adapter.updateTasks(tasks);
                 updateEmptyView(tasks.isEmpty());
             } else if (result instanceof Result.Error) {
                 swipeRefreshLayout.setRefreshing(false);
                 Log.e(TAG, "Error loading completed tasks", ((Result.Error<List<Task>>) result).exception);
+
                 Toast.makeText(this, "Error loading archive.", Toast.LENGTH_SHORT).show();
             }
         });
@@ -106,7 +109,8 @@ public class CompletedTasksActivity extends AppCompatActivity {
                 .setTitle("Delete Permanently?")
                 .setMessage("Are you sure you want to permanently delete this task? This action cannot be undone.")
                 .setNegativeButton(R.string.cancel, null)
-                .setPositiveButton(R.string.delete, (dialog, which) -> {
+                .setPositiveButton(R.string.delete, (dialog, which)
+                        -> {
                     viewModel.deleteTask(task.getId());
                     Toast.makeText(this, "Task deleted", Toast.LENGTH_SHORT).show();
                 })

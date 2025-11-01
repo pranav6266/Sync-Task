@@ -11,14 +11,13 @@ import com.pranav.synctask.data.UserRepository;
 import com.pranav.synctask.models.User;
 // REMOVED: Map import
 
-public class ProfileViewModel extends ViewModel {
+public class SettingsViewModel extends ViewModel { // RENAMED
     private final UserRepository userRepository;
     // REMOVED: private final TaskRepository taskRepository;
     private final MutableLiveData<Result<User>> userLiveData = new MutableLiveData<>();
     // REMOVED: private final MutableLiveData<Map<String, Integer>> taskStats = new MutableLiveData<>();
     private final MutableLiveData<Result<String>> photoUpdateResult = new MutableLiveData<>();
-
-    public ProfileViewModel() {
+    public SettingsViewModel() { // RENAMED
         this.userRepository = UserRepository.getInstance();
         // REMOVED: this.taskRepository = TaskRepository.getInstance();
     }

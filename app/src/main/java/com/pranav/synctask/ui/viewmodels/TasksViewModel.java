@@ -44,6 +44,13 @@ public class TasksViewModel extends ViewModel {
         taskRepository.syncLocalTasks(context);
     }
 
+    // --- ADDED ---
+    // Used for the "Undo" delete feature
+    public void createTask(Task task, Context context) {
+        taskRepository.createTask(task, context);
+    }
+    // --- END ADDED ---
+
     // --- ADDED IN PHASE 4A ---
     public void deleteTask(String taskId) {
         taskRepository.deleteTask(taskId);

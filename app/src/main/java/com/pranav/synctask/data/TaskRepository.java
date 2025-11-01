@@ -29,6 +29,10 @@ public class TaskRepository {
     private ListenerRegistration completedTasksListener;
     private final MutableLiveData<Result<List<Task>>> completedTasksResult = new MutableLiveData<>();
 
+    // --- ADDED ---
+    private ListenerRegistration completedTasksForSpacesListener;
+    // --- END ADDED ---
+
     // --- ADDED IN PHASE 3D ---
     private static ListenerRegistration allTasksListener;
     private final MutableLiveData<Result<List<Task>>> allTasksResult = new MutableLiveData<>();
@@ -76,6 +80,7 @@ public class TaskRepository {
             }
 
             @Override
+
             public void onError(Exception e) {
                 combinedTasksResult.setValue(new Result.Error<>(e));
             }
@@ -114,6 +119,7 @@ public class TaskRepository {
 
             @Override
             public void onError(Exception e) {
+
                 completedTasksResult.setValue(new Result.Error<>(e));
             }
         });
@@ -125,6 +131,34 @@ public class TaskRepository {
             completedTasksListener = null;
         }
     }
+
+    // --- ADDED ---
+    public void attachCompletedTasksListenerForSpaces(List<String> spaceIds) {
+        if (completedTasksForSpacesListener != null) {
+            completedTasksForSpacesListener.remove();
+        }
+        completedTasksResult.setValue(new Result.Loading<>());
+        completedTasksForSpacesListener = firebaseHelper.getCompletedTasksForSpaces(spaceIds, new FirebaseHelper.TasksCallback() {
+            @Override
+            public void onSuccess(List<Task> tasks) {
+                completedTasksResult.setValue(new Result.Success<>(tasks));
+            }
+
+            @Override
+            public void onError(Exception e) {
+                completedTasksResult.setValue(new Result.Error<>(e));
+            }
+        });
+    }
+
+    public void removeCompletedTasksForSpacesListener() {
+        if (completedTasksForSpacesListener != null) {
+            completedTasksForSpacesListener.remove();
+            completedTasksForSpacesListener = null;
+        }
+    }
+    // --- END ADDED ---
+
 
     // --- ADDED IN PHASE 3D: All Tasks (for Progress) Methods ---
 
@@ -145,6 +179,7 @@ public class TaskRepository {
 
             @Override
             public void onError(Exception e) {
+
                 allTasksResult.setValue(new Result.Error<>(e));
             }
         });
@@ -179,6 +214,7 @@ public class TaskRepository {
 
             @Override
             public void onError(Exception e) {
+
                 singleTaskResult.setValue(new Result.Error<>(e));
             }
         });
@@ -231,6 +267,7 @@ public class TaskRepository {
                     result.setValue(new Result.Success<>(null));
                 }
 
+
                 @Override
                 public void onError(Exception e) {
                     Log.e("TaskRepository", "Error updating task in Firestore", e);
@@ -263,6 +300,7 @@ public class TaskRepository {
         mergedList.sort((o1, o2) -> {
             int priorityCompare = getPriorityValue(o2.getPriority()) - getPriorityValue(o1.getPriority());
             if (priorityCompare == 0) {
+
                 // If priorities are the same, sort by creation date (newest first)
                 if (o1.getCreatedAt() == null || o2.getCreatedAt() == null) return 0;
                 return o2.getCreatedAt().compareTo(o1.getCreatedAt());
@@ -282,12 +320,14 @@ public class TaskRepository {
                 @Override
                 public void onSuccess(List<Task> tasks) {
                     // Listener will automatically update the list, nothing needed here
+
                     Log.d("TaskRepository", "Task created online successfully.");
                 }
 
                 @Override
                 public void onError(Exception e) {
                     // If online creation fails despite network check, save locally
+
                     Log.e("TaskRepository", "Failed to create online task, saving locally.", e);
                     createLocalTask(task);
                 }
@@ -322,15 +362,18 @@ public class TaskRepository {
                 // Attempt to create the task in Firestore
                 firebaseHelper.createTask(localTask, new FirebaseHelper.TasksCallback() {
                     @Override
+
                     public void onSuccess(List<Task> tasks) {
                         // Task successfully synced, remove from local list
                         localTasks.remove(localTask);
                         // No need to call mergeAndNotify here, Firestore listener will update
+
                         Log.d("TaskRepository", "Successfully synced local task: " + localTask.getTitle());
                     }
 
                     @Override
                     public void onError(Exception e) {
+
                         // Sync failed, keep the task in the local list for next attempt
                         Log.e("TaskRepository", "Sync failed for task: " + localTask.getTitle(), e);
                     }

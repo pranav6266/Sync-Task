@@ -8,6 +8,7 @@
     tools:context=".activities.PersonalLinksActivity">
 
     <com.google.android.material.appbar.AppBarLayout
+
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?attr/colorSurface">
@@ -19,6 +20,7 @@
             app:navigationIcon="@drawable/ic_arrow_back"
             app:title="@string/personal_links_title"
             app:titleTextColor="?attr/colorOnSurface" />
+
 
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -33,10 +35,20 @@
             android:layout_height="match_parent"
             android:clipToPadding="false"
             android:paddingTop="8dp"
+
             android:paddingBottom="8dp"
             tools:listitem="@layout/item_personal_links"
             />
 
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/empty_view"
+            android:layout_width="200dp"
+            android:layout_height="200dp"
+            android:layout_centerInParent="true"
+            app:lottie_rawRes="@raw/lottie_empty"
+            app:lottie_autoPlay="true"
+            app:lottie_loop="true"
+            android:visibility="gone" />
     </RelativeLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
