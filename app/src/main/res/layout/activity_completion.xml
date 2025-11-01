@@ -7,12 +7,15 @@
     android:gravity="center">
 
     <com.airbnb.lottie.LottieAnimationView
-        android:id="@+id/lottie_complete_animation"
+        android:id="@+id/lottiecompleteanimation"
         android:layout_width="250dp"
         android:layout_height="250dp"
         android:layout_centerInParent="true"
+        android:visibility="gone"
+        android:background="#CC000000"
         app:lottie_rawRes="@raw/lottie_task_complete"
         app:lottie_autoPlay="false"
         app:lottie_loop="false" />
+
 
 </RelativeLayout>

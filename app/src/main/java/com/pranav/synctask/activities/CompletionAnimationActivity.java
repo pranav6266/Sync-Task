@@ -2,6 +2,7 @@ package com.pranav.synctask.activities;
 
 import android.animation.Animator;
 import android.os.Bundle;
+import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -12,14 +13,13 @@ import com.pranav.synctask.R;
 
 public class CompletionAnimationActivity extends AppCompatActivity {
 
-    private LottieAnimationView lottieAnimationView;
-
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_completion);
 
-        lottieAnimationView = findViewById(R.id.lottie_complete_animation);
+        LottieAnimationView lottieAnimationView = findViewById(R.id.lottiecompleteanimation);
+        lottieAnimationView.setVisibility(View.VISIBLE);
         lottieAnimationView.playAnimation();
 
         lottieAnimationView.addAnimatorListener(new Animator.AnimatorListener() {
@@ -48,5 +48,6 @@ public class CompletionAnimationActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         // Do nothing. Prevent user from closing the animation early.
+        super.onBackPressed();
     }
 }
