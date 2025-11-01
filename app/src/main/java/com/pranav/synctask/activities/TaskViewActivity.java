@@ -3,6 +3,7 @@ package com.pranav.synctask.activities;
 import android.app.ActivityOptions; // ADDED
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Window;
@@ -21,14 +22,16 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.pranav.synctask.R;
 import com.pranav.synctask.adapters.ViewPagerAdapter;
+import com.pranav.synctask.models.Space;
 import com.pranav.synctask.ui.viewmodels.TasksViewModel;
 
-// MODIFIED IN PHASE 2: Renamed from MainActivity
 public class TaskViewActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
     private TasksViewModel viewModel;
     private String currentSpaceId;
+    private String contextType; // --- ADDED IN PHASE 4A ---
+
     @Override
     protected void onNewIntent(@NonNull Intent intent) {
         super.onNewIntent(intent);
@@ -42,10 +45,17 @@ public class TaskViewActivity extends AppCompatActivity {
         getWindow().setExitTransition(new MaterialFadeThrough());
 
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_task_view); // MODIFIED IN PHASE 2
+        setContentView(R.layout.activity_task_view);
         handleNotificationIntent(getIntent());
 
         currentSpaceId = getIntent().getStringExtra("SPACE_ID");
+        // --- ADDED IN PHASE 4A ---
+        contextType = getIntent().getStringExtra("CONTEXT_TYPE");
+        if (contextType == null) {
+            contextType = Space.TYPE_SHARED; // Default to shared
+        }
+        // --- END ADDED ---
+
         if (currentSpaceId == null || currentSpaceId.isEmpty()) {
             Toast.makeText(this, "Error: No Space ID provided.", Toast.LENGTH_LONG).show();
             finish();
@@ -62,26 +72,42 @@ public class TaskViewActivity extends AppCompatActivity {
         TabLayout tabLayout = findViewById(R.id.tab_layout);
         FloatingActionButton fab = findViewById(R.id.fab_add_task);
 
-        viewPager.setAdapter(new ViewPagerAdapter(this));
+        // --- MODIFIED IN PHASE 4A ---
+        viewPager.setAdapter(new ViewPagerAdapter(this, contextType));
         new TabLayoutMediator(tabLayout, viewPager,
                 (tab, position) -> {
-                    switch (position) {
-                        case 0:
-                            tab.setText("Today");
-                            break;
-                        case 1:
-                            tab.setText("This Month");
-                            break;
-                        case 2:
-                            tab.setText("All");
-                            break;
-                        case 3:
-                            tab.setText("Updates");
-                            break;
+                    if (Space.TYPE_PERSONAL.equals(contextType)) {
+                        switch (position) {
+                            case 0:
+                                tab.setText("All");
+                                break;
+                            case 1:
+                                tab.setText("My Tasks");
+                                break;
+                            case 2:
+                                tab.setText("Partner's Tasks");
+                                break;
+                        }
+                    } else { // SHARED
+                        switch (position) {
+                            case 0:
+                                tab.setText("All");
+                                break;
+                            case 1:
+                                tab.setText("Individual");
+                                break;
+                            case 2:
+                                tab.setText("Shared");
+                                break;
+                            case 3:
+                                tab.setText("Assigned");
+                                break;
+                        }
                     }
                 }
         ).attach();
-        // --- MODIFIED: Launch with Animation ---
+        // --- END MODIFIED ---
+
         fab.setOnClickListener(v -> {
             Intent intent = new Intent(TaskViewActivity.this, CreateTaskActivity.class);
             intent.putExtra("SPACE_ID", currentSpaceId);
@@ -93,10 +119,8 @@ public class TaskViewActivity extends AppCompatActivity {
             );
             startActivity(intent, options.toBundle());
         });
-        // --- END MODIFIED ---
     }
 
-    // ... (rest of the file is unchanged) ...
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_menu, menu);
@@ -120,7 +144,6 @@ public class TaskViewActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        // MODIFIED IN PHASE 2
         int itemId = item.getItemId();
         if (itemId == R.id.action_archive) {
             Intent intent = new Intent(this, CompletedTasksActivity.class);

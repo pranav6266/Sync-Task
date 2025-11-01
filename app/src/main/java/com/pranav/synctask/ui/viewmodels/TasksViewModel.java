@@ -15,7 +15,6 @@ public class TasksViewModel extends ViewModel {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     private final MutableLiveData<String> searchQuery = new MutableLiveData<>("");
-
     public TasksViewModel() {
         this.taskRepository = TaskRepository.getInstance();
         this.userRepository = UserRepository.getInstance();
@@ -44,6 +43,12 @@ public class TasksViewModel extends ViewModel {
     public void syncLocalTasks(Context context) {
         taskRepository.syncLocalTasks(context);
     }
+
+    // --- ADDED IN PHASE 4A ---
+    public void deleteTask(String taskId) {
+        taskRepository.deleteTask(taskId);
+    }
+    // --- END ADDED ---
 
     @Override
     protected void onCleared() {

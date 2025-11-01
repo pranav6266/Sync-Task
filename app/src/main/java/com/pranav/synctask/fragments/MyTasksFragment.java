@@ -4,12 +4,13 @@ import com.pranav.synctask.models.Task;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class UpdatesFragment extends BaseTaskFragment {
+public class MyTasksFragment extends BaseTaskFragment {
 
     @Override
     protected List<Task> filterTasks(List<Task> tasks) {
+        // "My Tasks" in a Personal link are ones I created, which are "Individual"
         return tasks.stream()
-                .filter(task -> Task.TYPE_UPDATE.equals(task.getTaskType()))
+                .filter(task -> Task.SCOPE_INDIVIDUAL.equals(task.getOwnershipScope()))
                 .collect(Collectors.toList());
     }
 }

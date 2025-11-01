@@ -22,7 +22,6 @@ import com.pranav.synctask.models.Task;
 // import com.pranav.synctask.utils.DateUtils; // No longer needed for due date
 import java.util.List;
 import java.util.Objects;
-
 public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder> {
 
     private List<Task> taskList;
@@ -30,11 +29,23 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     private final String currentUserId;
     private int lastPosition = -1;
 
-    public TaskAdapter(Context context, List<Task> taskList, String currentUserId) {
+    // --- ADDED IN PHASE 4A ---
+    private final OnTaskActionListener listener;
+
+    public interface OnTaskActionListener {
+        void onTaskClick(Task task);
+        void onTaskLongClick(Task task, View view);
+    }
+    // --- END ADDED ---
+
+    // --- MODIFIED IN PHASE 4A ---
+    public TaskAdapter(Context context, List<Task> taskList, String currentUserId, OnTaskActionListener listener) {
         this.context = context;
         this.taskList = taskList;
         this.currentUserId = currentUserId;
+        this.listener = listener;
     }
+    // --- END MODIFIED ---
 
     @NonNull
     @Override
@@ -49,59 +60,14 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         Task task = taskList.get(position);
         if (task == null) return;
 
-        // --- PERMISSIONS LOGIC (PHASE 1) ---
         String scope = task.getOwnershipScope();
         if (scope == null) {
             scope = Task.SCOPE_SHARED;
         }
 
-        boolean isCreator = currentUserId != null && currentUserId.equals(task.getCreatorUID());
-
-        // By default, you can see everything, but can't interact
-        boolean canEdit = false;
-        // boolean canComplete = false; // Moved to Phase 2
-        // boolean canDelete = false; // Moved to Phase 2
-
-        switch (scope) {
-            case Task.SCOPE_INDIVIDUAL:
-                // Only the creator can edit.
-                if (isCreator) {
-                    canEdit = true;
-                    // canComplete = true;
-                    // canDelete = true;
-                }
-                // Partner (else) can see, but all flags remain false.
-                break;
-
-            case Task.SCOPE_SHARED:
-                // Both users can do everything
-                canEdit = true;
-                // canComplete = true;
-                // canDelete = true;
-                break;
-
-            case Task.SCOPE_ASSIGNED:
-                if (isCreator) {
-                    // I created it, I can edit/delete but not complete
-                    canEdit = true;
-                    // canDelete = true;
-                    // canComplete = false; // Only assignee can complete
-                } else {
-                    // It's assigned to me.
-                    // I can complete, but not edit/delete
-                    canEdit = false; // Per Phase 2, this will open detail view
-                    // canDelete = false;
-                    // canComplete = true;
-                }
-                break;
-        }
-        // --- END PERMISSIONS LOGIC ---
-
-
         // --- APPLY UI AND PERMISSIONS ---
 
         holder.tvTitle.setText(task.getTitle());
-
         // Set Task Type Icon
         switch (task.getTaskType()) {
             case Task.TYPE_REMINDER:
@@ -130,23 +96,20 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 break;
         }
 
-        // Apply edit/view permission
-        if (canEdit) {
-            // User has permission, clicking opens the Edit activity
-            holder.itemView.setOnClickListener(v -> {
-                Intent intent = new Intent(context, EditTaskActivity.class);
-                intent.putExtra(EditTaskActivity.EXTRA_TASK, task);
-                context.startActivity(intent);
-            });
-        } else {
-            // This is the fix: Non-creator clicks an Individual task
-            // In Phase 1, it's view-only and does nothing (or shows a toast).
-            // In Phase 2, this will open the TaskDetailActivity.
-            holder.itemView.setOnClickListener(v -> {
-                // Optional: Show a toast that it's view-only for now
-                Toast.makeText(context, "View-only (Details in Phase 2)", Toast.LENGTH_SHORT).show();
-            });
-        }
+        // --- MODIFIED IN PHASE 4A: New click logic ---
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onTaskClick(task);
+            }
+        });
+
+        holder.itemView.setOnLongClickListener(v -> {
+            if (listener != null) {
+                listener.onTaskLongClick(task, v);
+            }
+            return true;
+        });
+        // --- END MODIFIED ---
 
         // Set animation
         setAnimation(holder.itemView, position);
@@ -222,7 +185,8 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             return Objects.equals(oldTask.getTitle(), newTask.getTitle()) &&
                     Objects.equals(oldTask.getTaskType(), newTask.getTaskType()) && // Added check
                     Objects.equals(oldTask.getOwnershipScope(), newTask.getOwnershipScope()) &&
-                    oldTask.isSynced() == newTask.isSynced();
+                    oldTask.isSynced()
+                            == newTask.isSynced();
         }
     }
 }

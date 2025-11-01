@@ -48,7 +48,7 @@ public class PersonalLinksAdapter extends RecyclerView.Adapter<PersonalLinksAdap
     @NonNull
     @Override
     public LinkViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item_personal_links, parent, false);
+        View view = LayoutInflater.from(context).inflate(R.layout.item_personal_link, parent, false);
         return new LinkViewHolder(view);
     }
 
@@ -82,8 +82,9 @@ public class PersonalLinksAdapter extends RecyclerView.Adapter<PersonalLinksAdap
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, TaskViewActivity.class);
             intent.putExtra("SPACE_ID", link.getSpaceId());
-            // In Phase 4, we will also pass the context:
-            // intent.putExtra("CONTEXT_TYPE", Space.TYPE_PERSONAL);
+            // --- ADDED IN PHASE 4A ---
+            intent.putExtra("CONTEXT_TYPE", Space.TYPE_PERSONAL);
+            // --- END ADDED ---
             context.startActivity(intent);
         });
 

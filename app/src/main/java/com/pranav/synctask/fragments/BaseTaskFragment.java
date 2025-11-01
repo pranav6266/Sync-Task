@@ -1,6 +1,7 @@
 package com.pranav.synctask.fragments;
 
 import android.content.Context;
+import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkRequest;
@@ -9,7 +10,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-// import android.widget.TextView; // REMOVED
+import android.widget.PopupMenu;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -19,9 +20,12 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.airbnb.lottie.LottieAnimationView; // ADDED
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.pranav.synctask.R;
+import com.pranav.synctask.activities.EditTaskActivity;
+import com.pranav.synctask.activities.TaskDetailActivity;
 import com.pranav.synctask.adapters.TaskAdapter;
 import com.pranav.synctask.data.Result;
 import com.pranav.synctask.models.Task;
@@ -30,18 +34,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public abstract class BaseTaskFragment extends Fragment {
+// --- MODIFIED IN PHASE 4A: Implements listener ---
+public abstract class BaseTaskFragment extends Fragment implements TaskAdapter.OnTaskActionListener {
 
     protected RecyclerView recyclerView;
     protected TaskAdapter adapter;
     protected SwipeRefreshLayout swipeRefreshLayout;
     protected LottieAnimationView emptyView; // MODIFIED: Changed from TextView
-    private String currentUserId;
-    private TasksViewModel viewModel;
+    protected String currentUserId; // MODIFIED: Made protected
+    protected TasksViewModel viewModel; // MODIFIED: Made protected
     private ConnectivityManager.NetworkCallback networkCallback;
     private List<Task> currentTaskList = new ArrayList<>();
     private String currentSearchQuery = "";
-
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -53,7 +57,8 @@ public abstract class BaseTaskFragment extends Fragment {
 
         recyclerView = view.findViewById(R.id.recycler_view);
         swipeRefreshLayout = view.findViewById(R.id.swipe_refresh_layout);
-        emptyView = view.findViewById(R.id.empty_view); // This now finds the LottieAnimationView
+        emptyView = view.findViewById(R.id.empty_view);
+        // This now finds the LottieAnimationView
 
         setupRecyclerView();
         swipeRefreshLayout.setOnRefreshListener(() -> {
@@ -73,7 +78,8 @@ public abstract class BaseTaskFragment extends Fragment {
 
     private void setupRecyclerView() {
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapter = new TaskAdapter(getContext(), new ArrayList<>(), currentUserId);
+        // --- MODIFIED IN PHASE 4A: Pass 'this' as the listener ---
+        adapter = new TaskAdapter(getContext(), new ArrayList<>(), currentUserId, this);
         recyclerView.setAdapter(adapter);
     }
 
@@ -97,7 +103,6 @@ public abstract class BaseTaskFragment extends Fragment {
 
             if (result instanceof Result.Success) {
                 currentTaskList = ((Result.Success<List<Task>>) result).data;
-
                 filterAndDisplayTasks();
             } else if (result instanceof Result.Error) {
                 Log.e(getClass().getSimpleName(), "Error loading tasks", ((Result.Error<List<Task>>) result).exception);
@@ -160,4 +165,77 @@ public abstract class BaseTaskFragment extends Fragment {
     }
 
     protected abstract List<Task> filterTasks(List<Task> tasks);
+
+    // --- ADDED IN PHASE 4A: Listener implementation ---
+    @Override
+    public void onTaskClick(Task task) {
+        Intent intent = new Intent(getContext(), TaskDetailActivity.class);
+        intent.putExtra(TaskDetailActivity.EXTRA_TASK_ID, task.getId());
+        startActivity(intent);
+    }
+
+    @Override
+    public void onTaskLongClick(Task task, View view) {
+        PopupMenu popup = new PopupMenu(getContext(), view);
+        popup.getMenuInflater().inflate(R.menu.task_item_menu, popup.getMenu());
+
+        // Check permissions
+        boolean isCreator = currentUserId != null && currentUserId.equals(task.getCreatorUID());
+        String scope = task.getOwnershipScope();
+
+        // Determine who can edit/delete based on new logic (matches TaskDetailActivity)
+        boolean canEdit = false;
+        boolean canDelete = false;
+
+        switch (scope) {
+            case Task.SCOPE_INDIVIDUAL:
+                if (isCreator) {
+                    canEdit = true;
+                    canDelete = true;
+                }
+                break;
+            case Task.SCOPE_SHARED:
+                canEdit = true;
+                canDelete = true;
+                break;
+            case Task.SCOPE_ASSIGNED:
+                if (isCreator) {
+                    canEdit = true;
+                    canDelete = true;
+                }
+                break;
+        }
+
+        popup.getMenu().findItem(R.id.action_edit_task).setVisible(canEdit);
+        popup.getMenu().findItem(R.id.action_delete_task).setVisible(canDelete);
+
+        popup.setOnMenuItemClickListener(item -> {
+            int itemId = item.getItemId();
+            if (itemId == R.id.action_edit_task) {
+                Intent intent = new Intent(getContext(), EditTaskActivity.class);
+                intent.putExtra(EditTaskActivity.EXTRA_TASK, task);
+                startActivity(intent);
+                return true;
+            } else if (itemId == R.id.action_delete_task) {
+                showDeleteConfirmation(task);
+                return true;
+            }
+            return false;
+        });
+        popup.show();
+    }
+
+    private void showDeleteConfirmation(Task task) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.delete_task_dialog_title)
+                .setMessage(R.string.delete_task_dialog_message)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.delete, (dialog, which) -> {
+                    viewModel.deleteTask(task.getId());
+                    // Phase 4C will add an "Undo" Snackbar
+                    Toast.makeText(getContext(), "Task deleted", Toast.LENGTH_SHORT).show();
+                })
+                .show();
+    }
+    // --- END ADDED ---
 }

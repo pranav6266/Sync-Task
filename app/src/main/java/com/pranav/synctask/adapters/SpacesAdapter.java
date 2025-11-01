@@ -53,15 +53,16 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
         Space space = spaceList.get(position);
         if (space == null) return;
 
-        // FIX: Use the camelCase variable name 'tvSpaceName'
         holder.tvSpaceName.setText(space.getSpaceName());
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, TaskViewActivity.class); // MODIFIED IN PHASE 2
             intent.putExtra("SPACE_ID", space.getSpaceId());
+            // --- ADDED IN PHASE 4A ---
+            intent.putExtra("CONTEXT_TYPE", Space.TYPE_SHARED);
+            // --- END ADDED ---
             context.startActivity(intent);
         });
         boolean isCreator = currentUserId != null && !space.getMembers().isEmpty() && space.getMembers().get(0).equals(currentUserId);
-        // FIX: Use the camelCase variable name 'ivSpaceOptions'
         holder.ivSpaceOptions.setOnClickListener(v -> {
             showOptionsDialog(space, isCreator);
         });
@@ -80,7 +81,6 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
             options.add(leaveOption);
         }
 
-        // MODIFIED: Use MaterialAlertDialogBuilder
         new MaterialAlertDialogBuilder(context)
                 .setItems(options.toArray(new String[0]), (dialog, which) -> {
                     String selectedOption = options.get(which);
@@ -107,7 +107,6 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
     private void showInviteCodeDialog(Space space) {
         String title = "Share Invite Code";
         String message = "Share this code with a partner to let them join your space.";
-        // Create a TextView for the code
         final TextView codeView = new TextView(context);
         codeView.setText(space.getInviteCode());
         codeView.setTextSize(24);
@@ -115,7 +114,6 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
         codeView.setGravity(Gravity.CENTER);
         codeView.setPadding(40, 40, 40, 40);
 
-        // MODIFIED: Use MaterialAlertDialogBuilder
         new MaterialAlertDialogBuilder(context)
                 .setTitle(title)
                 .setMessage(message)
@@ -134,7 +132,6 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
     }
 
     private void showConfirmationDialog(String title, String message, Runnable onConfirm) {
-        // MODIFIED: Use MaterialAlertDialogBuilder
         new MaterialAlertDialogBuilder(context)
                 .setTitle(title)
                 .setMessage(message)
@@ -145,7 +142,6 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
     }
 
     private DashboardViewModel getViewModel() {
-        // This assumes the context is the DashboardActivity
         return new ViewModelProvider((AppCompatActivity) context).get(DashboardViewModel.class);
     }
 

@@ -5,38 +5,60 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import com.pranav.synctask.fragments.AllTasksFragment;
-import com.pranav.synctask.fragments.ThisMonthFragment;
-import com.pranav.synctask.fragments.TodayFragment;
-import com.pranav.synctask.fragments.UpdatesFragment;
+import com.pranav.synctask.fragments.AssignedFragment;
+import com.pranav.synctask.fragments.IndividualFragment;
+import com.pranav.synctask.fragments.MyTasksFragment;
+import com.pranav.synctask.fragments.PartnerTasksFragment;
+import com.pranav.synctask.fragments.SharedFragment;
+import com.pranav.synctask.models.Space;
 
 public class ViewPagerAdapter extends FragmentStateAdapter {
 
-    public ViewPagerAdapter(@NonNull FragmentActivity fragmentActivity) {
+    private final String contextType;
+
+    public ViewPagerAdapter(@NonNull FragmentActivity fragmentActivity, String contextType) {
         super(fragmentActivity);
+        this.contextType = (contextType != null) ? contextType : Space.TYPE_SHARED; // Default to shared
     }
 
     @NonNull
     @Override
     public Fragment createFragment(int position) {
-        // CHANGED: Swapped positions 0 and 1 to match the tab labels in MainActivity
-        switch (position) {
-            case 0:
-                // "Today" tab
-                return new TodayFragment();
-            case 1:
-                // "This Month" tab
-                return new ThisMonthFragment();
-            case 2:
-                // "All" tab
-                return new AllTasksFragment();
-            default:
-                // "Updates" tab
-                return new UpdatesFragment();
+        if (Space.TYPE_PERSONAL.equals(contextType)) {
+            // Personal Context: [All, My Tasks, Partner's Tasks]
+            switch (position) {
+                case 0:
+                    return new AllTasksFragment();
+                case 1:
+                    return new MyTasksFragment();
+                case 2:
+                    return new PartnerTasksFragment();
+                default:
+                    return new AllTasksFragment();
+            }
+        } else {
+            // Shared Context: [All, Individual, Shared, Assigned]
+            switch (position) {
+                case 0:
+                    return new AllTasksFragment();
+                case 1:
+                    return new IndividualFragment();
+                case 2:
+                    return new SharedFragment();
+                case 3:
+                    return new AssignedFragment();
+                default:
+                    return new AllTasksFragment();
+            }
         }
     }
 
     @Override
     public int getItemCount() {
-        return 4; // We have 4 tabs
+        if (Space.TYPE_PERSONAL.equals(contextType)) {
+            return 3; // All, My Tasks, Partner's Tasks
+        } else {
+            return 4; // All, Individual, Shared, Assigned
+        }
     }
 }

@@ -1,16 +1,15 @@
 package com.pranav.synctask.fragments;
 
 import com.pranav.synctask.models.Task;
-import com.pranav.synctask.utils.DateUtils;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class TodayFragment extends BaseTaskFragment {
+public class SharedFragment extends BaseTaskFragment {
 
     @Override
     protected List<Task> filterTasks(List<Task> tasks) {
         return tasks.stream()
-                .filter(task -> DateUtils.isToday(task.getDueDate()))
+                .filter(task -> Task.SCOPE_SHARED.equals(task.getOwnershipScope()))
                 .collect(Collectors.toList());
     }
 }
