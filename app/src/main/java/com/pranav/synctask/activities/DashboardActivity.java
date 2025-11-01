@@ -43,9 +43,7 @@ public class DashboardActivity extends AppCompatActivity {
     private TextView tvWelcomeMessage, tvPersonalSummary, tvSharedSummary;
     private MaterialCardView cardPersonalSpaces, cardSharedSpaces;
     private Button btnViewProfile;
-    // private ProgressBar loadingView;
-    // Optional
-    private LinearProgressIndicator progressPersonal, progressShared;
+    // Progress bars removed
     private FloatingActionButton fabAdd;
     private List<DialogItem> dialogItemsCache = new ArrayList<>();
     // Cache for dialog
@@ -81,11 +79,8 @@ public class DashboardActivity extends AppCompatActivity {
         cardPersonalSpaces = findViewById(R.id.card_personal_spaces);
         cardSharedSpaces = findViewById(R.id.card_shared_spaces);
         btnViewProfile = findViewById(R.id.btn_view_profile);
-        progressPersonal = findViewById(R.id.progress_personal);
-        progressShared = findViewById(R.id.progress_shared);
+        // Progress bars removed
         fabAdd = findViewById(R.id.fab_add);
-        // loadingView = findViewById(R.id.loading_view);
-        // Optional
     }
 
     private void setupClickListeners() {
@@ -155,13 +150,7 @@ public class DashboardActivity extends AppCompatActivity {
         });
         // --- END ADDED ---
 
-        // Observe progress
-        viewModel.getPersonalProgress().observe(this, progress -> {
-            progressPersonal.setProgress(progress, true);
-        });
-        viewModel.getSharedProgress().observe(this, progress -> {
-            progressShared.setProgress(progress, true);
-        });
+        // --- REMOVED Progress Observers ---
     }
 
     private void showAddTaskDialog() {

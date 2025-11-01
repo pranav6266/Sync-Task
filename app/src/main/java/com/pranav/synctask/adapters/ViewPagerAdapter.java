@@ -6,7 +6,6 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import com.pranav.synctask.fragments.AllTasksFragment;
 import com.pranav.synctask.fragments.AssignedFragment;
-import com.pranav.synctask.fragments.IndividualFragment;
 import com.pranav.synctask.fragments.MyTasksFragment;
 import com.pranav.synctask.fragments.PartnerTasksFragment;
 import com.pranav.synctask.fragments.SharedFragment;
@@ -37,28 +36,20 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
                     return new AllTasksFragment();
             }
         } else {
-            // Shared Context: [All, Individual, Shared, Assigned]
+            // Shared Context: [All, Shared, Assigned] - (Individual removed)
             switch (position) {
-                case 0:
-                    return new AllTasksFragment();
                 case 1:
-                    return new IndividualFragment();
+                    return new SharedFragment();  // Was case 2
                 case 2:
-                    return new SharedFragment();
-                case 3:
-                    return new AssignedFragment();
+                    return new AssignedFragment();  // Was case 3
                 default:
-                    return new AllTasksFragment();
+                    return new AllTasksFragment(); 
             }
         }
     }
 
     @Override
     public int getItemCount() {
-        if (Space.TYPE_PERSONAL.equals(contextType)) {
-            return 3; // All, My Tasks, Partner's Tasks
-        } else {
-            return 4; // All, Individual, Shared, Assigned
-        }
+        return 3;
     }
 }

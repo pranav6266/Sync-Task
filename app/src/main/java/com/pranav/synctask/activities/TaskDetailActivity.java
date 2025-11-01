@@ -31,7 +31,6 @@ import com.pranav.synctask.ui.viewmodels.TaskDetailViewModel;
 import com.pranav.synctask.utils.DateUtils;
 
 import java.util.Locale;
-
 public class TaskDetailActivity extends AppCompatActivity {
 
     public static final String EXTRA_TASK_ID = "EXTRA_TASK_ID";
@@ -48,11 +47,12 @@ public class TaskDetailActivity extends AppCompatActivity {
     private View contentLayout;
     private Toolbar toolbar;
     private AppBarLayout appBarLayout; // ADDED IN PHASE 1
-    private LottieAnimationView lottieAnimationView; // ADDED IN PHASE 1
+    // private LottieAnimationView lottieAnimationView; // REMOVED
     private boolean canEdit = false;
     private boolean canDelete = false;
     private boolean canComplete = false;
-    // private boolean canUpdateProgress = false; // REMOVED IN PHASE 1
+    // private boolean canUpdateProgress = false;
+    // REMOVED IN PHASE 1
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,7 +74,8 @@ public class TaskDetailActivity extends AppCompatActivity {
         initializeViews();
         setupToolbar();
         observeViewModel();
-        // setupProgressSliderListener(); // REMOVED IN PHASE 1
+        // setupProgressSliderListener();
+        // REMOVED IN PHASE 1
     }
 
     private void initializeViews() {
@@ -86,11 +87,12 @@ public class TaskDetailActivity extends AppCompatActivity {
         tvPriority = findViewById(R.id.tv_task_priority_detail);
         tvScope = findViewById(R.id.tv_task_scope_detail);
         tvCreator = findViewById(R.id.tv_task_creator_detail);
-        tvEffort = findViewById(R.id.tv_task_effort_detail); // ADDED IN PHASE 1
+        tvEffort = findViewById(R.id.tv_task_effort_detail);
+        // ADDED IN PHASE 1
         cbStatus = findViewById(R.id.cb_task_status_detail);
         progressBar = findViewById(R.id.progress_bar_detail);
         contentLayout = findViewById(R.id.content_layout_detail);
-        lottieAnimationView = findViewById(R.id.lottie_complete_animation); // ADDED IN PHASE 1
+        // lottieAnimationView = findViewById(R.id.lottie_complete_animation); // REMOVED
         // REMOVED progressSlider and tvProgressPercentage
     }
 
@@ -121,17 +123,20 @@ public class TaskDetailActivity extends AppCompatActivity {
                 progressBar.setVisibility(View.VISIBLE);
                 contentLayout.setVisibility(View.GONE);
             } else if (result instanceof Result.Success) {
+
                 progressBar.setVisibility(View.GONE);
                 contentLayout.setVisibility(View.VISIBLE);
                 currentTask = ((Result.Success<Task>) result).data;
                 if (currentTask != null) {
                     calculatePermissions();
                     populateUi();
+
                 } else {
                     Toast.makeText(this, "Error loading task data.", Toast.LENGTH_SHORT).show();
                     finish();
                 }
             } else if (result instanceof Result.Error) {
+
                 progressBar.setVisibility(View.GONE);
                 Log.e(TAG, "Error loading task", ((Result.Error<Task>) result).exception);
                 Toast.makeText(this, "Error loading task.", Toast.LENGTH_SHORT).show();
@@ -197,16 +202,19 @@ public class TaskDetailActivity extends AppCompatActivity {
         }
 
         tvPriority.setText(currentTask.getPriority());
-        tvEffort.setText(String.valueOf(currentTask.getEffort())); // ADDED IN PHASE 1
+        tvEffort.setText(String.valueOf(currentTask.getEffort()));
+        // ADDED IN PHASE 1
         tvScope.setText(getScopeDisplayString(currentTask.getOwnershipScope()));
 
         boolean isCreator = currentUser.getUid().equals(currentTask.getCreatorUID());
         tvCreator.setText(isCreator ? getString(R.string.task_creator_label_you) : currentTask.getCreatorDisplayName());
 
         // MODIFIED Checkbox logic IN PHASE 1
-        cbStatus.setOnCheckedChangeListener(null); // Remove listener to set initial state
+        cbStatus.setOnCheckedChangeListener(null);
+        // Remove listener to set initial state
         cbStatus.setChecked(Task.STATUS_COMPLETED.equals(currentTask.getStatus()));
-        cbStatus.setEnabled(canComplete); // Enable/disable based on permission
+        cbStatus.setEnabled(canComplete);
+        // Enable/disable based on permission
 
         // Add new listener
         cbStatus.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -215,6 +223,7 @@ public class TaskDetailActivity extends AppCompatActivity {
             }
 
             if (isChecked) {
+
                 // User checked the box
                 playCompleteAnimation();
             } else {
@@ -222,39 +231,20 @@ public class TaskDetailActivity extends AppCompatActivity {
                 viewModel.updateTaskStatus(taskId, Task.STATUS_PENDING);
             }
         });
-
         // REMOVED All progress slider logic IN PHASE 1
     }
 
-    // ADDED IN PHASE 1
+    // MODIFIED
     private void playCompleteAnimation() {
-        // Disable UI
-        contentLayout.setVisibility(View.GONE);
-        appBarLayout.setVisibility(View.GONE);
-
-        // Play animation
-        lottieAnimationView.setVisibility(View.VISIBLE);
-        lottieAnimationView.playAnimation();
-
-        // Update status in Firestore
+        // 1. Update status in Firestore
         viewModel.updateTaskStatus(taskId, Task.STATUS_COMPLETED);
 
-        // Add listener to finish activity on animation end
-        lottieAnimationView.addAnimatorListener(new Animator.AnimatorListener() {
-            @Override
-            public void onAnimationStart(@NonNull Animator animation) {}
+        // 2. Launch the modal animation activity
+        Intent intent = new Intent(this, CompletionAnimationActivity.class);
+        startActivity(intent);
 
-            @Override
-            public void onAnimationEnd(@NonNull Animator animation) {
-                finish();
-            }
-
-            @Override
-            public void onAnimationCancel(@NonNull Animator animation) {}
-
-            @Override
-            public void onAnimationRepeat(@NonNull Animator animation) {}
-        });
+        // 3. Finish this activity immediately
+        finish();
     }
 
     // REMOVED progressChangeListener and setupProgressSliderListener IN PHASE 1
@@ -312,6 +302,7 @@ public class TaskDetailActivity extends AppCompatActivity {
                 .setMessage(R.string.delete_task_dialog_message)
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.delete, (dialog, which) -> {
+
                     viewModel.deleteTask(taskId);
                     Toast.makeText(this, "Task deleted", Toast.LENGTH_SHORT).show();
                     finish();

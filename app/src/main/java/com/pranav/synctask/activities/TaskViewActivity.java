@@ -73,6 +73,7 @@ public class TaskViewActivity extends AppCompatActivity {
         FloatingActionButton fab = findViewById(R.id.fab_add_task);
 
         // --- MODIFIED IN PHASE 4A ---
+        // --- MODIFIED IN PHASE 4A ---
         viewPager.setAdapter(new ViewPagerAdapter(this, contextType));
         new TabLayoutMediator(tabLayout, viewPager,
                 (tab, position) -> {
@@ -82,25 +83,22 @@ public class TaskViewActivity extends AppCompatActivity {
                                 tab.setText("All");
                                 break;
                             case 1:
-                                tab.setText("My Tasks");
+                                tab.setText("My Tasks"); 
                                 break;
                             case 2:
-                                tab.setText("Partner's Tasks");
+                                tab.setText("Partner's Tasks"); 
                                 break;
                         }
-                    } else { // SHARED
+                    } else { // SHARED (MODIFIED)
                         switch (position) {
                             case 0:
-                                tab.setText("All");
+                                tab.setText("All"); 
                                 break;
                             case 1:
-                                tab.setText("Individual");
+                                tab.setText("Shared");  // Was case 2
                                 break;
                             case 2:
-                                tab.setText("Shared");
-                                break;
-                            case 3:
-                                tab.setText("Assigned");
+                                tab.setText("Assigned");  // Was case 3
                                 break;
                         }
                     }
@@ -191,5 +189,9 @@ public class TaskViewActivity extends AppCompatActivity {
                 }
             }
         }
+    }
+
+    public String getContextType() {
+        return contextType;
     }
 }

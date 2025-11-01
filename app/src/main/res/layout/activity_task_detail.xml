@@ -8,6 +8,7 @@
     tools:context=".activities.TaskDetailActivity">
 
     <com.google.android.material.appbar.AppBarLayout
+
         android:id="@+id/app_bar_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -22,6 +23,7 @@
     </com.google.android.material.appbar.AppBarLayout>
 
     <RelativeLayout
+
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
@@ -34,16 +36,6 @@
             android:visibility="gone"
             tools:visibility="visible" />
 
-        <com.airbnb.lottie.LottieAnimationView
-            android:id="@+id/lottie_complete_animation"
-            android:layout_width="250dp"
-            android:layout_height="250dp"
-            android:layout_centerInParent="true"
-            app:lottie_rawRes="@raw/lottie_task_complete"
-            app:lottie_autoPlay="false"
-            app:lottie_loop="false"
-            android:visibility="gone" />
-
 
         <androidx.core.widget.NestedScrollView
             android:id="@+id/content_layout_detail"
@@ -54,6 +46,7 @@
             android:visibility="visible"
             tools:visibility="gone">
 
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -61,34 +54,40 @@
 
                 <TextView
                     android:id="@+id/tv_task_title_detail"
+
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
                     android:textAppearance="?attr/textAppearanceHeadlineMedium"
                     android:textColor="?attr/colorOnSurface"
+
                     tools:text="Buy Groceries" />
 
                 <com.google.android.material.checkbox.MaterialCheckBox
                     android:id="@+id/cb_task_status_detail"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+
                     android:layout_marginBottom="16dp"
                     android:text="@string/status_label"
                     android:textAppearance="?attr/textAppearanceTitleMedium"
                     android:textColor="?attr/colorOnSurface" />
 
                 <View
+
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_marginTop="8dp"
                     android:layout_marginBottom="24dp"
                     android:background="?attr/colorOutlineVariant" />
 
+
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="4dp"
                     android:text="@string/description_label"
+
                     android:textAppearance="?attr/textAppearanceLabelLarge"
                     android:textColor="?attr/colorOnSurfaceVariant" />
 
@@ -96,105 +95,127 @@
                     android:id="@+id/tv_task_description_detail"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+
                     android:layout_marginBottom="16dp"
                     android:autoLink="web"
                     android:lineSpacingMultiplier="1.1"
                     android:textAppearance="?attr/textAppearanceBodyLarge"
                     android:textColor="?attr/colorOnSurface"
+
                     android:textColorLink="?attr/colorPrimary"
-                    tools:text="Milk, Bread, Eggs, and Cheese. Also don't forget the snacks for the party on Friday night." />
+                    tools:text="Milk, Bread, Eggs, and Cheese.
+                    Also don't forget the snacks for the party on Friday night." />
 
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_marginTop="8dp"
+
                     android:layout_marginBottom="24dp"
                     android:background="?attr/colorOutlineVariant" />
 
                 <GridLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+
                     android:columnCount="2"
                     android:rowCount="4"> <TextView
                     android:layout_columnWeight="1"
                     android:layout_gravity="fill_horizontal"
                     android:layout_marginBottom="16dp"
+
                     android:text="@string/due_date_label_detail"
                     android:textAppearance="?attr/textAppearanceLabelLarge"
                     android:textColor="?attr/colorOnSurfaceVariant" />
 
                     <TextView
                         android:id="@+id/tv_task_due_date_detail"
+
                         android:layout_columnWeight="1"
                         android:layout_gravity="fill_horizontal"
                         android:gravity="end"
                         android:textAppearance="?attr/textAppearanceBodyLarge"
+
                         android:textColor="?attr/colorOnSurface"
                         tools:text="Oct 25, 2025" />
 
                     <TextView
                         android:layout_columnWeight="1"
+
                         android:layout_gravity="fill_horizontal"
                         android:layout_marginBottom="16dp"
                         android:text="@string/priority_label"
                         android:textAppearance="?attr/textAppearanceLabelLarge"
+
                         android:textColor="?attr/colorOnSurfaceVariant" />
 
                     <TextView
                         android:id="@+id/tv_task_priority_detail"
                         android:layout_columnWeight="1"
                         android:layout_gravity="fill_horizontal"
+
                         android:gravity="end"
                         android:textAppearance="?attr/textAppearanceBodyLarge"
                         android:textColor="?attr/colorOnSurface"
                         tools:text="High" />
 
+
                     <TextView
                         android:layout_columnWeight="1"
                         android:layout_gravity="fill_horizontal"
                         android:layout_marginBottom="16dp"
+
                         android:text="@string/effort_value_label"
                         android:textAppearance="?attr/textAppearanceLabelLarge"
                         android:textColor="?attr/colorOnSurfaceVariant" />
 
                     <TextView
+
                         android:id="@+id/tv_task_effort_detail"
                         android:layout_columnWeight="1"
                         android:layout_gravity="fill_horizontal"
                         android:gravity="end"
                         android:textAppearance="?attr/textAppearanceBodyLarge"
+
                         android:textColor="?attr/colorOnSurface"
                         tools:text="3" />
                     <TextView
                         android:layout_columnWeight="1"
+
                         android:layout_gravity="fill_horizontal"
                         android:layout_marginBottom="16dp"
                         android:text="@string/scope_label"
                         android:textAppearance="?attr/textAppearanceLabelLarge"
+
                         android:textColor="?attr/colorOnSurfaceVariant" />
 
                     <TextView
                         android:id="@+id/tv_task_scope_detail"
                         android:layout_columnWeight="1"
+
                         android:layout_gravity="fill_horizontal"
                         android:gravity="end"
                         android:textAppearance="?attr/textAppearanceBodyLarge"
                         android:textColor="?attr/colorOnSurface"
                         tools:text="Shared" />
 
+
                     <TextView
                         android:layout_columnWeight="1"
                         android:layout_gravity="fill_horizontal"
                         android:text="@string/creator_label"
+
                         android:textAppearance="?attr/textAppearanceLabelLarge"
                         android:textColor="?attr/colorOnSurfaceVariant" />
 
                     <TextView
                         android:id="@+id/tv_task_creator_detail"
+
                         android:layout_columnWeight="1"
                         android:layout_gravity="fill_horizontal"
                         android:gravity="end"
                         android:textAppearance="?attr/textAppearanceBodyLarge"
+
                         android:textColor="?attr/colorOnSurface"
                         tools:text="Partner Name" />
 

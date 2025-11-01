@@ -8,6 +8,7 @@
     android:layout_marginTop="8dp"
     android:layout_marginEnd="16dp"
     android:layout_marginBottom="8dp"
+
     app:cardCornerRadius="12dp"
     app:cardElevation="1dp"
     app:strokeWidth="1dp"
@@ -16,31 +17,46 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:padding="16dp">
 
-        <TextView
-            android:id="@+id/tv_partner_name"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textAppearance="?attr/textAppearanceTitleMedium"
-            android:textColor="?attr/colorOnSurface"
-            tools:text="Tasks with Partner" />
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
-        <ImageView
-            android:id="@+id/iv_link_options"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true"
-            android:contentDescription="@string/personal_link_options"
-            android:src="@drawable/ic_more_vert"
-            app:tint="?attr/colorOnSurfaceVariant" />
+            <TextView
+                android:id="@+id/tv_partner_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_toStartOf="@+id/iv_link_options"
+                android:layout_centerVertical="true"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textColor="?attr/colorOnSurface"
+                tools:text="Tasks with Partner" />
 
+            <ImageView
+                android:id="@+id/iv_link_options"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:layout_marginStart="16dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="@string/personal_link_options"
+                android:src="@drawable/ic_more_vert"
+                app:tint="?attr/colorOnSurfaceVariant" />
+        </RelativeLayout>
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/progress_link"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:progress="0"
+            app:indicatorColor="?attr/colorSecondary"
+            app:trackColor="?attr/colorOutlineVariant" />
     </LinearLayout>
 
 </com.google.android.material.card.MaterialCardView>

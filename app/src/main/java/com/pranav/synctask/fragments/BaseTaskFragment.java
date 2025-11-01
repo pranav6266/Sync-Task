@@ -27,6 +27,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.pranav.synctask.R;
 import com.pranav.synctask.activities.EditTaskActivity;
 import com.pranav.synctask.activities.TaskDetailActivity;
+import com.pranav.synctask.activities.TaskViewActivity;
 import com.pranav.synctask.adapters.TaskAdapter;
 import com.pranav.synctask.data.Result;
 import com.pranav.synctask.models.Task;
@@ -80,7 +81,8 @@ public abstract class BaseTaskFragment extends Fragment implements TaskAdapter.O
     private void setupRecyclerView() {
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         // --- MODIFIED IN PHASE 4A: Pass 'this' as the listener ---
-        adapter = new TaskAdapter(getContext(), new ArrayList<>(), currentUserId, this);
+        String contextType = ((TaskViewActivity) requireActivity()).getContextType();
+        adapter = new TaskAdapter(contextType, getContext(),new ArrayList<>(), currentUserId, this);
         recyclerView.setAdapter(adapter);
     }
 

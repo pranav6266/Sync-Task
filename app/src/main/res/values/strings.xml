@@ -43,9 +43,12 @@ Settings</string>
     <string name="unpair_button">Unpair from Partner</string>
     <string name="logout_button">Logout</string>
 
-    <string name="scope_shared">Shared Task (Both can edit)</string>
-    <string name="scope_individual">Individual Task (Only I can edit)</string>
-    <string name="scope_assigned">Assign to Partner (They complete it)</string>
+    <string name="owner_my_task">My Task</string>
+    <string name="owner_partners_task">Partner\'s Task</string>
+
+    <string name="scope_shared">Shared (Anyone can edit/complete)</string>
+    <string name="scope_individual">Individual (Only I can edit)</string>
+    <string name="scope_assigned">Assign (Partner completes it)</string>
 
     <string name="owner_hint">Owner</string>
     <string name="owner_me">Me (Individual Task)</string>

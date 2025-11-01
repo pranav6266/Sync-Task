@@ -19,11 +19,14 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.progressindicator.LinearProgressIndicator; // ADDED
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.pranav.synctask.R;
 import com.pranav.synctask.activities.TaskViewActivity; // MODIFIED IN PHASE 2
 import com.pranav.synctask.models.Space;
+import com.pranav.synctask.models.Task; // ADDED
 import com.pranav.synctask.ui.DashboardViewModel;
 
 import java.util.ArrayList;
@@ -32,11 +35,13 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
 
     private final Context context;
     private final List<Space> spaceList;
+    private final List<Task> allTasks; // ADDED
     private final String currentUserId;
 
-    public SpacesAdapter(Context context, List<Space> spaceList) {
+    public SpacesAdapter(Context context, List<Space> spaceList, List<Task> allTasks) {
         this.context = context;
         this.spaceList = spaceList;
+        this.allTasks = allTasks; // ADDED
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         this.currentUserId = (user != null) ? user.getUid() : null;
     }
@@ -54,12 +59,29 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
         if (space == null) return;
 
         holder.tvSpaceName.setText(space.getSpaceName());
+
+        // --- ADDED: Progress Calculation ---
+        int totalEffort = 0;
+        int completedEffort = 0;
+        for (Task task : allTasks) {
+            if (space.getSpaceId().equals(task.getSpaceId())) {
+                totalEffort += task.getEffort();
+                if (Task.STATUS_COMPLETED.equals(task.getStatus())) {
+                    completedEffort += task.getEffort();
+                }
+            }
+        }
+        int progress = (totalEffort == 0) ? 0 : (int) (100.0 * completedEffort / totalEffort);
+        holder.progressSpace.setProgress(progress, true);
+        // --- END ADDED ---
+
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, TaskViewActivity.class); // MODIFIED IN PHASE 2
             intent.putExtra("SPACE_ID", space.getSpaceId());
             // --- ADDED IN PHASE 4A ---
             intent.putExtra("CONTEXT_TYPE", Space.TYPE_SHARED);
             // --- END ADDED ---
+
             context.startActivity(intent);
         });
         boolean isCreator = currentUserId != null && !space.getMembers().isEmpty() && space.getMembers().get(0).equals(currentUserId);
@@ -86,21 +108,26 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
                     String selectedOption = options.get(which);
                     switch (selectedOption) {
                         case
+
                                 shareOption:
                             showInviteCodeDialog(space);
                             break;
+
                         case leaveOption:
 
                             showConfirmationDialog("Leave", "Are you sure you want to leave this space?",
                                     () -> getViewModel().leaveSpace(space.getSpaceId()));
+
                             break;
 
                         case deleteOption:
                             showConfirmationDialog("Delete", "Are you sure? This will delete the space and all its tasks for EVERYONE.",
+
                                     () -> getViewModel().deleteSpace(space.getSpaceId()));
                             break;
                     }
                 })
+
                 .show();
     }
 
@@ -113,17 +140,18 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
         codeView.setTextIsSelectable(true);
         codeView.setGravity(Gravity.CENTER);
         codeView.setPadding(40, 40, 40, 40);
-
         new MaterialAlertDialogBuilder(context)
                 .setTitle(title)
                 .setMessage(message)
                 .setView(codeView)
                 .setPositiveButton("Share", (dialog, which) -> {
                     Intent sendIntent =
+
                             new Intent();
                     sendIntent.setAction(Intent.ACTION_SEND);
                     sendIntent.putExtra(Intent.EXTRA_TEXT, "Join my '" + space.getSpaceName() + "' space on SyncTask! \n\nInvite Code: " + space.getInviteCode());
                     sendIntent.setType("text/plain");
+
                     context.startActivity(Intent.createChooser(sendIntent, "Share code via"));
 
                 })
@@ -138,6 +166,7 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
                 .setPositiveButton(title, (dialog, which) -> onConfirm.run())
                 .setNegativeButton("Cancel", null)
 
+
                 .show();
     }
 
@@ -151,20 +180,24 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
         return spaceList.size();
     }
 
-    public void updateSpaces(List<Space> newSpaces) {
+    public void updateSpaces(List<Space> newSpaces, List<Task> newTasks) {
         this.spaceList.clear();
         this.spaceList.addAll(newSpaces);
-        notifyDataSetChanged();
+        this.allTasks.clear(); // ADDED
+        this.allTasks.addAll(newTasks); // ADDED
+        notifyDataSetChanged(); // DiffUtil would be better, but this matches original
     }
 
     static class SpaceViewHolder extends RecyclerView.ViewHolder {
         TextView tvSpaceName;
         ImageView ivSpaceOptions;
+        LinearProgressIndicator progressSpace; // ADDED
 
         public SpaceViewHolder(@NonNull View itemView) {
             super(itemView);
             tvSpaceName = itemView.findViewById(R.id.tv_space_name);
             ivSpaceOptions = itemView.findViewById(R.id.iv_space_options);
+            progressSpace = itemView.findViewById(R.id.progress_space); // ADDED
         }
     }
 }

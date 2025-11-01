@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.TimeZone;
 public class CreateTaskActivity extends AppCompatActivity {
 
+
     private TextInputEditText etTitle, etDescription, etDueDate;
     private AutoCompleteTextView acTaskType, acTaskPriority, acTaskScope;
     private TextInputLayout layoutTaskScope; // ADDED
@@ -113,16 +114,15 @@ public class CreateTaskActivity extends AppCompatActivity {
 
         if (Space.TYPE_PERSONAL.equals(contextType)) {
             // Personal Context: Owner
-            layoutTaskScope.setHint(getString(R.string.owner_hint));
-            scopeMap.put(getString(R.string.owner_me), Task.SCOPE_INDIVIDUAL);
-            scopeMap.put(getString(R.string.owner_partner), Task.SCOPE_ASSIGNED);
-            scopeDisplayNames = scopeMap.keySet().toArray(new String[0]);
+            layoutTaskScope.setHint(getString(R.string.owner_hint)); 
+            scopeMap.put(getString(R.string.owner_me), Task.SCOPE_INDIVIDUAL); 
+            scopeMap.put(getString(R.string.owner_partner), Task.SCOPE_ASSIGNED); 
+            scopeDisplayNames = scopeMap.keySet().toArray(new String[0]); 
             defaultScope = getString(R.string.owner_me);
         } else {
-            // Shared Context: Scope
-            layoutTaskScope.setHint(getString(R.string.scope_hint));
+            // Shared Context: Scope (REMOVING "INDIVIDUAL")
+            layoutTaskScope.setHint(getString(R.string.scope_hint)); 
             scopeMap.put(getString(R.string.scope_shared), Task.SCOPE_SHARED);
-            scopeMap.put(getString(R.string.scope_individual), Task.SCOPE_INDIVIDUAL);
             scopeMap.put(getString(R.string.scope_assigned), Task.SCOPE_ASSIGNED);
             scopeDisplayNames = scopeMap.keySet().toArray(new String[0]);
             defaultScope = getString(R.string.scope_shared);
@@ -166,7 +166,7 @@ public class CreateTaskActivity extends AppCompatActivity {
         int effort = (int) effortSlider.getValue(); // ADDED IN PHASE 1
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (TextUtils.isEmpty(title) || TextUtils.isEmpty(taskType) || TextUtils.isEmpty(ownershipScope) || currentUser == null) {
-            Toast.makeText(this, "Title, Type, and Scope/Owner are required.", Toast.LENGTH_SHORT).show(); // MODIFIED
+            Toast.makeText(this, "Title, Type, and Scope/Owner are required.", Toast.LENGTH_SHORT).show();
             return;
         }
         // --- END MODIFIED ---
@@ -186,8 +186,6 @@ public class CreateTaskActivity extends AppCompatActivity {
                 Toast.makeText(this, "Task created!", Toast.LENGTH_SHORT).show();
                 finish();
             } else if (result instanceof Result.Error) {
-
-
                 Toast.makeText(CreateTaskActivity.this, "Error creating task.", Toast.LENGTH_SHORT).show();
             }
         });

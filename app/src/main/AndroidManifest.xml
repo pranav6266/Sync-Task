@@ -43,7 +43,8 @@
             android:name=".activities.PairingActivity"
             android:exported="false" />
         <activity
-            android:name=".activities.SettingsActivity" android:exported="false" />
+            android:name=".activities.SettingsActivity"
+            android:exported="false" />
         <activity
             android:name=".activities.EditTaskActivity"
             android:exported="false" />
@@ -59,6 +60,10 @@
             android:exported="false"
             android:parentActivityName=".activities.TaskViewActivity" />
 
+        <activity
+            android:name=".activities.CompletionAnimationActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SyncTask.ModalAnimation" />
         <activity
 
             android:name=".activities.PersonalLinksActivity"

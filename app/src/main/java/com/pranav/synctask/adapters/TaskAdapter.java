@@ -18,12 +18,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.pranav.synctask.R;
 import com.pranav.synctask.activities.EditTaskActivity;
 // import com.pranav.synctask.data.TaskRepository; // No longer needed for status/delete
+import com.pranav.synctask.models.Space;
 import com.pranav.synctask.models.Task;
 // import com.pranav.synctask.utils.DateUtils; // No longer needed for due date
 import java.util.List;
 import java.util.Objects;
 public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder> {
-
+    private final String contextType;
     private List<Task> taskList;
     private final Context context;
     private final String currentUserId;
@@ -39,7 +40,8 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     // --- END ADDED ---
 
     // --- MODIFIED IN PHASE 4A ---
-    public TaskAdapter(Context context, List<Task> taskList, String currentUserId, OnTaskActionListener listener) {
+    public TaskAdapter(String contextType, Context context, List<Task> taskList, String currentUserId, OnTaskActionListener listener) {
+        this.contextType = contextType;
         this.context = context;
         this.taskList = taskList;
         this.currentUserId = currentUserId;
@@ -96,6 +98,19 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 break;
         }
 
+        if (Space.TYPE_PERSONAL.equals(contextType)) {
+            holder.tvTaskOwner.setVisibility(View.VISIBLE);
+            if (Task.SCOPE_INDIVIDUAL.equals(scope)) {
+                holder.tvTaskOwner.setText(R.string.owner_my_task);
+            } else if (Task.SCOPE_ASSIGNED.equals(scope)) {
+                holder.tvTaskOwner.setText(R.string.owner_partners_task);
+            } else {
+                holder.tvTaskOwner.setVisibility(View.GONE);
+            }
+        } else {
+            holder.tvTaskOwner.setVisibility(View.GONE);
+        }
+
         // --- MODIFIED IN PHASE 4A: New click logic ---
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
@@ -137,14 +152,15 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     }
 
     static class TaskViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTitle;
+        TextView tvTitle, tvTaskOwner; // MODIFIED
         ImageView ivTaskType, ivTaskScope; // Updated views
 
         public TaskViewHolder(@NonNull View itemView) {
             super(itemView);
+            tvTaskOwner = itemView.findViewById(R.id.tv_task_owner); // ADDED
             tvTitle = itemView.findViewById(R.id.tv_task_title);
             ivTaskType = itemView.findViewById(R.id.iv_task_type);
-            ivTaskScope = itemView.findViewById(R.id.iv_task_scope); // Added
+            ivTaskScope = itemView.findViewById(R.id.iv_task_scope);
         }
     }
 

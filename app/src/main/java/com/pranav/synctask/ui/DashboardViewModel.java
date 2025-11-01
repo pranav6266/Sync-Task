@@ -32,14 +32,11 @@ public class DashboardViewModel extends ViewModel {
     private final MutableLiveData<Result<List<Space>>> _allSpaces = new MutableLiveData<>();
     private final MutableLiveData<Result<List<Space>>> _sharedSpacesLiveData = new MutableLiveData<>();
     private final MutableLiveData<Result<List<Space>>> _personalLinksLiveData = new MutableLiveData<>();
-
     private final MutableLiveData<Result<List<User>>> _partnerDetails = new MutableLiveData<>(new Result.Success<>(new ArrayList<>()));
     private final MediatorLiveData<Result<List<DialogItem>>> _allDialogItems = new MediatorLiveData<>();
 
-    private final MediatorLiveData<ProgressCalculationHelper> _progressMediator = new MediatorLiveData<>();
+    // --- MODIFIED: REMOVED Progress Mediator, PersonalProgress, SharedProgress ---
     private final MutableLiveData<Result<List<Task>>> _allTasksResult = new MutableLiveData<>();
-    private final MutableLiveData<Integer> _personalProgress = new MutableLiveData<>(0);
-    private final MutableLiveData<Integer> _sharedProgress = new MutableLiveData<>(0);
 
     private final MutableLiveData<Result<Space>> createSpaceResult = new MutableLiveData<>();
     private final MutableLiveData<Result<Void>> leaveSpaceResult = new MutableLiveData<>();
@@ -53,29 +50,30 @@ public class DashboardViewModel extends ViewModel {
         this.userRepository = UserRepository.getInstance();
         this.taskRepository = TaskRepository.getInstance(); // ADDED IN PHASE 3D
         this.currentUid = FirebaseAuth.getInstance().getUid();
-
         // Observe the user to trigger space loading
         userLiveData.observeForever(userResult -> {
             if (userResult instanceof Result.Success) {
                 User user = ((Result.Success<User>) userResult).data;
                 if (user.getSpaceIds() != null && !user.getSpaceIds().isEmpty()) {
                     loadSpaces(user.getSpaceIds());
-                    // ADDED IN PHASE 3D: Also load ALL tasks for progress
+
+                    // ADDED IN PHASE 3D: Also load ALL tasks
                     taskRepository.attachAllTasksListener(user.getSpaceIds());
                 } else {
                     _allSpaces.setValue(new Result.Success<>(new ArrayList<>()));
+
                     _sharedSpacesLiveData.setValue(new Result.Success<>(new ArrayList<>()));
                     _personalLinksLiveData.setValue(new Result.Success<>(new ArrayList<>()));
                     _allTasksResult.setValue(new Result.Success<>(new ArrayList<>())); // Clear tasks
                 }
             } else if (userResult instanceof Result.Error) {
+
                 Exception e = ((Result.Error<User>) userResult).exception;
                 _sharedSpacesLiveData.setValue(new Result.Error<>(e));
                 _personalLinksLiveData.setValue(new Result.Error<>(e));
                 _allTasksResult.setValue(new Result.Error<>(e)); // Propagate error
             }
         });
-
         // Observe allSpaces to filter into two lists
         _allSpaces.observeForever(spacesResult -> {
             if (spacesResult instanceof Result.Success) {
@@ -83,11 +81,13 @@ public class DashboardViewModel extends ViewModel {
 
                 List<Space> sharedSpaces = allSpaces.stream()
                         .filter(space -> Space.TYPE_SHARED.equals(space.getSpaceType()))
+
                         .collect(Collectors.toList());
                 _sharedSpacesLiveData.setValue(new Result.Success<>(sharedSpaces));
 
                 List<Space> personalLinks = allSpaces.stream()
                         .filter(space -> Space.TYPE_PERSONAL.equals(space.getSpaceType()))
+
                         .collect(Collectors.toList());
                 _personalLinksLiveData.setValue(new Result.Success<>(personalLinks));
 
@@ -102,83 +102,26 @@ public class DashboardViewModel extends ViewModel {
                 _personalLinksLiveData.setValue(new Result.Loading<>());
             }
         });
-
         // --- Mediator for the "Add Task" dialog list ---
         _allDialogItems.addSource(_personalLinksLiveData, result -> combineDialogItems());
         _allDialogItems.addSource(_sharedSpacesLiveData, result -> combineDialogItems());
         _allDialogItems.addSource(_partnerDetails, result -> combineDialogItems());
 
-        // --- Mediator for Progress Calculation ---
-        _progressMediator.addSource(_personalLinksLiveData, result -> {
+        // --- REMOVED Progress Calculation Mediator ---
+        // This observer now just caches the task list
+        taskRepository.getAllTasksResult().observeForever(result -> {
             if (result instanceof Result.Success) {
-                _progressMediator.setValue(new ProgressCalculationHelper());
-            }
-        });
-        _progressMediator.addSource(_sharedSpacesLiveData, result -> {
-            if (result instanceof Result.Success) {
-                _progressMediator.setValue(new ProgressCalculationHelper());
-            }
-        });
-        // This is the new listener from TaskRepository
-        _progressMediator.addSource(taskRepository.getAllTasksResult(), result -> {
-            if (result instanceof Result.Success) {
-                _allTasksResult.setValue(result); // Store the task list
-                _progressMediator.setValue(new ProgressCalculationHelper());
+                _allTasksResult.setValue(result);
             } else if (result instanceof Result.Error) {
-                Log.e(TAG, "Error loading all tasks for progress");
-            }
-        });
-
-        // This observer fires whenever any of the 3 data sources change
-        _progressMediator.observeForever(helper -> {
-            if (helper != null) {
-                calculateProgress();
+                Log.e(TAG, "Error loading all tasks");
+                _allTasksResult.setValue(new Result.Error<>(((Result.Error<List<Task>>) result).exception));
+            } else {
+                _allTasksResult.setValue(new Result.Loading<>());
             }
         });
     }
 
-    private void calculateProgress() {
-        Result<List<Space>> personalResult = _personalLinksLiveData.getValue();
-        Result<List<Space>> sharedResult = _sharedSpacesLiveData.getValue();
-        Result<List<Task>> allTasksResult = _allTasksResult.getValue();
-
-        if (personalResult instanceof Result.Success &&
-                sharedResult instanceof Result.Success &&
-                allTasksResult instanceof Result.Success) {
-
-            List<Space> personalLinks = ((Result.Success<List<Space>>) personalResult).data;
-            List<Space> sharedSpaces = ((Result.Success<List<Space>>) sharedResult).data;
-            List<Task> allTasks = ((Result.Success<List<Task>>) allTasksResult).data;
-
-            Set<String> personalSpaceIds = personalLinks.stream().map(Space::getSpaceId).collect(Collectors.toSet());
-            Set<String> sharedSpaceIds = sharedSpaces.stream().map(Space::getSpaceId).collect(Collectors.toSet());
-
-            int personalTotalEffort = 0;
-            int personalCompletedEffort = 0;
-            int sharedTotalEffort = 0;
-            int sharedCompletedEffort = 0;
-
-            for (Task task : allTasks) {
-                if (personalSpaceIds.contains(task.getSpaceId())) {
-                    personalTotalEffort += task.getEffort();
-                    if (Task.STATUS_COMPLETED.equals(task.getStatus())) {
-                        personalCompletedEffort += task.getEffort();
-                    }
-                } else if (sharedSpaceIds.contains(task.getSpaceId())) {
-                    sharedTotalEffort += task.getEffort();
-                    if (Task.STATUS_COMPLETED.equals(task.getStatus())) {
-                        sharedCompletedEffort += task.getEffort();
-                    }
-                }
-            }
-
-            int personalProgress = (personalTotalEffort == 0) ? 0 : (int) (100.0 * personalCompletedEffort / personalTotalEffort);
-            int sharedProgress = (sharedTotalEffort == 0) ? 0 : (int) (100.0 * sharedCompletedEffort / sharedTotalEffort);
-
-            _personalProgress.setValue(personalProgress);
-            _sharedProgress.setValue(sharedProgress);
-        }
-    }
+    // --- REMOVED calculateProgress() method ---
 
     private void fetchPartnerDetails(List<Space> personalLinks) {
         if (personalLinks.isEmpty()) {
@@ -192,17 +135,18 @@ public class DashboardViewModel extends ViewModel {
 
         for (Space link : personalLinks) {
             String partnerUid = link.getMembers().stream().filter(memberId -> !memberId.equals(currentUid)).findFirst().orElse(null);
-
             if (partnerUid != null) {
                 // Use a one-time fetch for this
                 userRepository.getUser(partnerUid).observeForever(userResult -> {
                     if (userResult instanceof Result.Success) {
                         partnerList.add(((Result.Success<User>) userResult).data);
+
                     } else if (userResult instanceof Result.Error) {
                         Log.e(TAG, "Failed to fetch partner details for " + partnerUid, ((Result.Error<User>) userResult).exception);
                     }
 
                     if (counter.decrementAndGet() == 0) {
+
                         _partnerDetails.setValue(new Result.Success<>(partnerList));
                     }
                 });
@@ -227,7 +171,6 @@ public class DashboardViewModel extends ViewModel {
             List<Space> sharedSpaces = ((Result.Success<List<Space>>) sharedResult).data;
             List<User> partners = ((Result.Success<List<User>>) partnersResult).data;
             List<DialogItem> dialogItems = new ArrayList<>();
-
             for (Space link : personalLinks) {
                 String partnerUid = null;
                 for (String memberId : link.getMembers()) {
@@ -254,7 +197,6 @@ public class DashboardViewModel extends ViewModel {
             }
 
             _allDialogItems.setValue(new Result.Success<>(dialogItems));
-
         } else if (personalResult instanceof Result.Error || sharedResult instanceof Result.Error || partnersResult instanceof Result.Error) {
             _allDialogItems.setValue(new Result.Error<>(new Exception("Failed to load spaces")));
         } else {
@@ -283,13 +225,13 @@ public class DashboardViewModel extends ViewModel {
         return _allDialogItems;
     }
 
-    public LiveData<Integer> getPersonalProgress() {
-        return _personalProgress;
+    // --- ADDED: Getter for all tasks ---
+    public LiveData<Result<List<Task>>> getAllTasksResult() {
+        return _allTasksResult;
     }
+    // --- END ADDED ---
 
-    public LiveData<Integer> getSharedProgress() {
-        return _sharedProgress;
-    }
+    // --- REMOVED getPersonalProgress() and getSharedProgress() ---
 
     public LiveData<Result<Space>> getCreateSpaceResult() {
         return createSpaceResult;
@@ -335,6 +277,7 @@ public class DashboardViewModel extends ViewModel {
             if (userResult instanceof Result.Success) {
                 User partner = ((Result.Success<User>) userResult).data;
                 String spaceName = "Tasks with " + partner.getDisplayName();
+
                 userRepository.createPersonalLink(currentUid, partnerUid, spaceName)
                         .observeForever(createLinkResult::setValue);
             } else if (userResult instanceof Result.Error) {
@@ -363,7 +306,5 @@ public class DashboardViewModel extends ViewModel {
         TaskRepository.removeAllTasksListener();
     }
 
-    private static class ProgressCalculationHelper {
-        // This is just an empty marker class to trigger the MediatorLiveData
-    }
+    // --- REMOVED ProgressCalculationHelper inner class ---
 }

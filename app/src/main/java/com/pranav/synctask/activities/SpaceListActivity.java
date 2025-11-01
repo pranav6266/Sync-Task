@@ -22,11 +22,12 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.lifecycle.MediatorLiveData; // ADDED
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.airbnb.lottie.LottieAnimationView; // ADDED
+import com.airbnb.lottie.LottieAnimationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.transition.platform.MaterialFadeThrough;
 import com.google.firebase.auth.FirebaseAuth;
@@ -37,6 +38,7 @@ import com.pranav.synctask.adapters.SpacesAdapter;
 import com.pranav.synctask.data.Result;
 import com.pranav.synctask.data.UserRepository;
 import com.pranav.synctask.models.Space;
+import com.pranav.synctask.models.Task; // ADDED
 import com.pranav.synctask.models.User;
 import com.pranav.synctask.ui.DashboardViewModel;
 import java.util.ArrayList;
@@ -52,7 +54,13 @@ public class SpaceListActivity extends AppCompatActivity {
     private SpacesAdapter spacesAdapter;
     private RecyclerView spacesRecyclerView;
     private FloatingActionButton fabAddSpace;
-    private LottieAnimationView emptyView; // ADDED
+    private LottieAnimationView emptyView;
+
+    // --- ADDED: MediatorLiveData for progress ---
+    private MediatorLiveData<CombinedSpacesResult> combinedData = new MediatorLiveData<>();
+    private List<Space> currentSpaces = new ArrayList<>();
+    private List<Task> allTasks = new ArrayList<>();
+    // --- END ADDED ---
 
     private final ActivityResultLauncher<String> requestPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
@@ -81,7 +89,7 @@ public class SpaceListActivity extends AppCompatActivity {
 
         spacesRecyclerView = findViewById(R.id.spaces_recycler_view);
         fabAddSpace = findViewById(R.id.fab_add_space);
-        emptyView = findViewById(R.id.empty_view); // ADDED
+        emptyView = findViewById(R.id.empty_view);
         Button btnViewProfile = findViewById(R.id.btn_view_profile);
         TextView tvWelcomeMessage = findViewById(R.id.tv_welcome_message);
         if (currentUser != null && currentUser.getDisplayName() != null) {
@@ -91,7 +99,7 @@ public class SpaceListActivity extends AppCompatActivity {
         setupRecyclerView();
 
         fabAddSpace.setOnClickListener(v -> showAddSpaceDialog());
-        btnViewProfile.setOnClickListener(v -> startActivity(new Intent(SpaceListActivity.this, SettingsActivity.class))); // CHANGED
+        btnViewProfile.setOnClickListener(v -> startActivity(new Intent(SpaceListActivity.this, SettingsActivity.class)));
 
         observeViewModel();
         askNotificationPermission();
@@ -100,7 +108,8 @@ public class SpaceListActivity extends AppCompatActivity {
 
     private void setupRecyclerView() {
         spacesRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        spacesAdapter = new SpacesAdapter(this, new ArrayList<>());
+        // MODIFIED: Added allTasks list
+        spacesAdapter = new SpacesAdapter(this, new ArrayList<>(), new ArrayList<>());
         spacesRecyclerView.setAdapter(spacesAdapter);
     }
 
@@ -178,21 +187,35 @@ public class SpaceListActivity extends AppCompatActivity {
     }
 
     private void observeViewModel() {
-        // MODIFIED IN PHASE 3A: This now observes the filtered list
-        viewModel.getSharedSpacesLiveData().observe(this, result -> {
+        // --- MODIFIED: Use MediatorLiveData ---
+        combinedData.addSource(viewModel.getSharedSpacesLiveData(), result -> {
             if (result instanceof Result.Success) {
-                List<Space> spaces = ((Result.Success<List<Space>>) result).data; // ADDED
-                spacesAdapter.updateSpaces(spaces); // MODIFIED
-                updateEmptyView(spaces.isEmpty()); // ADDED
-
+                currentSpaces = ((Result.Success<List<Space>>) result).data;
+                combinedData.setValue(new CombinedSpacesResult(currentSpaces, allTasks));
             } else if (result instanceof Result.Error) {
                 Toast.makeText(this, "Error loading spaces.", Toast.LENGTH_SHORT).show();
-                updateEmptyView(true); // ADDED
+                updateEmptyView(true);
             } else if (result instanceof Result.Loading) {
                 // TODO: Show loading
             }
-
         });
+
+        combinedData.addSource(viewModel.getAllTasksResult(), result -> {
+            if (result instanceof Result.Success) {
+                allTasks = ((Result.Success<List<Task>>) result).data;
+                combinedData.setValue(new CombinedSpacesResult(currentSpaces, allTasks));
+            } else if (result instanceof Result.Error) {
+                Toast.makeText(this, "Error loading tasks for progress.", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        combinedData.observe(this, combinedResult -> {
+            if (combinedResult != null) {
+                spacesAdapter.updateSpaces(combinedResult.spaces, combinedResult.tasks);
+                updateEmptyView(combinedResult.spaces.isEmpty());
+            }
+        });
+        // --- END MODIFIED ---
 
         viewModel.getCreateSpaceResult().observe(this, result -> {
             if (result instanceof Result.Success) {
@@ -248,6 +271,17 @@ public class SpaceListActivity extends AppCompatActivity {
             emptyView.cancelAnimation();
         }
         spacesRecyclerView.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+    }
+
+    // Helper class for Mediator
+    private static class CombinedSpacesResult {
+        final List<Space> spaces;
+        final List<Task> tasks;
+
+        CombinedSpacesResult(List<Space> spaces, List<Task> tasks) {
+            this.spaces = spaces;
+            this.tasks = tasks;
+        }
     }
     // --- END ADDED ---
 
