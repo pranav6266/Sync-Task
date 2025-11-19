@@ -16,7 +16,7 @@ import java.util.List;
 public class UserRepository {
     private static volatile UserRepository instance;
     private ListenerRegistration userListenerRegistration;
-    private ListenerRegistration spacesListenerRegistration; // NEW
+    // REMOVED: private ListenerRegistration spacesListenerRegistration; <--- Caused the bug
     private User currentUserCache;
     private final FirebaseHelper firebaseHelper;
 
@@ -35,15 +35,12 @@ public class UserRepository {
         return instance;
     }
 
-    // --- UPDATED: LOAD SPACES VIA QUERY ---
-    public LiveData<ListenerRegistration> getSpacesForUser(String uid, MutableLiveData<Result<List<Space>>> spacesLiveData) {
-        MutableLiveData<ListenerRegistration> registrationData = new MutableLiveData<>();
+    // --- UPDATED: Returns the listener so ViewModel can own it ---
+    public ListenerRegistration getSpacesForUser(String uid, MutableLiveData<Result<List<Space>>> spacesLiveData) {
         spacesLiveData.setValue(new Result.Loading<>());
 
-        // Remove old listener if exists
-        if (spacesListenerRegistration != null) spacesListenerRegistration.remove();
-
-        spacesListenerRegistration = firebaseHelper.getSpacesForUser(uid, new FirebaseHelper.SpacesCallback() {
+        // We simply return the new registration. We do NOT cancel any existing ones here.
+        return firebaseHelper.getSpacesForUser(uid, new FirebaseHelper.SpacesCallback() {
             @Override
             public void onSuccess(List<Space> spaces) {
                 spacesLiveData.setValue(new Result.Success<>(spaces));
@@ -53,19 +50,12 @@ public class UserRepository {
                 spacesLiveData.setValue(new Result.Error<>(e));
             }
         });
-
-        registrationData.setValue(spacesListenerRegistration);
-        return registrationData;
     }
 
-    public void removeSpacesListener() {
-        if (spacesListenerRegistration != null) {
-            spacesListenerRegistration.remove();
-            spacesListenerRegistration = null;
-        }
-    }
+    // REMOVED: removeSpacesListener() - No longer needed here.
 
-    // ... Keep existing methods for User Profile updates (updateProfilePicture, etc.) ...
+    // ... (Keep all other methods: updateProfilePicture, createOrUpdateUser, etc. exactly as they were) ...
+
     public LiveData<Result<String>> updateProfilePicture(FirebaseUser firebaseUser, Uri imageUri) {
         MutableLiveData<Result<String>> result = new MutableLiveData<>(new Result.Loading<>());
         StorageReference storageRef = FirebaseStorage.getInstance().getReference();

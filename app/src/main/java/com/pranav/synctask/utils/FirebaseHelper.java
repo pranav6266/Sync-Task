@@ -162,21 +162,54 @@ public class FirebaseHelper {
     }
 
     public void leaveSpace(String spaceId, String userUID, SpaceCallback callback) {
-        db.collection(SPACES_COLLECTION).document(spaceId)
-                .update("members", FieldValue.arrayRemove(userUID))
-                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
-                .addOnFailureListener(callback::onError);
-        // Note: We removed the complex deletion logic for simplicity in this fix.
-        // Orphans will be cleaned up later or left as is.
-    }
+        // 1. Get the space first to check its type
+        db.collection(SPACES_COLLECTION).document(spaceId).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (!documentSnapshot.exists()) {
+                        callback.onError(new Exception("Space not found"));
+                        return;
+                    }
 
+                    Space space = documentSnapshot.toObject(Space.class);
+                    if (space == null) return;
+
+                    // 2. LOGIC CHECK
+                    if (Space.TYPE_PERSONAL.equals(space.getSpaceType())) {
+                        // Case A: Personal Link -> DELETE IT FOR EVERYONE
+                        // This ensures it disappears from the partner's phone too.
+                        deleteSpace(spaceId, userUID, callback);
+                    } else {
+                        // Case B: Shared Space -> JUST REMOVE ME
+                        db.collection(SPACES_COLLECTION).document(spaceId)
+                                .update("members", FieldValue.arrayRemove(userUID))
+                                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                                .addOnFailureListener(callback::onError);
+                    }
+                })
+                .addOnFailureListener(callback::onError);
+    }
     public void deleteSpace(String spaceId, String userUID, SpaceCallback callback) {
-        // Simple delete for creator
-        db.collection(SPACES_COLLECTION).document(spaceId).delete()
-                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+        // 1. First, find all tasks in this space
+        db.collection(TASKS_COLLECTION)
+                .whereEqualTo("spaceId", spaceId)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    // 2. Create a batch to delete them all
+                    WriteBatch batch = db.batch();
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        batch.delete(doc.getReference());
+                    }
+                    // 3. Delete the Space document itself in the same batch
+                    DocumentReference spaceRef = db.collection(SPACES_COLLECTION).document(spaceId);
+                    batch.delete(spaceRef);
+
+                    // 4. Commit the batch
+                    batch.commit()
+                            .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                            .addOnFailureListener(callback::onError);
+                })
                 .addOnFailureListener(callback::onError);
     }
-
 
     // --- TASK METHODS ---
     public void createTask(Task task, TasksCallback callback) {

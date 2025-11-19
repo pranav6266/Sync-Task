@@ -1,51 +1,31 @@
 package com.pranav.synctask.activities;
 
-import android.Manifest;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Bundle;
-import android.text.InputType;
-import android.util.Log;
-import android.view.Gravity;
 import android.view.View;
-import android.view.Window;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
-
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-// MODIFIED: Changed import
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
-import androidx.lifecycle.MediatorLiveData; // ADDED
+import androidx.lifecycle.MediatorLiveData;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.airbnb.lottie.LottieAnimationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.transition.platform.MaterialFadeThrough;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.messaging.FirebaseMessaging;
 import com.pranav.synctask.R;
 import com.pranav.synctask.adapters.SpacesAdapter;
 import com.pranav.synctask.data.Result;
-import com.pranav.synctask.data.UserRepository;
 import com.pranav.synctask.models.Space;
-import com.pranav.synctask.models.Task; // ADDED
+import com.pranav.synctask.models.Task;
 import com.pranav.synctask.models.User;
 import com.pranav.synctask.ui.DashboardViewModel;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
+import java.util.Map;
 
-// MODIFIED IN PHASE 3A: Renamed from DashboardActivity
 public class SpaceListActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
@@ -56,212 +36,98 @@ public class SpaceListActivity extends AppCompatActivity {
     private FloatingActionButton fabAddSpace;
     private LottieAnimationView emptyView;
 
-    // --- ADDED: MediatorLiveData for progress ---
-    private MediatorLiveData<CombinedSpacesResult> combinedData = new MediatorLiveData<>();
-    private List<Space> currentSpaces = new ArrayList<>();
-    private List<Task> allTasks = new ArrayList<>();
-    // --- END ADDED ---
+    // Mediator for combining data sources
+    private final MediatorLiveData<CombinedSpacesResult> combinedData = new MediatorLiveData<>();
 
-    private final ActivityResultLauncher<String> requestPermissionLauncher =
-            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
-                if (isGranted) {
-                    Toast.makeText(this, "Notifications enabled!", Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(this,
-                            "Notifications are disabled.", Toast.LENGTH_SHORT).show();
-                }
-            });
+    // Local Cache
+    private List<Space> currentSpaces = new ArrayList<>();
+    private Map<String, User> currentMembers = new HashMap<>();
+    private List<Task> allTasks = new ArrayList<>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // ADDED: Material Motion Transition
-        getWindow().requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS);
-        getWindow().setEnterTransition(new MaterialFadeThrough());
-        getWindow().setExitTransition(new MaterialFadeThrough());
-        // END ADDED
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_space_list);
-        // MODIFIED IN PHASE 3A
 
         mAuth = FirebaseAuth.getInstance();
         currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) {
+            finish();
+            return;
+        }
+
         viewModel = new ViewModelProvider(this).get(DashboardViewModel.class);
 
         spacesRecyclerView = findViewById(R.id.spaces_recycler_view);
         fabAddSpace = findViewById(R.id.fab_add_space);
         emptyView = findViewById(R.id.empty_view);
-        Button btnViewProfile = findViewById(R.id.btn_view_profile);
-        TextView tvWelcomeMessage = findViewById(R.id.tv_welcome_message);
-        if (currentUser != null && currentUser.getDisplayName() != null) {
-            tvWelcomeMessage.setText(String.format(Locale.getDefault(), "Welcome, %s!", currentUser.getDisplayName()));
-        }
+
+        // Add Space is now handled via Dashboard/Bottom Sheet,
+        // but we can keep this FAB to open the new bottom sheet if you like,
+        // or redirect to PairingActivity. For now, let's hide it or make it a shortcut.
+        fabAddSpace.setOnClickListener(v -> startActivity(new Intent(this, PairingActivity.class)));
 
         setupRecyclerView();
-
-        fabAddSpace.setOnClickListener(v -> showAddSpaceDialog());
-        btnViewProfile.setOnClickListener(v -> startActivity(new Intent(SpaceListActivity.this, SettingsActivity.class)));
-
         observeViewModel();
-        askNotificationPermission();
-        updateFcmToken();
     }
 
     private void setupRecyclerView() {
         spacesRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        // MODIFIED: Added allTasks list
-        spacesAdapter = new SpacesAdapter(this, new ArrayList<>(), new ArrayList<>());
+        // Initialize adapter with empty data
+        spacesAdapter = new SpacesAdapter(this, new ArrayList<>(), new HashMap<>(), new ArrayList<>());
         spacesRecyclerView.setAdapter(spacesAdapter);
     }
 
-    private void showAddSpaceDialog() {
-        final String[] options = {"Create a new Space", "Join a Space"};
-        // MODIFIED: Use MaterialAlertDialogBuilder
-        new MaterialAlertDialogBuilder(this)
-                .setTitle("Add Space")
-                .setItems(options, (dialog, which) -> {
-                    if (which == 0) {
-                        showCreateSpaceDialog();
-
-                    } else {
-                        startActivity(new Intent(SpaceListActivity.this, PairingActivity.class));
-                    }
-                })
-                .show();
-    }
-
-    private void showCreateSpaceDialog() {
-        final EditText input = new EditText(this);
-        input.setHint("Space Name (e.g. Home Tasks)");
-        input.setInputType(InputType.TYPE_CLASS_TEXT);
-
-        // MODIFIED: Use MaterialAlertDialogBuilder
-        new MaterialAlertDialogBuilder(this)
-                .setTitle("Create New Space")
-                .setView(input)
-                .setPositiveButton("Create", (dialog, which) -> {
-                    String spaceName = input.getText().toString().trim();
-
-                    if (!spaceName.isEmpty()) {
-                        viewModel.createSpace(spaceName);
-                    } else {
-                        Toast.makeText(this, "Space name cannot be empty.", Toast.LENGTH_SHORT).show();
-
-                    }
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
-    }
-
-    private void updateFcmToken() {
-        if (currentUser == null) return;
-        FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
-            if (!task.isSuccessful()) {
-                Log.w("DashboardActivity", "Fetching FCM registration token failed", task.getException());
-                return;
-            }
-            String token = task.getResult();
-            Log.d("DashboardActivity", "FCM Token: " + token);
-
-            UserRepository.getInstance().updateFcmToken(currentUser.getUid(), token);
-        });
-    }
-
-    private void askNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
-                    PackageManager.PERMISSION_GRANTED) {
-                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
-            }
-        }
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        if (currentUser == null) {
-            startActivity(new Intent(this, LoginActivity.class));
-            finish();
-            return;
-        }
-        viewModel.attachUserListener(currentUser.getUid());
-    }
-
     private void observeViewModel() {
-        // --- MODIFIED: Use MediatorLiveData ---
+        // 1. Observe Shared Spaces
         combinedData.addSource(viewModel.getSharedSpacesLiveData(), result -> {
             if (result instanceof Result.Success) {
                 currentSpaces = ((Result.Success<List<Space>>) result).data;
-                combinedData.setValue(new CombinedSpacesResult(currentSpaces, allTasks));
+                emitCombinedResult();
             } else if (result instanceof Result.Error) {
                 Toast.makeText(this, "Error loading spaces.", Toast.LENGTH_SHORT).show();
                 updateEmptyView(true);
-            } else if (result instanceof Result.Loading) {
-                // TODO: Show loading
             }
         });
 
+        // 2. Observe Members (For names in description)
+        combinedData.addSource(viewModel.getMembersMap(), map -> {
+            currentMembers = map;
+            emitCombinedResult();
+        });
+
+        // 3. Observe All Tasks (For Progress)
         combinedData.addSource(viewModel.getAllTasksResult(), result -> {
             if (result instanceof Result.Success) {
                 allTasks = ((Result.Success<List<Task>>) result).data;
-                combinedData.setValue(new CombinedSpacesResult(currentSpaces, allTasks));
-            } else if (result instanceof Result.Error) {
-                Toast.makeText(this, "Error loading tasks for progress.", Toast.LENGTH_SHORT).show();
+                emitCombinedResult();
             }
         });
 
-        combinedData.observe(this, combinedResult -> {
-            if (combinedResult != null) {
-                spacesAdapter.updateSpaces(combinedResult.spaces, combinedResult.tasks);
-                updateEmptyView(combinedResult.spaces.isEmpty());
+        // 4. Update Adapter
+        combinedData.observe(this, result -> {
+            if (result != null) {
+                spacesAdapter.updateSpaces(result.spaces, result.members, result.tasks);
+                updateEmptyView(result.spaces.isEmpty());
             }
         });
-        // --- END MODIFIED ---
 
-        viewModel.getCreateSpaceResult().observe(this, result -> {
-            if (result instanceof Result.Success) {
-                // Get the newly created space from the result
-                Space newSpace = ((Result.Success<Space>) result).data;
-                if (newSpace != null && newSpace.getInviteCode() != null) {
-
-                    // Show a dialog with the invite code
-                    showInviteCodeDialog(newSpace.getSpaceName(), newSpace.getInviteCode());
-                } else {
-                    Toast.makeText(this, "Space created!", Toast.LENGTH_SHORT).show();
-                }
-
-                // The user listener will automatically refresh the spaces list
-            } else if (result instanceof Result.Error) {
-                Toast.makeText(this, "Error creating space.", Toast.LENGTH_SHORT).show();
-            }
-        });
-        // --- NEW ---
+        // Observe Action Results (Leave/Delete)
         viewModel.getLeaveSpaceResult().observe(this, result -> {
-            if (result instanceof Result.Success) {
-                Toast.makeText(this, "Successfully left space.", Toast.LENGTH_SHORT).show();
-                // List will refresh automatically
-            } else if (result instanceof Result.Error) {
-
-                Toast.makeText(this, "Error leaving space.", Toast.LENGTH_SHORT).show();
-            }
+            if (result instanceof Result.Success) Toast.makeText(this, "Left space.", Toast.LENGTH_SHORT).show();
+            else if(result instanceof Result.Error) Toast.makeText(this, "Error leaving space.", Toast.LENGTH_SHORT).show();
         });
+
         viewModel.getDeleteSpaceResult().observe(this, result -> {
-            if (result instanceof Result.Success) {
-                Toast.makeText(this, "Space deleted.", Toast.LENGTH_SHORT).show();
-                // List will refresh automatically
-            } else if (result instanceof Result.Error) {
-                String message = "Error deleting space.";
-
-                Exception e = ((Result.Error<Void>) result).exception;
-                if (e != null && e.getMessage() != null) {
-                    message = e.getMessage();
-                }
-                Toast.makeText(this, message, Toast.LENGTH_LONG).show();
-
-            }
+            if (result instanceof Result.Success) Toast.makeText(this, "Space deleted.", Toast.LENGTH_SHORT).show();
+            else if(result instanceof Result.Error) Toast.makeText(this, "Error deleting space.", Toast.LENGTH_SHORT).show();
         });
     }
 
-    // --- ADDED ---
+    private void emitCombinedResult() {
+        combinedData.setValue(new CombinedSpacesResult(currentSpaces, currentMembers, allTasks));
+    }
+
     private void updateEmptyView(boolean isEmpty) {
         if (isEmpty) {
             emptyView.setVisibility(View.VISIBLE);
@@ -273,35 +139,24 @@ public class SpaceListActivity extends AppCompatActivity {
         spacesRecyclerView.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
     }
 
-    // Helper class for Mediator
-    private static class CombinedSpacesResult {
-        final List<Space> spaces;
-        final List<Task> tasks;
-
-        CombinedSpacesResult(List<Space> spaces, List<Task> tasks) {
-            this.spaces = spaces;
-            this.tasks = tasks;
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (currentUser != null) {
+            viewModel.attachUserListener(currentUser.getUid());
         }
     }
-    // --- END ADDED ---
 
-    private void showInviteCodeDialog(String spaceName, String inviteCode) {
-        String title = "Space '" + spaceName + "' Created!";
-        // Create a TextView for the code to make it selectable
-        final TextView codeView = new TextView(this);
-        codeView.setText(inviteCode);
-        codeView.setTextSize(24);
-        codeView.setTextIsSelectable(true);
-        codeView.setGravity(Gravity.CENTER);
-        codeView.setPadding(40, 40, 40, 40);
+    // Helper Class
+    private static class CombinedSpacesResult {
+        final List<Space> spaces;
+        final Map<String, User> members;
+        final List<Task> tasks;
 
-        // MODIFIED: Use MaterialAlertDialogBuilder
-        new MaterialAlertDialogBuilder(this)
-                .setTitle(title)
-                .setMessage(getString(R.string.share_code_instruction))
-                .setView(codeView) // Add the selectable code here
-                .setPositiveButton("OK", null)
-
-                .show();
+        CombinedSpacesResult(List<Space> spaces, Map<String, User> members, List<Task> tasks) {
+            this.spaces = spaces;
+            this.members = members;
+            this.tasks = tasks;
+        }
     }
 }

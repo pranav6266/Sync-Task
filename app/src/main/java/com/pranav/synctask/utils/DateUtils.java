@@ -7,15 +7,29 @@ import java.util.Locale;
 
 public class DateUtils {
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
+    private static final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
 
-    // Returns "Today", "Tomorrow", "Yesterday" or "Oct 24"
+    // --- DATE FORMATTING ---
+
+    public static String formatDate(Timestamp timestamp) {
+        if (timestamp == null) return "";
+        return dateFormat.format(timestamp.toDate());
+    }
+
+    public static String formatTime(Timestamp timestamp) {
+        if (timestamp == null) return "";
+        return timeFormat.format(timestamp.toDate());
+    }
+
+    // --- HELPER METHODS ---
+
+    // This returns "Today", "Yesterday", or the formatted date
     public static String getRelativeDate(Timestamp timestamp) {
         if (timestamp == null) return "";
 
         long now = System.currentTimeMillis();
         long time = timestamp.toDate().getTime();
 
-        // Android's built-in helper handles "Today"/"Yesterday" logic automatically
         return android.text.format.DateUtils.getRelativeTimeSpanString(
                 time,
                 now,
@@ -24,12 +38,19 @@ public class DateUtils {
         ).toString();
     }
 
-    public static String formatDate(Timestamp timestamp) {
-        if (timestamp == null) return "";
-        return dateFormat.format(timestamp.toDate());
+    // Checks if a timestamp is strictly TODAY
+    public static boolean isToday(Timestamp timestamp) {
+        if (timestamp == null) return false;
+
+        Calendar today = Calendar.getInstance();
+        Calendar taskDate = Calendar.getInstance();
+        taskDate.setTime(timestamp.toDate());
+
+        return today.get(Calendar.YEAR) == taskDate.get(Calendar.YEAR) &&
+                today.get(Calendar.DAY_OF_YEAR) == taskDate.get(Calendar.DAY_OF_YEAR);
     }
 
-    // Check if a specific timestamp is strictly before today (Overdue)
+    // Checks if a timestamp is strictly BEFORE today (ignoring time)
     public static boolean isOverdue(Timestamp timestamp) {
         if (timestamp == null) return false;
 

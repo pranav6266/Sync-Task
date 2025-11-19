@@ -12,7 +12,6 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -25,22 +24,25 @@ import com.pranav.synctask.models.Space;
 import com.pranav.synctask.models.Task;
 import com.pranav.synctask.models.User;
 import com.pranav.synctask.ui.DashboardViewModel;
+// IMPORTANT: Use the custom DateUtils
+import com.pranav.synctask.utils.DateUtils;
+
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
+import java.util.Map;
 
 public class PersonalLinksAdapter extends RecyclerView.Adapter<PersonalLinksAdapter.LinkViewHolder> {
 
     private final Context context;
     private final List<Space> linkList;
     private final String currentUserId;
-    private final List<User> partnerDetails;
+    private Map<String, User> membersMap;
     private final List<Task> allTasks;
 
-    public PersonalLinksAdapter(Context context, List<Space> linkList, List<User> partnerDetails, List<Task> allTasks) {
+    public PersonalLinksAdapter(Context context, List<Space> linkList, Map<String, User> membersMap, List<Task> allTasks) {
         this.context = context;
         this.linkList = linkList;
-        this.partnerDetails = partnerDetails;
+        this.membersMap = membersMap;
         this.allTasks = allTasks;
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         this.currentUserId = (user != null) ? user.getUid() : null;
@@ -58,7 +60,7 @@ public class PersonalLinksAdapter extends RecyclerView.Adapter<PersonalLinksAdap
         Space link = linkList.get(position);
         if (link == null || currentUserId == null) return;
 
-        // Find Partner Name
+        // 1. Find Partner Name
         String partnerUid = null;
         for (String memberId : link.getMembers()) {
             if (!memberId.equals(currentUserId)) {
@@ -66,35 +68,53 @@ public class PersonalLinksAdapter extends RecyclerView.Adapter<PersonalLinksAdap
                 break;
             }
         }
+
         String partnerName = "Partner";
-        if (partnerUid != null) {
-            for (User partner : partnerDetails) {
-                if (partner.getUid().equals(partnerUid)) {
-                    partnerName = partner.getDisplayName();
-                    break;
-                }
+        if (partnerUid != null && membersMap != null && membersMap.containsKey(partnerUid)) {
+            User partner = membersMap.get(partnerUid);
+            if (partner != null && partner.getDisplayName() != null) {
+                partnerName = partner.getDisplayName();
             }
         }
-        holder.tvPartnerName.setText(String.format(Locale.getDefault(), "Tasks with %s", partnerName));
 
-        // Progress
+        // Update Title
+        holder.tvPartnerName.setText("Tasks with " + partnerName);
+
+        // 2. Progress Calculation
         int totalEffort = 0;
         int completedEffort = 0;
         int taskCount = 0;
 
         for (Task task : allTasks) {
             if (link.getSpaceId().equals(task.getSpaceId())) {
-                taskCount++;
-                totalEffort += task.getEffort();
-                if (Task.STATUS_COMPLETED.equals(task.getStatus())) {
-                    completedEffort += task.getEffort();
+
+                if (Task.STATUS_PENDING.equals(task.getStatus())) {
+                    taskCount++;
+                }
+
+                boolean isRelevant = false;
+                if (task.getDueDate() != null && DateUtils.isToday(task.getDueDate())) isRelevant = true;
+                else if (task.getCreatedAt() != null && DateUtils.isToday(task.getCreatedAt())) isRelevant = true;
+
+                if (isRelevant) {
+                    totalEffort += task.getEffort();
+                    if (Task.STATUS_COMPLETED.equals(task.getStatus())) {
+                        completedEffort += task.getEffort();
+                    }
                 }
             }
         }
-        int progress = (totalEffort == 0) ? 0 : (int) (100.0 * completedEffort / totalEffort);
-        holder.progressLink.setProgress(progress, true);
 
-        // Description
+        int progress = (totalEffort == 0) ? 0 : (int) (100.0 * completedEffort / totalEffort);
+
+        if (totalEffort == 0) {
+            holder.progressLink.setVisibility(View.GONE);
+        } else {
+            holder.progressLink.setVisibility(View.VISIBLE);
+            holder.progressLink.setProgress(progress, true);
+        }
+
+        // 3. Status Text
         holder.tvLinkStatus.setText(taskCount + " Active Tasks");
 
         holder.itemView.setOnClickListener(v -> {
@@ -104,9 +124,7 @@ public class PersonalLinksAdapter extends RecyclerView.Adapter<PersonalLinksAdap
             context.startActivity(intent);
         });
 
-        holder.ivLinkOptions.setOnClickListener(v -> {
-            showOptionsDialog(v, link);
-        });
+        holder.ivLinkOptions.setOnClickListener(v -> showOptionsDialog(v, link));
     }
 
     private void showOptionsDialog(View anchor, Space link) {
@@ -118,9 +136,7 @@ public class PersonalLinksAdapter extends RecyclerView.Adapter<PersonalLinksAdap
                         .setTitle(R.string.unlink_partner_title)
                         .setMessage(R.string.unlink_partner_message)
                         .setNegativeButton(R.string.cancel, null)
-                        .setPositiveButton(R.string.unlink, (dialog, which) -> {
-                            getViewModel().leaveSpace(link.getSpaceId());
-                        })
+                        .setPositiveButton(R.string.unlink, (dialog, which) -> getViewModel().leaveSpace(link.getSpaceId()))
                         .show();
             }
             return true;
@@ -137,19 +153,17 @@ public class PersonalLinksAdapter extends RecyclerView.Adapter<PersonalLinksAdap
         return linkList.size();
     }
 
-    public void updateLinks(List<Space> newLinks, List<User> newPartners, List<Task> newTasks) {
-        PersonalLinkDiffCallback diffCallback = new PersonalLinkDiffCallback(this.linkList, newLinks);
-        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(diffCallback);
+    public void updateLinks(List<Space> newLinks, Map<String, User> newMembersMap, List<Task> newTasks) {
         this.linkList.clear();
         this.linkList.addAll(newLinks);
-        this.partnerDetails.clear();
-        this.partnerDetails.addAll(newPartners);
+        this.membersMap = newMembersMap;
         this.allTasks.clear();
         this.allTasks.addAll(newTasks);
-        diffResult.dispatchUpdatesTo(this);
+        notifyDataSetChanged();
     }
 
-    static class LinkViewHolder extends RecyclerView.ViewHolder {
+    // CHANGED: Made public static class
+    public static class LinkViewHolder extends RecyclerView.ViewHolder {
         TextView tvPartnerName, tvLinkStatus;
         ImageView ivLinkOptions;
         LinearProgressIndicator progressLink;
@@ -157,23 +171,9 @@ public class PersonalLinksAdapter extends RecyclerView.Adapter<PersonalLinksAdap
         public LinkViewHolder(@NonNull View itemView) {
             super(itemView);
             tvPartnerName = itemView.findViewById(R.id.tv_partner_name);
-            tvLinkStatus = itemView.findViewById(R.id.tv_link_status); // ADDED
+            tvLinkStatus = itemView.findViewById(R.id.tv_link_status);
             ivLinkOptions = itemView.findViewById(R.id.iv_link_options);
             progressLink = itemView.findViewById(R.id.progress_link);
         }
-    }
-
-    private static class PersonalLinkDiffCallback extends DiffUtil.Callback {
-        private final List<Space> oldList;
-        private final List<Space> newList;
-
-        public PersonalLinkDiffCallback(List<Space> oldList, List<Space> newList) {
-            this.oldList = oldList;
-            this.newList = newList;
-        }
-        @Override public int getOldListSize() { return oldList.size(); }
-        @Override public int getNewListSize() { return newList.size(); }
-        @Override public boolean areItemsTheSame(int old, int neo) { return Objects.equals(oldList.get(old).getSpaceId(), newList.get(neo).getSpaceId()); }
-        @Override public boolean areContentsTheSame(int old, int neo) { return Objects.equals(oldList.get(old).getSpaceName(), newList.get(neo).getSpaceName()); }
     }
 }
