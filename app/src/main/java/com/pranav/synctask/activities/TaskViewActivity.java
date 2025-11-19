@@ -1,20 +1,22 @@
 package com.pranav.synctask.activities;
 
-import android.app.ActivityOptions; // ADDED
+import android.app.ActivityOptions;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Window;
+import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.widget.ViewPager2;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton; // Updated Import
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.google.android.material.transition.platform.MaterialFadeThrough;
@@ -30,7 +32,8 @@ public class TaskViewActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private TasksViewModel viewModel;
     private String currentSpaceId;
-    private String contextType; // --- ADDED IN PHASE 4A ---
+    private String contextType;
+    private TextView tvHeaderTitle;
 
     @Override
     protected void onNewIntent(@NonNull Intent intent) {
@@ -49,12 +52,10 @@ public class TaskViewActivity extends AppCompatActivity {
         handleNotificationIntent(getIntent());
 
         currentSpaceId = getIntent().getStringExtra("SPACE_ID");
-        // --- ADDED IN PHASE 4A ---
         contextType = getIntent().getStringExtra("CONTEXT_TYPE");
         if (contextType == null) {
-            contextType = Space.TYPE_SHARED; // Default to shared
+            contextType = Space.TYPE_SHARED;
         }
-        // --- END ADDED ---
 
         if (currentSpaceId == null || currentSpaceId.isEmpty()) {
             Toast.makeText(this, "Error: No Space ID provided.", Toast.LENGTH_LONG).show();
@@ -64,16 +65,22 @@ public class TaskViewActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
         viewModel = new ViewModelProvider(this).get(TasksViewModel.class);
+
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        // TODO: Set toolbar title to space name
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
+        }
+
+        tvHeaderTitle = findViewById(R.id.tv_header_title);
+        // Optional: Set space name to tvHeaderTitle here if available
 
         ViewPager2 viewPager = findViewById(R.id.view_pager);
         TabLayout tabLayout = findViewById(R.id.tab_layout);
-        FloatingActionButton fab = findViewById(R.id.fab_add_task);
 
-        // --- MODIFIED IN PHASE 4A ---
-        // --- MODIFIED IN PHASE 4A ---
+        // CHANGED: Updated to ExtendedFloatingActionButton
+        ExtendedFloatingActionButton fab = findViewById(R.id.fab_add_task);
+
         viewPager.setAdapter(new ViewPagerAdapter(this, contextType));
         new TabLayoutMediator(tabLayout, viewPager,
                 (tab, position) -> {
@@ -83,37 +90,37 @@ public class TaskViewActivity extends AppCompatActivity {
                                 tab.setText("All");
                                 break;
                             case 1:
-                                tab.setText("My Tasks"); 
+                                tab.setText("My Tasks");
                                 break;
                             case 2:
-                                tab.setText("Partner's Tasks"); 
+                                tab.setText("Partner");
                                 break;
                         }
-                    } else { // SHARED (MODIFIED)
+                    } else {
                         switch (position) {
                             case 0:
-                                tab.setText("All"); 
+                                tab.setText("All");
                                 break;
                             case 1:
-                                tab.setText("Shared");  // Was case 2
+                                tab.setText("Shared");
                                 break;
                             case 2:
-                                tab.setText("Assigned");  // Was case 3
+                                tab.setText("Assigned");
                                 break;
                         }
                     }
                 }
         ).attach();
-        // --- END MODIFIED ---
 
         fab.setOnClickListener(v -> {
             Intent intent = new Intent(TaskViewActivity.this, CreateTaskActivity.class);
             intent.putExtra("SPACE_ID", currentSpaceId);
+            intent.putExtra("CONTEXT_TYPE", contextType);
 
             ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(
                     this,
                     fab,
-                    "fab_to_create_task" // The transitionName
+                    "fab_to_create_task"
             );
             startActivity(intent, options.toBundle());
         });
@@ -160,7 +167,6 @@ public class TaskViewActivity extends AppCompatActivity {
             goToLogin();
             return;
         }
-        // This viewmodel now only loads PENDING tasks
         viewModel.loadTasks(currentSpaceId);
     }
 

@@ -1,134 +1,249 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-
-    android:padding="16dp"
     android:background="?attr/colorSurface"
+    android:fillViewport="true"
     android:transitionName="fab_to_create_task">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/create_new_item"
-        android:textAppearance="?attr/textAppearanceHeadlineMedium"
-        android:textColor="?attr/colorOnSurface"
-        android:layout_marginBottom="24dp" />
-
-    <com.google.android.material.textfield.TextInputLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        style="?attr/textInputStyle">
+        android:orientation="vertical"
+        android:padding="24dp">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/et_task_title"
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:text="@string/create_new_item"
+            android:fontFamily="sans-serif-medium"
+            android:textAppearance="?attr/textAppearanceHeadlineMedium"
+            android:textColor="?attr/colorOnSurface" />
+
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/title_hint"
-            android:inputType="textCapSentences" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginBottom="16dp"
+            style="?attr/textInputStyle"
+            android:hint="@string/title_hint">
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_task_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textCapSentences" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-        style="?attr/textInputStyle">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/et_task_description"
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/description_hint"
-            android:inputType="textCapSentences|textMultiLine"
-            android:minLines="3"
-            android:gravity="top" />
+            android:layout_marginBottom="24dp"
+            style="?attr/textInputStyle"
+            android:hint="@string/description_hint">
 
-    </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_task_description"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="top"
+                android:inputType="textCapSentences|textMultiLine"
+                android:minLines="3" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/layout_task_scope"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
-        <AutoCompleteTextView
-            android:id="@+id/ac_task_scope"
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Type"
+            android:textAllCaps="true"
+            android:letterSpacing="0.05"
+            android:textAppearance="?attr/textAppearanceLabelSmall"
+            android:textColor="?attr/colorOutline"
+            android:layout_marginBottom="8dp"/>
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chip_group_type"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/scope_hint"
+            android:layout_marginBottom="24dp"
+            app:singleSelection="true"
+            app:selectionRequired="true">
 
-            android:inputType="none" />
-    </com.google.android.material.textfield.TextInputLayout>
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
-        <AutoCompleteTextView
-            android:id="@+id/ac_task_type"
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_type_task"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Task"
+                android:checked="true"
+                app:chipIcon="@drawable/ic_task_type_task"/>
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_type_reminder"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Reminder"
+                app:chipIcon="@drawable/ic_task_type_reminder"/>
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_type_update"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Update"
+                app:chipIcon="@drawable/ic_task_type_update"/>
+        </com.google.android.material.chip.ChipGroup>
+
+        <TextView
+            android:id="@+id/tv_scope_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/scope_label"
+            android:textAllCaps="true"
+            android:letterSpacing="0.05"
+            android:textAppearance="?attr/textAppearanceLabelSmall"
+            android:textColor="?attr/colorOutline"
+            android:layout_marginBottom="8dp"/>
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chip_group_scope"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:singleSelection="true"
+            app:selectionRequired="true">
 
-            android:hint="@string/type_hint"
-            android:inputType="none" />
-    </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_scope_shared"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Shared"
+                android:checked="true"
+                app:chipIcon="@drawable/ic_scope_shared"/>
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
-        <AutoCompleteTextView
-            android:id="@+id/ac_task_priority"
-            android:layout_width="match_parent"
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_scope_assigned"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Assign Partner"
+                app:chipIcon="@drawable/ic_scope_assigned"/>
 
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_scope_me"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="My Task"
+                android:visibility="gone"
+                app:chipIcon="@drawable/ic_scope_individual"/>
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_scope_partner"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Partner's Task"
+                android:visibility="gone"
+                app:chipIcon="@drawable/ic_scope_assigned"/>
+        </com.google.android.material.chip.ChipGroup>
+
+        <TextView
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:hint="Priority"
-            android:inputType="none" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:text="@string/priority_label"
+            android:textAllCaps="true"
+            android:letterSpacing="0.05"
+            android:textAppearance="?attr/textAppearanceLabelSmall"
+            android:textColor="?attr/colorOutline"
+            android:layout_marginBottom="8dp"/>
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="4dp"
-        android:layout_marginBottom="4dp"
-        android:text="@string/effort_label"
-        android:textAppearance="?attr/textAppearanceLabelLarge"
-        android:textColor="?attr/colorOnSurfaceVariant" />
-
-    <com.google.android.material.slider.Slider
-
-        android:id="@+id/slider_task_effort"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        android:valueFrom="1"
-        android:valueTo="5"
-        android:stepSize="1"
-        app:labelBehavior="gone" />
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp"
-        style="?attr/textInputStyle">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/et_task_due_date"
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chip_group_priority"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/due_date_hint"
-            android.focusable="true"
-            android:clickable="true" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginBottom="24dp"
+            app:singleSelection="true"
+            app:selectionRequired="true">
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_create_task"
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_prio_low"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Low"
+                android:textColor="@color/priority_low"
+                app:chipBackgroundColor="@color/chip_bg_personal"/>
 
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:text="@string/create_task_button"
-        android:textSize="16sp" />
-</LinearLayout>
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_prio_normal"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Normal"
+                android:checked="true"
+                android:textColor="@color/priority_normal"
+                app:chipBackgroundColor="@color/chip_bg_shared"/>
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_prio_high"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="High"
+                android:textColor="@color/priority_high"
+                app:chipBackgroundColor="@color/chip_bg_assigned"/> </com.google.android.material.chip.ChipGroup>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/effort_label"
+            android:textAllCaps="true"
+            android:letterSpacing="0.05"
+            android:textAppearance="?attr/textAppearanceLabelSmall"
+            android:textColor="?attr/colorOutline"
+            android:layout_marginBottom="4dp"/>
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/slider_task_effort"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:valueFrom="1"
+            android:valueTo="5"
+            android:stepSize="1"
+            android:value="1"
+            app:labelBehavior="floating"
+            app:thumbColor="?attr/colorPrimary"
+            app:trackColorActive="?attr/colorPrimary"
+            app:trackColorInactive="?attr/colorSurfaceVariant"/>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="32dp"
+            style="?attr/textInputStyle"
+            app:startIconDrawable="@android:drawable/ic_menu_my_calendar"
+            android:hint="@string/due_date_hint">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_task_due_date"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:focusable="false"
+                android:clickable="true" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_create_task"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="@string/create_task_button"
+            android:textSize="16sp"
+            app:cornerRadius="28dp"/>
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
