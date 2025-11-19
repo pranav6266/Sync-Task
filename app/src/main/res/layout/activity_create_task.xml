@@ -5,6 +5,7 @@
     android:layout_height="match_parent"
     android:background="?attr/colorSurface"
     android:fillViewport="true"
+    android:fitsSystemWindows="true"
     android:transitionName="fab_to_create_task">
 
     <LinearLayout

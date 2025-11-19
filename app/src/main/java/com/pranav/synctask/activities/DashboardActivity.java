@@ -3,7 +3,6 @@ package com.pranav.synctask.activities;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.InputType;
-import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
@@ -13,14 +12,23 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.content.ContextCompat;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
 
-import com.google.android.material.card.MaterialCardView; // Updated Import
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton; // Updated Import
-import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.pranav.synctask.R;
+import com.pranav.synctask.adapters.SpaceSelectionAdapter;
 import com.pranav.synctask.data.Result;
 import com.pranav.synctask.data.TaskRepository;
 import com.pranav.synctask.models.DialogItem;
@@ -30,7 +38,6 @@ import com.pranav.synctask.ui.DashboardViewModel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 
 public class DashboardActivity extends AppCompatActivity {
 
@@ -38,13 +45,20 @@ public class DashboardActivity extends AppCompatActivity {
     private FirebaseUser currentUser;
     private DashboardViewModel viewModel;
     private TextView tvWelcomeMessage, tvPersonalSummary, tvSharedSummary;
-
-    // CHANGED: Updated View Types to match new XML
     private MaterialCardView cardPersonalSpaces, cardSharedSpaces;
     private MaterialCardView btnViewProfile;
     private ExtendedFloatingActionButton fabAdd;
-
     private List<DialogItem> dialogItemsCache = new ArrayList<>();
+
+    // 1. Permission Launcher
+    private final ActivityResultLauncher<String> requestNotificationPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (isGranted) {
+                    Toast.makeText(this, "Notifications enabled!", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "Notifications are required to see task updates.", Toast.LENGTH_LONG).show();
+                }
+            });
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -65,7 +79,6 @@ public class DashboardActivity extends AppCompatActivity {
         observeViewModel();
 
         if (currentUser.getDisplayName() != null) {
-            // CHANGED: Just show the name, since "Hello," is already in the layout
             tvWelcomeMessage.setText(currentUser.getDisplayName());
         }
     }
@@ -76,8 +89,6 @@ public class DashboardActivity extends AppCompatActivity {
         tvSharedSummary = findViewById(R.id.tv_shared_summary);
         cardPersonalSpaces = findViewById(R.id.card_personal_spaces);
         cardSharedSpaces = findViewById(R.id.card_shared_spaces);
-
-        // CHANGED: Casting to correct types
         btnViewProfile = findViewById(R.id.btn_view_profile);
         fabAdd = findViewById(R.id.fab_add);
     }
@@ -92,15 +103,11 @@ public class DashboardActivity extends AppCompatActivity {
         cardSharedSpaces.setOnClickListener(v ->
                 startActivity(new Intent(DashboardActivity.this, SpaceListActivity.class)));
 
+        // CHANGED: ONLY set OnClickListener. The LongClick is removed to prevent conflicts.
         fabAdd.setOnClickListener(v -> showAddTaskDialog());
-        fabAdd.setOnLongClickListener(v -> {
-            showCreateNewDialog();
-            return true;
-        });
     }
 
     private void observeViewModel() {
-        // Observe personal links to update summary
         viewModel.getPersonalLinksLiveData().observe(this, result -> {
             if (result instanceof Result.Success) {
                 List<Space> links = ((Result.Success<List<Space>>) result).data;
@@ -111,7 +118,6 @@ public class DashboardActivity extends AppCompatActivity {
             }
         });
 
-        // Observe shared spaces to update summary
         viewModel.getSharedSpacesLiveData().observe(this, result -> {
             if (result instanceof Result.Success) {
                 List<Space> spaces = ((Result.Success<List<Space>>) result).data;
@@ -122,16 +128,12 @@ public class DashboardActivity extends AppCompatActivity {
             }
         });
 
-        // Observe combined dialog items and cache them
         viewModel.getAllDialogItems().observe(this, result -> {
             if (result instanceof Result.Success) {
                 dialogItemsCache = ((Result.Success<List<DialogItem>>) result).data;
-            } else if (result instanceof Result.Error) {
-                Toast.makeText(this, "Error loading spaces for dialog", Toast.LENGTH_SHORT).show();
             }
         });
 
-        // Observe create space result (for the dialog)
         viewModel.getCreateSpaceResult().observe(this, result -> {
             if (result instanceof Result.Success) {
                 Toast.makeText(this, "Space created!", Toast.LENGTH_SHORT).show();
@@ -150,70 +152,38 @@ public class DashboardActivity extends AppCompatActivity {
         });
     }
 
+    // CHANGED: This now handles the entire "Create" flow (Spaces, Links, and Tasks)
     private void showAddTaskDialog() {
-        if (dialogItemsCache.isEmpty()) {
-            Toast.makeText(this, "No spaces or links found. Long press to create one!", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(this);
+        View sheetView = LayoutInflater.from(this).inflate(R.layout.bottom_sheet_select_space, null);
+        bottomSheetDialog.setContentView(sheetView);
 
-        // Create a simple array of display names
-        CharSequence[] items = dialogItemsCache.stream()
-                .map(DialogItem::getDisplayName).toArray(CharSequence[]::new);
+        // 1. Create Space Button
+        sheetView.findViewById(R.id.btn_action_create_space).setOnClickListener(v -> {
+            bottomSheetDialog.dismiss();
+            showCreateSpaceDialog();
+        });
 
-        new MaterialAlertDialogBuilder(this)
-                .setTitle("Add Task To...")
-                .setItems(items, (dialog, which) -> {
-                    DialogItem selected = dialogItemsCache.get(which);
-                    Intent intent = new Intent(DashboardActivity.this, CreateTaskActivity.class);
-                    intent.putExtra("SPACE_ID", selected.getSpaceId());
-                    intent.putExtra("CONTEXT_TYPE", selected.getSpaceType());
-                    startActivity(intent);
-                })
-                .show();
-    }
+        // 2. Join / Connect Button (Opens PairingActivity)
+        sheetView.findViewById(R.id.btn_action_join_connect).setOnClickListener(v -> {
+            bottomSheetDialog.dismiss();
+            startActivity(new Intent(DashboardActivity.this, PairingActivity.class));
+        });
 
-    private void showCreateNewDialog() {
-        final CharSequence[] options = {
-                getString(R.string.link_new_partner),
-                getString(R.string.create_shared_space),
-                getString(R.string.join_shared_space)
-        };
+        // 3. Setup RecyclerView for existing spaces
+        RecyclerView rvSpaces = sheetView.findViewById(R.id.rv_space_selection);
+        rvSpaces.setLayoutManager(new LinearLayoutManager(this));
 
-        new MaterialAlertDialogBuilder(this)
-                .setTitle("Create New")
-                .setItems(options, (dialog, which) -> {
-                    String selected = options[which].toString();
-                    if (selected.equals(getString(R.string.link_new_partner))) {
-                        showLinkPartnerDialog();
-                    } else if (selected.equals(getString(R.string.create_shared_space))) {
-                        showCreateSpaceDialog();
-                    } else if (selected.equals(getString(R.string.join_shared_space))) {
-                        startActivity(new Intent(DashboardActivity.this, PairingActivity.class));
-                    }
-                })
-                .show();
-    }
+        SpaceSelectionAdapter adapter = new SpaceSelectionAdapter(dialogItemsCache, selectedItem -> {
+            bottomSheetDialog.dismiss();
+            Intent intent = new Intent(DashboardActivity.this, CreateTaskActivity.class);
+            intent.putExtra("SPACE_ID", selectedItem.getSpaceId());
+            intent.putExtra("CONTEXT_TYPE", selectedItem.getSpaceType());
+            startActivity(intent);
+        });
 
-    private void showLinkPartnerDialog() {
-        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_link_partner, null);
-        TextView tvYourUid = dialogView.findViewById(R.id.tv_your_uid);
-        TextInputEditText etPartnerUid = dialogView.findViewById(R.id.et_partner_uid);
-
-        tvYourUid.setText(currentUser.getUid());
-
-        new MaterialAlertDialogBuilder(this)
-                .setTitle(R.string.link_new_partner)
-                .setView(dialogView)
-                .setPositiveButton(R.string.link_button, (dialog, which) -> {
-                    String partnerUid = Objects.requireNonNull(etPartnerUid.getText()).toString().trim();
-                    if (TextUtils.isEmpty(partnerUid)) {
-                        Toast.makeText(this, "Partner UID cannot be empty.", Toast.LENGTH_SHORT).show();
-                    } else {
-                        viewModel.createPersonalLink(partnerUid);
-                    }
-                })
-                .setNegativeButton(R.string.cancel, null)
-                .show();
+        rvSpaces.setAdapter(adapter);
+        bottomSheetDialog.show();
     }
 
     private void showCreateSpaceDialog() {
@@ -236,6 +206,15 @@ public class DashboardActivity extends AppCompatActivity {
                 .show();
     }
 
+    private void askNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
+                    PackageManager.PERMISSION_GRANTED) {
+                requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+            }
+        }
+    }
+
     @Override
     protected void onStart() {
         super.onStart();
@@ -243,6 +222,7 @@ public class DashboardActivity extends AppCompatActivity {
             goToLogin();
             return;
         }
+        askNotificationPermission();
         viewModel.attachUserListener(currentUser.getUid());
     }
 

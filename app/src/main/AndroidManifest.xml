@@ -53,7 +53,7 @@
         <activity
             android:name=".activities.TaskDetailActivity"
             android:exported="false"
-            android:parentActivityName=".activities.TaskViewActivity" />
+            android:parentActivityName=".activities.DashboardActivity" />
 
         <activity
             android:name=".activities.CompletedTasksActivity"

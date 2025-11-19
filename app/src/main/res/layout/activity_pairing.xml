@@ -1,83 +1,119 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/pairing_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/colorSurface"
-    android:orientation="vertical"
-    android:padding="24dp">
+    android:fitsSystemWindows="true"
+    android:fillViewport="true">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp"
-        android:text="@string/pair_with_partner_title"
-        android:textColor="?attr/colorOnSurface"
-        android:textAppearance="?attr/textAppearanceHeadlineMedium" />
-
-
-    <com.google.android.material.card.MaterialCardView
-        style="?attr/materialCardViewStyle"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
 
-        <LinearLayout
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:text="Connect"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="?attr/colorOnSurface"
+            android:textAppearance="?attr/textAppearanceHeadlineMedium" />
+
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="20dp">
+            android:layout_marginBottom="32dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="?attr/colorOutlineVariant"
+            app:cardBackgroundColor="?attr/colorSurface">
 
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:text="@string/enter_partner_code_label"
-                android:textColor="?attr/colorOnSurface"
-                android:textAppearance="?attr/textAppearanceTitleMedium" />
-
-            <com.google.android.material.textfield.TextInputLayout
-                style="?attr/textInputStyle"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp">
+                android:orientation="vertical"
+                android:padding="16dp">
 
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/et_partner_code"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/partner_code_hint"
-
-                    android:inputType="textCapCharacters"
-                    android:maxLength="6" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="56dp">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_pair"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:text="@string/pair_button_text"
-
-                    android:textAllCaps="false"
-                    android:textSize="16sp" />
-
-                <ProgressBar
-                    android:id="@+id/pairing_progress_bar"
-
+                <TextView
+                    android:text="Your User ID (Share this)"
+                    android:textAppearance="?attr/textAppearanceLabelSmall"
+                    android:textColor="?attr/colorOutline"
+                    android:textAllCaps="true"
+                    android:layout_marginBottom="4dp"
                     android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:visibility="gone" />
-            </FrameLayout>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+                    <TextView
+                        android:id="@+id/tv_my_uid_display"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="monospace"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        tools:text="aBcD123..."/>
 
-</LinearLayout>
+                    <Button
+                        android:id="@+id/btn_copy_my_uid"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Copy"
+                        android:minWidth="0dp"
+                        android:paddingHorizontal="12dp"/>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:text="Enter Partner's ID or Space Code"
+            android:textColor="?attr/colorOnSurface"
+            android:textAppearance="?attr/textAppearanceTitleMedium" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="?attr/textInputStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:hint="Paste Code/ID Here">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_partner_code"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_pair"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Connect"
+            android:textSize="16sp"
+            app:cornerRadius="28dp" />
+
+        <ProgressBar
+            android:id="@+id/pairing_progress_bar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="24dp"
+            android:visibility="gone" />
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
