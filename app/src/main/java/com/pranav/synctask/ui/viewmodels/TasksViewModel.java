@@ -8,7 +8,7 @@ import com.pranav.synctask.data.Result;
 import com.pranav.synctask.data.TaskRepository;
 import com.pranav.synctask.data.UserRepository;
 import com.pranav.synctask.models.Task;
-import com.pranav.synctask.models.User;
+
 import java.util.List;
 
 public class TasksViewModel extends ViewModel {
@@ -40,9 +40,9 @@ public class TasksViewModel extends ViewModel {
         taskRepository.refreshTasks();
     }
 
-    public void syncLocalTasks(Context context) {
+    public void updateTaskStatus(String taskId, String newStatus) {
+        taskRepository.updateTaskStatus(taskId, newStatus);
     }
-
     // --- ADDED ---
     // Used for the "Undo" delete feature
     public void createTask(Task task, Context context) {

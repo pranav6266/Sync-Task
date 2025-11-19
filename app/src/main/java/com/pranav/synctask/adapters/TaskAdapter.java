@@ -193,6 +193,12 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     public int getItemCount() {
         return taskList.size();
     }
+    public Task getTaskAt(int position) {
+        if (position >= 0 && position < taskList.size()) {
+            return taskList.get(position);
+        }
+        return null;
+    }
 
     public void updateTasks(List<Task> newTasks) {
         TaskDiffCallback diffCallback = new TaskDiffCallback(this.taskList, newTasks);
@@ -263,5 +269,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                     Objects.equals(oldTask.getPriority(), newTask.getPriority()) &&
                     Objects.equals(oldTask.getStatus(), newTask.getStatus());
         }
+
     }
 }

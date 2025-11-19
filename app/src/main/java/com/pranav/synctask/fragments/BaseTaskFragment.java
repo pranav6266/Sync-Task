@@ -1,10 +1,6 @@
 package com.pranav.synctask.fragments;
 
-import android.content.Context;
 import android.content.Intent;
-import android.net.ConnectivityManager;
-import android.net.Network;
-import android.net.NetworkRequest;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -16,15 +12,17 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.ItemTouchHelper; // ADDED
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
-import com.airbnb.lottie.LottieAnimationView; // ADDED
+import com.airbnb.lottie.LottieAnimationView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.snackbar.Snackbar; // ADDED
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.pranav.synctask.R;
+import com.pranav.synctask.activities.CompletionAnimationActivity; // ADDED
 import com.pranav.synctask.activities.EditTaskActivity;
 import com.pranav.synctask.activities.TaskDetailActivity;
 import com.pranav.synctask.activities.TaskViewActivity;
@@ -32,22 +30,23 @@ import com.pranav.synctask.adapters.TaskAdapter;
 import com.pranav.synctask.data.Result;
 import com.pranav.synctask.models.Task;
 import com.pranav.synctask.ui.viewmodels.TasksViewModel;
+import com.pranav.synctask.utils.SwipeTaskCallback; // ADDED
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-// --- MODIFIED IN PHASE 4A: Implements listener ---
+
 public abstract class BaseTaskFragment extends Fragment implements TaskAdapter.OnTaskActionListener {
 
     protected RecyclerView recyclerView;
     protected TaskAdapter adapter;
     protected SwipeRefreshLayout swipeRefreshLayout;
-    protected LottieAnimationView emptyView; // MODIFIED: Changed from TextView
+    protected LottieAnimationView emptyView;
     protected String currentUserId;
-    // MODIFIED: Made protected
-    protected TasksViewModel viewModel; // MODIFIED: Made protected
-    private ConnectivityManager.NetworkCallback networkCallback;
+    protected TasksViewModel viewModel;
     private List<Task> currentTaskList = new ArrayList<>();
     private String currentSearchQuery = "";
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -60,13 +59,14 @@ public abstract class BaseTaskFragment extends Fragment implements TaskAdapter.O
         recyclerView = view.findViewById(R.id.recycler_view);
         swipeRefreshLayout = view.findViewById(R.id.swipe_refresh_layout);
         emptyView = view.findViewById(R.id.empty_view);
-        // This now finds the LottieAnimationView
 
         setupRecyclerView();
+        setupSwipeGestures(); // ADDED
+
         swipeRefreshLayout.setOnRefreshListener(() -> {
             viewModel.refreshTasks();
         });
-        swipeRefreshLayout.setColorSchemeResources(R.color.md_theme_light_primary, R.color.md_theme_light_secondary); // MODIFIED: M3 Colors
+        swipeRefreshLayout.setColorSchemeResources(R.color.md_theme_light_primary, R.color.md_theme_light_secondary);
 
         return view;
     }
@@ -80,34 +80,76 @@ public abstract class BaseTaskFragment extends Fragment implements TaskAdapter.O
 
     private void setupRecyclerView() {
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        // --- MODIFIED IN PHASE 4A: Pass 'this' as the listener ---
         String contextType = ((TaskViewActivity) requireActivity()).getContextType();
-        adapter = new TaskAdapter(contextType, getContext(),new ArrayList<>(), currentUserId, this);
+        adapter = new TaskAdapter(contextType, getContext(), new ArrayList<>(), currentUserId, this);
         recyclerView.setAdapter(adapter);
     }
 
-    @Override
-    public void onStart() {
-        super.onStart();
-        registerNetworkCallback();
+    // --- SWIPE LOGIC ---
+    private void setupSwipeGestures() {
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new SwipeTaskCallback(getContext()) {
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                int position = viewHolder.getAdapterPosition();
+                Task task = adapter.getTaskAt(position);
+
+                if (task == null) return;
+
+                boolean isCreator = currentUserId != null && currentUserId.equals(task.getCreatorUID());
+                String scope = task.getOwnershipScope();
+                if (scope == null) scope = Task.SCOPE_SHARED;
+
+                if (direction == ItemTouchHelper.LEFT) {
+                    // DELETE ACTION
+                    boolean canDelete = false;
+                    if (isCreator) canDelete = true;
+                    if (Task.SCOPE_SHARED.equals(scope)) canDelete = true; // Anyone deletes shared
+                    // Assignee CANNOT delete assigned tasks from list (only creator)
+
+                    if (canDelete) {
+                        showDeleteConfirmation(task); // We show dialog. If cancelled, we need to notifyAdapter to bring item back.
+                    } else {
+                        notifyPermissionDenied(position, "You cannot delete this task.");
+                    }
+
+                } else if (direction == ItemTouchHelper.RIGHT) {
+                    // COMPLETE ACTION
+                    boolean canComplete = false;
+                    if (Task.SCOPE_INDIVIDUAL.equals(scope) && isCreator) canComplete = true;
+                    else if (Task.SCOPE_SHARED.equals(scope)) canComplete = true;
+                    else if (Task.SCOPE_ASSIGNED.equals(scope) && !isCreator) canComplete = true; // Only assignee completes
+
+                    if (canComplete) {
+                        completeTask(task);
+                    } else {
+                        notifyPermissionDenied(position, "You cannot complete this task.");
+                    }
+                }
+            }
+        });
+        itemTouchHelper.attachToRecyclerView(recyclerView);
     }
 
-    @Override
-    public void onStop() {
-        super.onStop();
-        unregisterNetworkCallback();
+    private void notifyPermissionDenied(int position, String message) {
+        adapter.notifyItemChanged(position); // Snap back
+        Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
     }
+
+    private void completeTask(Task task) {
+        viewModel.updateTaskStatus(task.getId(), Task.STATUS_COMPLETED);
+        // Launch animation
+        Intent intent = new Intent(getContext(), CompletionAnimationActivity.class);
+        startActivity(intent);
+    }
+    // -------------------
 
     private void observeViewModel() {
         viewModel.getTasksResult().observe(getViewLifecycleOwner(), result -> {
             if (!isAdded()) return;
-
             swipeRefreshLayout.setRefreshing(result instanceof Result.Loading);
-
             if (result instanceof Result.Success) {
                 currentTaskList = ((Result.Success<List<Task>>) result).data;
                 filterAndDisplayTasks();
-
             } else if (result instanceof Result.Error) {
                 Log.e(getClass().getSimpleName(), "Error loading tasks", ((Result.Error<List<Task>>) result).exception);
                 Toast.makeText(getContext(), "Error loading tasks.", Toast.LENGTH_SHORT).show();
@@ -122,11 +164,18 @@ public abstract class BaseTaskFragment extends Fragment implements TaskAdapter.O
     private void filterAndDisplayTasks() {
         List<Task> timeFilteredTasks = filterTasks(currentTaskList);
         List<Task> finalFilteredTasks;
+
         if (currentSearchQuery.isEmpty()) {
             finalFilteredTasks = timeFilteredTasks;
         } else {
+            // DEEP SEARCH LOGIC
+            String query = currentSearchQuery.toLowerCase();
             finalFilteredTasks = timeFilteredTasks.stream()
-                    .filter(task -> task.getTitle().toLowerCase().contains(currentSearchQuery.toLowerCase()))
+                    .filter(task ->
+                            (task.getTitle() != null && task.getTitle().toLowerCase().contains(query)) ||
+                                    (task.getDescription() != null && task.getDescription().toLowerCase().contains(query)) ||
+                                    (task.getCreatorDisplayName() != null && task.getCreatorDisplayName().toLowerCase().contains(query))
+                    )
                     .collect(Collectors.toList());
         }
 
@@ -134,43 +183,19 @@ public abstract class BaseTaskFragment extends Fragment implements TaskAdapter.O
         updateEmptyView(finalFilteredTasks.isEmpty());
     }
 
-    private void registerNetworkCallback() {
-        ConnectivityManager cm = (ConnectivityManager) requireContext().getSystemService(Context.CONNECTIVITY_SERVICE);
-        networkCallback = new ConnectivityManager.NetworkCallback() {
-            @Override
-            public void onAvailable(@NonNull Network network) {
-                super.onAvailable(network);
-                if (getActivity() != null) {
-                    getActivity().runOnUiThread(() -> {
-                        viewModel.syncLocalTasks(requireContext());
-                    });
-                }
-            }
-        };
-        cm.registerNetworkCallback(new NetworkRequest.Builder().build(), networkCallback);
-    }
-
-    private void unregisterNetworkCallback() {
-        if (networkCallback != null) {
-            ConnectivityManager cm = (ConnectivityManager) requireContext().getSystemService(Context.CONNECTIVITY_SERVICE);
-            cm.unregisterNetworkCallback(networkCallback);
-        }
-    }
-
     private void updateEmptyView(boolean isEmpty) {
         if (isEmpty) {
             emptyView.setVisibility(View.VISIBLE);
-            emptyView.playAnimation(); // ADDED
+            emptyView.playAnimation();
         } else {
             emptyView.setVisibility(View.GONE);
-            emptyView.cancelAnimation(); // ADDED
+            emptyView.cancelAnimation();
         }
         recyclerView.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
     }
 
     protected abstract List<Task> filterTasks(List<Task> tasks);
 
-    // --- ADDED IN PHASE 4A: Listener implementation ---
     @Override
     public void onTaskClick(Task task) {
         Intent intent = new Intent(getContext(), TaskDetailActivity.class);
@@ -180,49 +205,39 @@ public abstract class BaseTaskFragment extends Fragment implements TaskAdapter.O
 
     @Override
     public void onTaskLongClick(Task task, View view) {
+        // Long press menu logic (Keep existing or remove if you prefer swipe only)
+        // For now, keeping it as a backup method
         PopupMenu popup = new PopupMenu(getContext(), view);
         popup.getMenuInflater().inflate(R.menu.task_item_menu, popup.getMenu());
 
-        // Check permissions
         boolean isCreator = currentUserId != null && currentUserId.equals(task.getCreatorUID());
         String scope = task.getOwnershipScope();
+        if(scope == null) scope = Task.SCOPE_SHARED;
 
-        // Determine who can edit/delete based on new logic (matches TaskDetailActivity)
         boolean canEdit = false;
         boolean canDelete = false;
 
-        if (scope == null) scope = Task.SCOPE_SHARED; // Handle null scope
-
         switch (scope) {
             case Task.SCOPE_INDIVIDUAL:
-                if (isCreator) {
-                    canEdit = true;
-                    canDelete = true;
-                }
+                if (isCreator) { canEdit = true; canDelete = true; }
                 break;
             case Task.SCOPE_SHARED:
-                canEdit = true;
-                canDelete = true;
+                canEdit = true; canDelete = true;
                 break;
             case Task.SCOPE_ASSIGNED:
-                if (isCreator) {
-                    canEdit = true;
-                    canDelete = true;
-                }
-                // Note: Non-creator (assignee) can't edit/delete from the list,
-                // they can only complete it in TaskDetailActivity.
+                if (isCreator) { canEdit = true; canDelete = true; }
                 break;
         }
 
         popup.getMenu().findItem(R.id.action_edit_task).setVisible(canEdit);
         popup.getMenu().findItem(R.id.action_delete_task).setVisible(canDelete);
+
         popup.setOnMenuItemClickListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.action_edit_task) {
                 Intent intent = new Intent(getContext(), EditTaskActivity.class);
                 intent.putExtra(EditTaskActivity.EXTRA_TASK, task);
                 startActivity(intent);
-
                 return true;
             } else if (itemId == R.id.action_delete_task) {
                 showDeleteConfirmation(task);
@@ -233,29 +248,30 @@ public abstract class BaseTaskFragment extends Fragment implements TaskAdapter.O
         popup.show();
     }
 
-    // --- MODIFIED ---
     private void showDeleteConfirmation(Task task) {
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.delete_task_dialog_title)
                 .setMessage(R.string.delete_task_dialog_message)
-                .setNegativeButton(R.string.cancel, null)
+                .setNegativeButton(R.string.cancel, (dialog, which) -> {
+                    adapter.notifyDataSetChanged(); // Restore item if swipe cancelled via dialog
+                })
                 .setPositiveButton(R.string.delete, (dialog, which) -> {
-
-                    // --- Undo Logic Added ---
-                    Task taskToDelete = task; // Save task to a temp variable
+                    // Undo Logic
+                    Task taskToDelete = task;
                     viewModel.deleteTask(taskToDelete.getId());
+
+                    // We don't need to remove from adapter manually because
+                    // Firestore listener will update the list automatically.
 
                     Snackbar.make(requireView(), "Task deleted", Snackbar.LENGTH_LONG)
                             .setAction("Undo", v -> {
-                                // Re-create the task. We clear ID and status to ensure it's a new pending task.
                                 taskToDelete.setId(null);
                                 taskToDelete.setStatus(Task.STATUS_PENDING);
                                 viewModel.createTask(taskToDelete, requireContext());
                             })
                             .show();
-                    // --- End Undo Logic ---
                 })
+                .setOnCancelListener(dialog -> adapter.notifyDataSetChanged()) // Restore on outside click
                 .show();
     }
-    // --- END MODIFIED ---
 }
