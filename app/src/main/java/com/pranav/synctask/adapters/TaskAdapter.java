@@ -58,15 +58,40 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         // 1. Title
         holder.tvTitle.setText(task.getTitle());
 
-        // 2. Date
+        // 2. Date Logic (UPDATED)
         if (task.getDueDate() != null) {
-            holder.tvDate.setText(DateUtils.formatDate(task.getDueDate()));
+            // Use the new Relative Date ("Tomorrow", "Yesterday")
+            holder.tvDate.setText(com.pranav.synctask.utils.DateUtils.getRelativeDate(task.getDueDate()));
             holder.tvDate.setVisibility(View.VISIBLE);
             holder.ivCalendar.setVisibility(View.VISIBLE);
+
+            // Check for Overdue
+            if (com.pranav.synctask.utils.DateUtils.isOverdue(task.getDueDate())
+                    && !Task.STATUS_COMPLETED.equals(task.getStatus())) {
+
+                // Task is late! Make it RED.
+                int errorColor = ContextCompat.getColor(context, R.color.md_theme_light_error);
+                holder.tvDate.setTextColor(errorColor);
+                holder.ivCalendar.setColorFilter(errorColor);
+                holder.tvDate.setText(holder.tvDate.getText() + " (Overdue)");
+                holder.tvDate.setTypeface(null, android.graphics.Typeface.BOLD);
+            } else {
+                // Normal Date
+                int normalColor = ContextCompat.getColor(context, R.color.md_theme_light_onSurfaceVariant); // Or your variant color
+                holder.tvDate.setTextColor(normalColor);
+                holder.ivCalendar.setColorFilter(normalColor);
+                holder.tvDate.setTypeface(null, android.graphics.Typeface.NORMAL);
+            }
+
         } else {
             holder.tvDate.setText("No Due Date");
             holder.tvDate.setVisibility(View.VISIBLE);
             holder.ivCalendar.setVisibility(View.VISIBLE);
+
+            // Reset colors for recycled views
+            int normalColor = ContextCompat.getColor(context, R.color.md_theme_light_onSurfaceVariant);
+            holder.tvDate.setTextColor(normalColor);
+            holder.ivCalendar.setColorFilter(normalColor);
         }
 
         // 3. Priority Strip Color

@@ -2,12 +2,11 @@ package com.pranav.synctask.activities;
 
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.Timestamp;
@@ -24,9 +23,8 @@ import java.util.TimeZone;
 public class EditTaskActivity extends AppCompatActivity {
 
     public static final String EXTRA_TASK = "EXTRA_TASK";
-
     private TextInputEditText etTitle, etDescription, etDueDate;
-    private AutoCompleteTextView acTaskType, acTaskPriority;
+    private ChipGroup chipGroupType, chipGroupPriority;
     private Button btnSaveChanges;
     private Calendar selectedDueDate = Calendar.getInstance();
     private EditTaskViewModel viewModel;
@@ -49,25 +47,16 @@ public class EditTaskActivity extends AppCompatActivity {
         etTitle = findViewById(R.id.et_task_title);
         etDescription = findViewById(R.id.et_task_description);
         etDueDate = findViewById(R.id.et_task_due_date);
-        acTaskType = findViewById(R.id.ac_task_type);
-        acTaskPriority = findViewById(R.id.ac_task_priority);
+
+        chipGroupType = findViewById(R.id.chip_group_type);
+        chipGroupPriority = findViewById(R.id.chip_group_priority);
+
         btnSaveChanges = findViewById(R.id.btn_save_task);
 
-        setupDropdowns();
         setupDatePicker();
         populateData();
 
         btnSaveChanges.setOnClickListener(v -> saveChanges());
-    }
-
-    private void setupDropdowns() {
-        String[] taskTypes = {Task.TYPE_TASK, Task.TYPE_REMINDER, Task.TYPE_UPDATE};
-        ArrayAdapter<String> typeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, taskTypes);
-        acTaskType.setAdapter(typeAdapter);
-
-        String[] priorities = {"Low", "Normal", "High"};
-        ArrayAdapter<String> priorityAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, priorities);
-        acTaskPriority.setAdapter(priorityAdapter);
     }
 
     private void setupDatePicker() {
@@ -91,8 +80,18 @@ public class EditTaskActivity extends AppCompatActivity {
     private void populateData() {
         etTitle.setText(currentTask.getTitle());
         etDescription.setText(currentTask.getDescription());
-        acTaskType.setText(currentTask.getTaskType(), false);
-        acTaskPriority.setText(currentTask.getPriority(), false);
+
+        // Set Type Chip
+        String type = currentTask.getTaskType();
+        if (Task.TYPE_REMINDER.equals(type)) chipGroupType.check(R.id.chip_type_reminder);
+        else if (Task.TYPE_UPDATE.equals(type)) chipGroupType.check(R.id.chip_type_update);
+        else chipGroupType.check(R.id.chip_type_task);
+
+        // Set Priority Chip
+        String priority = currentTask.getPriority();
+        if ("High".equalsIgnoreCase(priority)) chipGroupPriority.check(R.id.chip_prio_high);
+        else if ("Low".equalsIgnoreCase(priority)) chipGroupPriority.check(R.id.chip_prio_low);
+        else chipGroupPriority.check(R.id.chip_prio_normal);
 
         if (currentTask.getDueDate() != null) {
             selectedDueDate.setTime(currentTask.getDueDate().toDate());
@@ -110,8 +109,8 @@ public class EditTaskActivity extends AppCompatActivity {
 
         currentTask.setTitle(title);
         currentTask.setDescription(etDescription.getText().toString().trim());
-        currentTask.setTaskType(acTaskType.getText().toString());
-        currentTask.setPriority(acTaskPriority.getText().toString());
+        currentTask.setTaskType(getSelectedType());
+        currentTask.setPriority(getSelectedPriority());
 
         if (!etDueDate.getText().toString().isEmpty()) {
             currentTask.setDueDate(new Timestamp(new Date(selectedDueDate.getTimeInMillis())));
@@ -127,5 +126,19 @@ public class EditTaskActivity extends AppCompatActivity {
                 Toast.makeText(this, "Error updating task.", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private String getSelectedType() {
+        int id = chipGroupType.getCheckedChipId();
+        if (id == R.id.chip_type_reminder) return Task.TYPE_REMINDER;
+        if (id == R.id.chip_type_update) return Task.TYPE_UPDATE;
+        return Task.TYPE_TASK;
+    }
+
+    private String getSelectedPriority() {
+        int id = chipGroupPriority.getCheckedChipId();
+        if (id == R.id.chip_prio_high) return "High";
+        if (id == R.id.chip_prio_low) return "Low";
+        return "Normal";
     }
 }

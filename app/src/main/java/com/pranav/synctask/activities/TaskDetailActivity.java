@@ -1,6 +1,5 @@
 package com.pranav.synctask.activities;
 
-import android.animation.Animator;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -15,13 +14,13 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.airbnb.lottie.LottieAnimationView;
 import com.google.android.material.appbar.AppBarLayout;
-import com.google.android.material.chip.Chip; // ADDED
+import com.google.android.material.chip.Chip;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.progressindicator.LinearProgressIndicator; // ADDED
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.pranav.synctask.R;
@@ -29,8 +28,6 @@ import com.pranav.synctask.data.Result;
 import com.pranav.synctask.models.Task;
 import com.pranav.synctask.ui.viewmodels.TaskDetailViewModel;
 import com.pranav.synctask.utils.DateUtils;
-
-import java.util.Locale;
 
 public class TaskDetailActivity extends AppCompatActivity {
 
@@ -41,13 +38,17 @@ public class TaskDetailActivity extends AppCompatActivity {
     private String taskId;
     private Task currentTask;
     private FirebaseUser currentUser;
-    private TextView tvTitle, tvDescription, tvDueDate, tvPriority, tvScope, tvCreator, tvEffort;
+
+    // Views
+    private TextView tvTitle, tvDescription, tvDueDate, tvCreator, tvEffortValue;
     private CheckBox cbStatus;
-    private Chip chipStatus; // ADDED for Requirement 1
+    private Chip chipStatus;
+    private Chip chipPriority, chipType, chipScope; // ADDED
+    private LinearProgressIndicator indicatorEffort; // ADDED
     private ProgressBar progressBar;
     private View contentLayout;
     private Toolbar toolbar;
-    private AppBarLayout appBarLayout;
+
     private boolean canEdit = false;
     private boolean canDelete = false;
     private boolean canComplete = false;
@@ -61,8 +62,6 @@ public class TaskDetailActivity extends AppCompatActivity {
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
 
         if (taskId == null || currentUser == null) {
-            Toast.makeText(this, "Error: Task ID or User missing.", Toast.LENGTH_SHORT).show();
-            Log.e(TAG, "TaskId or CurrentUser is null. Finishing activity.");
             finish();
             return;
         }
@@ -76,16 +75,23 @@ public class TaskDetailActivity extends AppCompatActivity {
 
     private void initializeViews() {
         toolbar = findViewById(R.id.toolbar_task_detail);
-        appBarLayout = findViewById(R.id.app_bar_layout);
         tvTitle = findViewById(R.id.tv_task_title_detail);
         tvDescription = findViewById(R.id.tv_task_description_detail);
         tvDueDate = findViewById(R.id.tv_task_due_date_detail);
-        tvPriority = findViewById(R.id.tv_task_priority_detail);
-        tvScope = findViewById(R.id.tv_task_scope_detail);
         tvCreator = findViewById(R.id.tv_task_creator_detail);
-        tvEffort = findViewById(R.id.tv_task_effort_detail);
+
+        // New Chips
+        chipPriority = findViewById(R.id.chip_priority_display);
+        chipType = findViewById(R.id.chip_type_display);
+        chipScope = findViewById(R.id.chip_scope_display);
+
+        // Effort
+        tvEffortValue = findViewById(R.id.tv_task_effort_detail);
+        indicatorEffort = findViewById(R.id.indicator_effort);
+
         cbStatus = findViewById(R.id.cb_task_status_detail);
-        chipStatus = findViewById(R.id.chip_read_only_status); // ADDED
+        chipStatus = findViewById(R.id.chip_read_only_status);
+
         progressBar = findViewById(R.id.progress_bar_detail);
         contentLayout = findViewById(R.id.content_layout_detail);
     }
@@ -95,7 +101,7 @@ public class TaskDetailActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setDisplayShowHomeEnabled(true);
-            getSupportActionBar().setTitle(R.string.task_details_title);
+            getSupportActionBar().setTitle(""); // Clean header
         }
     }
 
@@ -123,13 +129,9 @@ public class TaskDetailActivity extends AppCompatActivity {
                 if (currentTask != null) {
                     calculatePermissions();
                     populateUi();
-                } else {
-                    Toast.makeText(this, "Error loading task data.", Toast.LENGTH_SHORT).show();
-                    finish();
                 }
             } else if (result instanceof Result.Error) {
                 progressBar.setVisibility(View.GONE);
-                Log.e(TAG, "Error loading task", ((Result.Error<Task>) result).exception);
                 Toast.makeText(this, "Error loading task.", Toast.LENGTH_SHORT).show();
                 finish();
             }
@@ -142,34 +144,18 @@ public class TaskDetailActivity extends AppCompatActivity {
         if (scope == null) scope = Task.SCOPE_SHARED;
 
         boolean isCreator = currentUser.getUid().equals(currentTask.getCreatorUID());
-        // Reset flags
-        canEdit = false;
-        canDelete = false;
-        canComplete = false;
+        canEdit = false; canDelete = false; canComplete = false;
 
         switch (scope) {
             case Task.SCOPE_INDIVIDUAL:
-                if (isCreator) {
-                    canEdit = true;
-                    canDelete = true;
-                    canComplete = true;
-                }
+                if (isCreator) { canEdit = true; canDelete = true; canComplete = true; }
                 break;
             case Task.SCOPE_SHARED:
-                canEdit = true;
-                canDelete = true;
-                canComplete = true;
+                canEdit = true; canDelete = true; canComplete = true;
                 break;
             case Task.SCOPE_ASSIGNED:
-                if (isCreator) {
-                    canEdit = true;
-                    canDelete = true;
-                    canComplete = false; // Creator assigns, but cannot complete (Requirement 1 logic)
-                } else {
-                    canEdit = false;
-                    canDelete = false;
-                    canComplete = true; // Assignee completes
-                }
+                if (isCreator) { canEdit = true; canDelete = true; canComplete = false; }
+                else { canEdit = false; canDelete = false; canComplete = true; }
                 break;
         }
         invalidateOptionsMenu();
@@ -177,12 +163,13 @@ public class TaskDetailActivity extends AppCompatActivity {
 
     private void populateUi() {
         tvTitle.setText(currentTask.getTitle());
+
         if (currentTask.getDescription() != null && !currentTask.getDescription().isEmpty()) {
             tvDescription.setText(currentTask.getDescription());
-            tvDescription.setVisibility(View.VISIBLE);
+            tvDescription.setAlpha(1.0f);
         } else {
-            tvDescription.setText(R.string.not_set);
-            tvDescription.setVisibility(View.GONE);
+            tvDescription.setText("No description provided.");
+            tvDescription.setAlpha(0.5f);
         }
 
         if (currentTask.getDueDate() != null) {
@@ -191,58 +178,65 @@ public class TaskDetailActivity extends AppCompatActivity {
             tvDueDate.setText(R.string.not_set);
         }
 
-        tvPriority.setText(currentTask.getPriority());
-        tvEffort.setText(String.valueOf(currentTask.getEffort()));
-        tvScope.setText(getScopeDisplayString(currentTask.getOwnershipScope()));
+        // Effort
+        int effort = currentTask.getEffort();
+        indicatorEffort.setProgress(effort);
+        tvEffortValue.setText(effort + "/5");
 
+        // Created By
         boolean isCreator = currentUser.getUid().equals(currentTask.getCreatorUID());
-        tvCreator.setText(isCreator ? getString(R.string.task_creator_label_you) : currentTask.getCreatorDisplayName());
+        tvCreator.setText(isCreator ? "Created by You" : "Created by " + currentTask.getCreatorDisplayName());
 
-        // --- MODIFIED: Requirement 1 Logic ---
+        // -- SET CHIPS --
+
+        // Priority Chip
+        String priority = currentTask.getPriority();
+        chipPriority.setText(priority);
+        if ("High".equalsIgnoreCase(priority)) {
+            chipPriority.setChipIconTintResource(R.color.priority_high);
+        } else if ("Low".equalsIgnoreCase(priority)) {
+            chipPriority.setChipIconTintResource(R.color.priority_low);
+        } else {
+            chipPriority.setChipIconTintResource(R.color.priority_normal);
+        }
+
+        // Type Chip
+        String type = currentTask.getTaskType();
+        if (Task.TYPE_REMINDER.equals(type)) {
+            chipType.setText("Reminder");
+            chipType.setChipIconResource(R.drawable.ic_task_type_reminder);
+        } else if (Task.TYPE_UPDATE.equals(type)) {
+            chipType.setText("Update");
+            chipType.setChipIconResource(R.drawable.ic_task_type_update);
+        } else {
+            chipType.setText("Task");
+            chipType.setChipIconResource(R.drawable.ic_task_type_task);
+        }
+
+        // Scope Chip
+        chipScope.setText(getScopeDisplayString(currentTask.getOwnershipScope()));
+
+        // -- STATUS LOGIC --
         if (canComplete) {
-            // User has permission: Show Checkbox, Hide Status Chip
             cbStatus.setVisibility(View.VISIBLE);
             chipStatus.setVisibility(View.GONE);
-
-            cbStatus.setOnCheckedChangeListener(null); // Remove listener to set initial state
+            cbStatus.setOnCheckedChangeListener(null);
             cbStatus.setChecked(Task.STATUS_COMPLETED.equals(currentTask.getStatus()));
-
-            // Add new listener
             cbStatus.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (!buttonView.isPressed()) {
-                    return; // Ignore programmatic changes
-                }
-                if (isChecked) {
-                    playCompleteAnimation();
-                } else {
-                    viewModel.updateTaskStatus(taskId, Task.STATUS_PENDING);
-                }
+                if (!buttonView.isPressed()) return;
+                if (isChecked) playCompleteAnimation();
+                else viewModel.updateTaskStatus(taskId, Task.STATUS_PENDING);
             });
         } else {
-            // User CANNOT complete: Hide Checkbox, Show Status Chip
             cbStatus.setVisibility(View.GONE);
             chipStatus.setVisibility(View.VISIBLE);
-
             boolean isCompleted = Task.STATUS_COMPLETED.equals(currentTask.getStatus());
             String statusText = isCompleted ? "Completed" : "Pending";
-
-            // Add context if it's an assigned task
             if (Task.SCOPE_ASSIGNED.equals(currentTask.getOwnershipScope())) {
-                statusText += " (Assigned to Partner)";
+                statusText += " (Partner)";
             }
-
-            chipStatus.setText("Status: " + statusText);
-
-            // Optional: Change chip color based on status
-            if (isCompleted) {
-                chipStatus.setChipBackgroundColorResource(R.color.md_theme_light_secondaryContainer);
-                chipStatus.setTextColor(getColor(R.color.md_theme_light_onSecondaryContainer));
-            } else {
-                chipStatus.setChipBackgroundColorResource(R.color.md_theme_light_surfaceVariant);
-                chipStatus.setTextColor(getColor(R.color.md_theme_light_onSurfaceVariant));
-            }
+            chipStatus.setText(statusText);
         }
-        // --- END MODIFIED ---
     }
 
     private void playCompleteAnimation() {
@@ -253,15 +247,11 @@ public class TaskDetailActivity extends AppCompatActivity {
     }
 
     private String getScopeDisplayString(String scope) {
-        if (scope == null) return getString(R.string.scope_shared_short);
+        if (scope == null) return "Shared";
         switch (scope) {
-            case Task.SCOPE_INDIVIDUAL:
-                return getString(R.string.scope_individual_short);
-            case Task.SCOPE_ASSIGNED:
-                return getString(R.string.scope_assigned_short);
-            case Task.SCOPE_SHARED:
-            default:
-                return getString(R.string.scope_shared_short);
+            case Task.SCOPE_INDIVIDUAL: return "Private";
+            case Task.SCOPE_ASSIGNED: return "Assigned";
+            default: return "Shared";
         }
     }
 
@@ -270,10 +260,8 @@ public class TaskDetailActivity extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.task_detail_menu, menu);
         MenuItem editItem = menu.findItem(R.id.action_edit_task);
         MenuItem deleteItem = menu.findItem(R.id.action_delete_task);
-
         editItem.setVisible(canEdit);
         deleteItem.setVisible(canDelete);
-
         return true;
     }
 
@@ -291,9 +279,7 @@ public class TaskDetailActivity extends AppCompatActivity {
             }
             return true;
         } else if (itemId == R.id.action_delete_task) {
-            if (canDelete) {
-                showDeleteConfirmation();
-            }
+            if (canDelete) showDeleteConfirmation();
             return true;
         }
         return super.onOptionsItemSelected(item);

@@ -8,232 +8,258 @@
     tools:context=".activities.TaskDetailActivity">
 
     <com.google.android.material.appbar.AppBarLayout
-
         android:id="@+id/app_bar_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="?attr/colorSurface">
+        android:background="?attr/colorSurfaceVariant"
+        app:elevation="0dp">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar_task_detail"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:titleTextColor="?attr/colorOnSurface" />
-
+            app:navigationIcon="@drawable/ic_arrow_back"
+            app:title=""
+            app:menu="@menu/task_detail_menu"/>
     </com.google.android.material.appbar.AppBarLayout>
 
-    <RelativeLayout
-
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/content_layout_detail"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:fillViewport="true"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <ProgressBar
-            android:id="@+id/progress_bar_detail"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:visibility="gone"
-            tools:visibility="visible" />
-
-
-        <androidx.core.widget.NestedScrollView
-            android:id="@+id/content_layout_detail"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:padding="16dp"
-            android:visibility="visible"
-            tools:visibility="gone">
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
 
-
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="?attr/colorSurfaceVariant">
 
-                <TextView
-                    android:id="@+id/tv_task_title_detail"
-
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    android:textAppearance="?attr/textAppearanceHeadlineMedium"
-                    android:textColor="?attr/colorOnSurface"
+                    android:orientation="vertical"
+                    android:padding="24dp">
 
-                    tools:text="Buy Groceries" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
 
-                <com.google.android.material.checkbox.MaterialCheckBox
-                    android:id="@+id/cb_task_status_detail"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    android:text="@string/status_label"
-                    android:textAppearance="?attr/textAppearanceTitleMedium"
-                    android:textColor="?attr/colorOnSurface" />
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chip_read_only_status"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:visibility="gone"
+                            android:clickable="false"
+                            android:textColor="?attr/colorOnSecondaryContainer"
+                            app:chipBackgroundColor="?attr/colorSecondaryContainer"
+                            tools:text="Pending (Assigned)" />
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chip_read_only_status"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    android:visibility="gone"
-                    android:clickable="false"
-                    android:textColor="?attr/colorOnSecondaryContainer"
-                    app:chipBackgroundColor="?attr/colorSecondaryContainer"
-                    tools:text="Status: Pending (Assigned to Partner)" />
-
-                <View
-
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="24dp"
-                    android:background="?attr/colorOutlineVariant" />
-
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="4dp"
-                    android:text="@string/description_label"
-
-                    android:textAppearance="?attr/textAppearanceLabelLarge"
-                    android:textColor="?attr/colorOnSurfaceVariant" />
-
-                <TextView
-                    android:id="@+id/tv_task_description_detail"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-
-                    android:layout_marginBottom="16dp"
-                    android:autoLink="web"
-                    android:lineSpacingMultiplier="1.1"
-                    android:textAppearance="?attr/textAppearanceBodyLarge"
-                    android:textColor="?attr/colorOnSurface"
-
-                    android:textColorLink="?attr/colorPrimary"
-                    tools:text="Milk, Bread, Eggs, and Cheese.
-                    Also don't forget the snacks for the party on Friday night." />
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="8dp"
-
-                    android:layout_marginBottom="24dp"
-                    android:background="?attr/colorOutlineVariant" />
-
-                <GridLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-
-                    android:columnCount="2"
-                    android:rowCount="4"> <TextView
-                    android:layout_columnWeight="1"
-                    android:layout_gravity="fill_horizontal"
-                    android:layout_marginBottom="16dp"
-
-                    android:text="@string/due_date_label_detail"
-                    android:textAppearance="?attr/textAppearanceLabelLarge"
-                    android:textColor="?attr/colorOnSurfaceVariant" />
+                        <com.google.android.material.checkbox.MaterialCheckBox
+                            android:id="@+id/cb_task_status_detail"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Mark as Completed"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textAppearance="?attr/textAppearanceTitleMedium"
+                            android:textColor="?attr/colorOnSurface" />
+                    </LinearLayout>
 
                     <TextView
-                        android:id="@+id/tv_task_due_date_detail"
-
-                        android:layout_columnWeight="1"
-                        android:layout_gravity="fill_horizontal"
-                        android:gravity="end"
-                        android:textAppearance="?attr/textAppearanceBodyLarge"
-
-                        android:textColor="?attr/colorOnSurface"
-                        tools:text="Oct 25, 2025" />
-
-                    <TextView
-                        android:layout_columnWeight="1"
-
-                        android:layout_gravity="fill_horizontal"
-                        android:layout_marginBottom="16dp"
-                        android:text="@string/priority_label"
-                        android:textAppearance="?attr/textAppearanceLabelLarge"
-
-                        android:textColor="?attr/colorOnSurfaceVariant" />
-
-                    <TextView
-                        android:id="@+id/tv_task_priority_detail"
-                        android:layout_columnWeight="1"
-                        android:layout_gravity="fill_horizontal"
-
-                        android:gravity="end"
-                        android:textAppearance="?attr/textAppearanceBodyLarge"
-                        android:textColor="?attr/colorOnSurface"
-                        tools:text="High" />
-
-
-                    <TextView
-                        android:layout_columnWeight="1"
-                        android:layout_gravity="fill_horizontal"
-                        android:layout_marginBottom="16dp"
-
-                        android:text="@string/effort_value_label"
-                        android:textAppearance="?attr/textAppearanceLabelLarge"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
-
-                    <TextView
-
-                        android:id="@+id/tv_task_effort_detail"
-                        android:layout_columnWeight="1"
-                        android:layout_gravity="fill_horizontal"
-                        android:gravity="end"
-                        android:textAppearance="?attr/textAppearanceBodyLarge"
-
-                        android:textColor="?attr/colorOnSurface"
-                        tools:text="3" />
-                    <TextView
-                        android:layout_columnWeight="1"
-
-                        android:layout_gravity="fill_horizontal"
-                        android:layout_marginBottom="16dp"
-                        android:text="@string/scope_label"
-                        android:textAppearance="?attr/textAppearanceLabelLarge"
-
-                        android:textColor="?attr/colorOnSurfaceVariant" />
-
-                    <TextView
-                        android:id="@+id/tv_task_scope_detail"
-                        android:layout_columnWeight="1"
-
-                        android:layout_gravity="fill_horizontal"
-                        android:gravity="end"
-                        android:textAppearance="?attr/textAppearanceBodyLarge"
-                        android:textColor="?attr/colorOnSurface"
-                        tools:text="Shared" />
-
-
-                    <TextView
-                        android:layout_columnWeight="1"
-                        android:layout_gravity="fill_horizontal"
-                        android:text="@string/creator_label"
-
-                        android:textAppearance="?attr/textAppearanceLabelLarge"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
+                        android:id="@+id/tv_task_title_detail"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Buy Groceries"
+                        android:textAppearance="?attr/textAppearanceHeadlineMedium"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorOnSurface" />
 
                     <TextView
                         android:id="@+id/tv_task_creator_detail"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Created by Partner"
+                        android:textAppearance="?attr/textAppearanceLabelLarge"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
 
-                        android:layout_columnWeight="1"
-                        android:layout_gravity="fill_horizontal"
-                        android:gravity="end"
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:layout_marginBottom="16dp">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chip_priority_display"
+                        style="@style/Widget.Material3.Chip.Suggestion"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        tools:text="High Priority"
+                        app:chipIcon="@drawable/ic_priority_high"/>
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chip_type_display"
+                        style="@style/Widget.Material3.Chip.Suggestion"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        tools:text="Task"
+                        app:chipIcon="@drawable/ic_task_type_task"/>
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chip_scope_display"
+                        style="@style/Widget.Material3.Chip.Suggestion"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        tools:text="Shared"
+                        app:chipIcon="@drawable/ic_scope_shared"/>
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="1dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeWidth="1dp"
+                app:cardBackgroundColor="?attr/colorSurface">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="20dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_task_type_reminder"
+                            app:tint="?attr/colorPrimary"/>
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="16dp"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Due Date"
+                                android:textAllCaps="true"
+                                android:textSize="10sp"
+                                android:letterSpacing="0.05"
+                                android:textColor="?attr/colorOutline"/>
+
+                            <TextView
+                                android:id="@+id/tv_task_due_date_detail"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Oct 25, 2025"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="?attr/colorOnSurface"/>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Description"
+                        android:textAllCaps="true"
+                        android:textSize="10sp"
+                        android:letterSpacing="0.05"
+                        android:textColor="?attr/colorOutline"
+                        android:layout_marginBottom="4dp"/>
+
+                    <TextView
+                        android:id="@+id/tv_task_description_detail"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="24dp"
+                        android:text="Milk, Bread, Eggs..."
+                        android:lineSpacingMultiplier="1.2"
                         android:textAppearance="?attr/textAppearanceBodyLarge"
+                        android:textColor="?attr/colorOnSurface" />
 
-                        android:textColor="?attr/colorOnSurface"
-                        tools:text="Partner Name" />
+                    <com.google.android.material.divider.MaterialDivider
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"/>
 
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
 
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Effort Level"
+                            android:textSize="14sp"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:layout_marginEnd="16dp"/>
 
-                </GridLayout>
-            </LinearLayout>
-        </androidx.core.widget.NestedScrollView>
+                        <com.google.android.material.progressindicator.LinearProgressIndicator
+                            android:id="@+id/indicator_effort"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            app:trackCornerRadius="8dp"
+                            app:trackThickness="8dp"
+                            android:max="5"
+                            android:progress="3"/>
 
-    </RelativeLayout>
+                        <TextView
+                            android:id="@+id/tv_task_effort_detail"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="3/5"
+                            android:textStyle="bold"
+                            android:layout_marginStart="12dp"/>
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <ProgressBar
+        android:id="@+id/progress_bar_detail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -6,38 +6,30 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.pranav.synctask.models.Task;
-import com.pranav.synctask.models.User;
 import com.pranav.synctask.utils.FirebaseHelper;
-import com.pranav.synctask.utils.NetworkUtils;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
+
 public class TaskRepository {
     private static volatile TaskRepository instance;
     private ListenerRegistration tasksListListenerRegistration;
     private ListenerRegistration taskListenerRegistration;
-    private final List<Task> localTasks = new CopyOnWriteArrayList<>();
+    private ListenerRegistration completedTasksListener;
+    private ListenerRegistration allTasksListener;
+    private ListenerRegistration completedTasksForSpacesListener;
+
     private List<Task> firestoreTasks = new ArrayList<>();
+
+    // LiveData Sources
     private final MutableLiveData<Result<List<Task>>> combinedTasksResult = new MutableLiveData<>();
     private final MutableLiveData<Result<Task>> singleTaskResult = new MutableLiveData<>();
+    private final MutableLiveData<Result<List<Task>>> completedTasksResult = new MutableLiveData<>();
+    private final MutableLiveData<Result<List<Task>>> allTasksResult = new MutableLiveData<>();
+
     private final FirebaseHelper firebaseHelper;
     private String currentSpaceId;
-
-    private ListenerRegistration completedTasksListener;
-    private final MutableLiveData<Result<List<Task>>> completedTasksResult = new MutableLiveData<>();
-
-    // --- ADDED ---
-    private ListenerRegistration completedTasksForSpacesListener;
-    // --- END ADDED ---
-
-    // --- ADDED IN PHASE 3D ---
-    private static ListenerRegistration allTasksListener;
-    private final MutableLiveData<Result<List<Task>>> allTasksResult = new MutableLiveData<>();
-    // --- END ADDED ---
-
 
     private TaskRepository() {
         firebaseHelper = new FirebaseHelper();
@@ -54,16 +46,17 @@ public class TaskRepository {
         return instance;
     }
 
-    // --- Task List Methods (Pending Only) ---
+    // --- Task List Methods ---
 
     public LiveData<Result<List<Task>>> getTasks() {
         return combinedTasksResult;
     }
 
     public void attachTasksListener(String spaceId) {
+        if (spaceId == null) return;
+
         if (!spaceId.equals(currentSpaceId)) {
             firestoreTasks.clear();
-            localTasks.clear();
             currentSpaceId = spaceId;
         }
 
@@ -72,15 +65,40 @@ public class TaskRepository {
         }
 
         combinedTasksResult.setValue(new Result.Loading<>());
+
+        // Firestore automatically handles offline caching.
+        // We don't need manual local lists.
         tasksListListenerRegistration = firebaseHelper.getTasks(spaceId, new FirebaseHelper.TasksCallback() {
             @Override
             public void onSuccess(List<Task> tasks) {
                 firestoreTasks = tasks;
-                mergeAndNotify();
+                // Sort: High > Normal > Low
+// SMART SORTING LOGIC
+                firestoreTasks.sort((t1, t2) -> {
+                    // 1. Check if tasks are completed (Completed always goes to bottom if mixed)
+                    boolean c1 = "completed".equals(t1.getStatus());
+                    boolean c2 = "completed".equals(t2.getStatus());
+                    if (c1 != c2) return c1 ? 1 : -1;
+
+                    // 2. Sort by Due Date (Null dates go to the bottom)
+                    if (t1.getDueDate() != null && t2.getDueDate() != null) {
+                        // Both have dates: Compare them (Earliest first)
+                        int dateCompare = t1.getDueDate().compareTo(t2.getDueDate());
+                        if (dateCompare != 0) return dateCompare;
+                    } else if (t1.getDueDate() != null) {
+                        return -1; // t1 has date, t2 doesn't -> t1 comes first
+                    } else if (t2.getDueDate() != null) {
+                        return 1;  // t2 has date, t1 doesn't -> t2 comes first
+                    }
+
+                    // 3. If dates are equal (or both null), Sort by Priority (High > Normal > Low)
+                    return getPriorityValue(t2.getPriority()) - getPriorityValue(t1.getPriority());
+                });
+
+                combinedTasksResult.setValue(new Result.Success<>(firestoreTasks));                combinedTasksResult.setValue(new Result.Success<>(tasks));
             }
 
             @Override
-
             public void onError(Exception e) {
                 combinedTasksResult.setValue(new Result.Error<>(e));
             }
@@ -100,300 +118,40 @@ public class TaskRepository {
         }
     }
 
-    // --- Completed Task (Archive) Methods ---
+    // --- Task Actions ---
 
-    public LiveData<Result<List<Task>>> getCompletedTasks() {
-        return completedTasksResult;
-    }
-
-    public void attachCompletedTasksListener(String spaceId) {
-        if (completedTasksListener != null) {
-            completedTasksListener.remove();
-        }
-        completedTasksResult.setValue(new Result.Loading<>());
-        completedTasksListener = firebaseHelper.getCompletedTasks(spaceId, new FirebaseHelper.TasksCallback() {
+    // Simplified: No context needed, no connectivity check needed.
+    public void createTask(Task task, Context context) {
+        // Just fire and forget. Firestore syncs when possible.
+        firebaseHelper.createTask(task, new FirebaseHelper.TasksCallback() {
             @Override
             public void onSuccess(List<Task> tasks) {
-                completedTasksResult.setValue(new Result.Success<>(tasks));
+                Log.d("TaskRepository", "Task created successfully.");
             }
 
             @Override
             public void onError(Exception e) {
-
-                completedTasksResult.setValue(new Result.Error<>(e));
+                Log.e("TaskRepository", "Error creating task", e);
             }
         });
-    }
-
-    public void removeCompletedTasksListener() {
-        if (completedTasksListener != null) {
-            completedTasksListener.remove();
-            completedTasksListener = null;
-        }
-    }
-
-    // --- ADDED ---
-    public void attachCompletedTasksListenerForSpaces(List<String> spaceIds) {
-        if (completedTasksForSpacesListener != null) {
-            completedTasksForSpacesListener.remove();
-        }
-        completedTasksResult.setValue(new Result.Loading<>());
-        completedTasksForSpacesListener = firebaseHelper.getCompletedTasksForSpaces(spaceIds, new FirebaseHelper.TasksCallback() {
-            @Override
-            public void onSuccess(List<Task> tasks) {
-                completedTasksResult.setValue(new Result.Success<>(tasks));
-            }
-
-            @Override
-            public void onError(Exception e) {
-                completedTasksResult.setValue(new Result.Error<>(e));
-            }
-        });
-    }
-
-    public void removeCompletedTasksForSpacesListener() {
-        if (completedTasksForSpacesListener != null) {
-            completedTasksForSpacesListener.remove();
-            completedTasksForSpacesListener = null;
-        }
-    }
-    // --- END ADDED ---
-
-
-    // --- ADDED IN PHASE 3D: All Tasks (for Progress) Methods ---
-
-    public LiveData<Result<List<Task>>> getAllTasksResult() {
-        return allTasksResult;
-    }
-
-    public void attachAllTasksListener(List<String> spaceIds) {
-        if (allTasksListener != null) {
-            allTasksListener.remove();
-        }
-        allTasksResult.setValue(new Result.Loading<>());
-        allTasksListener = firebaseHelper.getAllTasksForSpaces(spaceIds, new FirebaseHelper.TasksCallback() {
-            @Override
-            public void onSuccess(List<Task> tasks) {
-                allTasksResult.setValue(new Result.Success<>(tasks));
-            }
-
-            @Override
-            public void onError(Exception e) {
-
-                allTasksResult.setValue(new Result.Error<>(e));
-            }
-        });
-    }
-
-    public static void removeAllTasksListener() {
-        if (allTasksListener != null) {
-            allTasksListener.remove();
-            allTasksListener = null;
-        }
-    }
-
-    // --- END ADDED ---
-
-
-    // --- Single Task Methods ---
-
-    public LiveData<Result<Task>> getTaskById() {
-        return singleTaskResult;
-    }
-
-    public void attachTaskListener(String taskId) {
-        if (taskListenerRegistration != null) {
-            taskListenerRegistration.remove();
-        }
-        singleTaskResult.setValue(new Result.Loading<>());
-        taskListenerRegistration = firebaseHelper.getTaskById(taskId, new FirebaseHelper.TaskCallback() {
-            @Override
-            public void onSuccess(Task task) {
-                singleTaskResult.setValue(new Result.Success<>(task));
-            }
-
-            @Override
-            public void onError(Exception e) {
-
-                singleTaskResult.setValue(new Result.Error<>(e));
-            }
-        });
-    }
-
-    public void removeTaskListener() {
-        if (taskListenerRegistration != null) {
-            taskListenerRegistration.remove();
-            taskListenerRegistration = null;
-        }
-    }
-
-    // --- Common Task Methods ---
-
-    public Map<String, Integer> getTaskStats() {
-        Map<String, Integer> stats = new HashMap<>();
-        int completedCount = 0;
-        List<Task> allTasks = new ArrayList<>(firestoreTasks);
-        allTasks.addAll(localTasks);
-        for (Task task : allTasks) {
-            if (Task.STATUS_COMPLETED.equals(task.getStatus())) {
-                completedCount++;
-            }
-        }
-        stats.put("total", allTasks.size());
-        stats.put("completed", completedCount);
-        return stats;
     }
 
     public LiveData<Result<Void>> updateTask(Task task) {
         MutableLiveData<Result<Void>> result = new MutableLiveData<>();
-        if (task.getId() == null || task.getId().isEmpty()) {
-            // Update local task
-            for (int i = 0; i < localTasks.size(); i++) {
-                if (localTasks.get(i).getLocalId().equals(task.getLocalId())) {
-                    localTasks.set(i, task);
-                    break;
-                }
+        result.setValue(new Result.Loading<>());
+
+        Map<String, Object> taskMap = task.toMap();
+        firebaseHelper.updateTask(task.getId(), taskMap, new FirebaseHelper.TasksCallback() {
+            @Override
+            public void onSuccess(List<Task> tasks) {
+                result.setValue(new Result.Success<>(null));
             }
-            mergeAndNotify();
-            result.setValue(new Result.Success<>(null)); // Assume local update succeeds
-        } else {
-            // Update Firestore task
-            result.setValue(new Result.Loading<>());
-            // Prepare map, which now includes effort
-            Map<String, Object> taskMap = task.toMap();
-            firebaseHelper.updateTask(task.getId(), taskMap, new FirebaseHelper.TasksCallback() { // Use generic callback for simplicity
-                @Override
-                public void onSuccess(List<Task> tasks) { // Parameter ignored
-                    result.setValue(new Result.Success<>(null));
-                }
-
-
-                @Override
-                public void onError(Exception e) {
-                    Log.e("TaskRepository", "Error updating task in Firestore", e);
-                    result.setValue(new Result.Error<>(e));
-                }
-            });
-        }
-        return result;
-    }
-
-
-    private void mergeAndNotify() {
-        List<Task> mergedList = new ArrayList<>(firestoreTasks);
-        for (Task localTask : localTasks) {
-            if (currentSpaceId != null && currentSpaceId.equals(localTask.getSpaceId())) {
-                boolean existsInFirestore = false;
-                for (Task firestoreTask : firestoreTasks) {
-                    // Check if a task with the same localId already exists from Firestore
-                    if (localTask.getLocalId().equals(firestoreTask.getLocalId())) {
-                        existsInFirestore = true;
-                        break;
-                    }
-                }
-                if (!existsInFirestore) {
-                    mergedList.add(localTask);
-                }
+            @Override
+            public void onError(Exception e) {
+                result.setValue(new Result.Error<>(e));
             }
-        }
-        // Sort tasks: High > Normal > Low, then by creation date descending
-        mergedList.sort((o1, o2) -> {
-            int priorityCompare = getPriorityValue(o2.getPriority()) - getPriorityValue(o1.getPriority());
-            if (priorityCompare == 0) {
-
-                // If priorities are the same, sort by creation date (newest first)
-                if (o1.getCreatedAt() == null || o2.getCreatedAt() == null) return 0;
-                return o2.getCreatedAt().compareTo(o1.getCreatedAt());
-            }
-            return priorityCompare; // Otherwise, sort by priority
         });
-        combinedTasksResult.postValue(new Result.Success<>(mergedList)); // Use postValue for thread safety
-    }
-
-    // Task object must have spaceId set before calling this
-    public void createTask(Task task, Context context) {
-        boolean isOnline = NetworkUtils.isNetworkAvailable(context);
-        if (isOnline) {
-            task.setSynced(true);
-            // Mark as synced assuming online creation succeeds initially
-            firebaseHelper.createTask(task, new FirebaseHelper.TasksCallback() {
-                @Override
-                public void onSuccess(List<Task> tasks) {
-                    // Listener will automatically update the list, nothing needed here
-
-                    Log.d("TaskRepository", "Task created online successfully.");
-                }
-
-                @Override
-                public void onError(Exception e) {
-                    // If online creation fails despite network check, save locally
-
-                    Log.e("TaskRepository", "Failed to create online task, saving locally.", e);
-                    createLocalTask(task);
-                }
-            });
-        } else {
-            // No network, save locally directly
-            createLocalTask(task);
-        }
-    }
-
-    private void createLocalTask(Task task) {
-        task.setSynced(false);
-        // Ensure it's marked as not synced
-        localTasks.add(task);
-        mergeAndNotify();
-        // Update the LiveData with the new local task
-    }
-
-    // Sync local tasks when network becomes available
-    public void syncLocalTasks(Context context) {
-        boolean isOnline = NetworkUtils.isNetworkAvailable(context);
-        if (!isOnline || localTasks.isEmpty()) {
-            return;
-            // No network or nothing to sync
-        }
-
-        Log.d("TaskRepository", "Starting sync for " + localTasks.size() + " local tasks.");
-        // Iterate over a copy to avoid ConcurrentModificationException if removing items
-        List<Task> tasksToSync = new ArrayList<>(localTasks);
-        for (Task localTask : tasksToSync) {
-            if (!localTask.isSynced()) {
-                // Attempt to create the task in Firestore
-                firebaseHelper.createTask(localTask, new FirebaseHelper.TasksCallback() {
-                    @Override
-
-                    public void onSuccess(List<Task> tasks) {
-                        // Task successfully synced, remove from local list
-                        localTasks.remove(localTask);
-                        // No need to call mergeAndNotify here, Firestore listener will update
-
-                        Log.d("TaskRepository", "Successfully synced local task: " + localTask.getTitle());
-                    }
-
-                    @Override
-                    public void onError(Exception e) {
-
-                        // Sync failed, keep the task in the local list for next attempt
-                        Log.e("TaskRepository", "Sync failed for task: " + localTask.getTitle(), e);
-                    }
-                });
-            }
-        }
-    }
-
-    // Helper to get numerical priority value for sorting
-    private int getPriorityValue(String priority) {
-        if (priority == null) return 1;
-        // Default to Normal
-        switch (priority) {
-            case "High":
-                return 2;
-            case "Low":
-                return 0;
-            default: // Normal
-                return 1;
-        }
+        return result;
     }
 
     public void updateTaskStatus(String taskId, String newStatus) {
@@ -402,6 +160,78 @@ public class TaskRepository {
 
     public void deleteTask(String taskId) {
         firebaseHelper.deleteTask(taskId);
-        // Firestore listener will handle UI update
+    }
+
+    // --- Helper Methods ---
+
+    private int getPriorityValue(String priority) {
+        if (priority == null) return 1;
+        switch (priority) {
+            case "High": return 2;
+            case "Low": return 0;
+            default: return 1;
+        }
+    }
+
+    // --- Completed / All Tasks Listeners (Kept same as before) ---
+
+    public LiveData<Result<List<Task>>> getCompletedTasks() { return completedTasksResult; }
+
+    public void attachCompletedTasksListener(String spaceId) {
+        if (completedTasksListener != null) completedTasksListener.remove();
+        completedTasksResult.setValue(new Result.Loading<>());
+        completedTasksListener = firebaseHelper.getCompletedTasks(spaceId, new FirebaseHelper.TasksCallback() {
+            @Override public void onSuccess(List<Task> tasks) { completedTasksResult.setValue(new Result.Success<>(tasks)); }
+            @Override public void onError(Exception e) { completedTasksResult.setValue(new Result.Error<>(e)); }
+        });
+    }
+
+    public void attachCompletedTasksListenerForSpaces(List<String> spaceIds) {
+        if (completedTasksForSpacesListener != null) completedTasksForSpacesListener.remove();
+        completedTasksResult.setValue(new Result.Loading<>());
+        completedTasksForSpacesListener = firebaseHelper.getCompletedTasksForSpaces(spaceIds, new FirebaseHelper.TasksCallback() {
+            @Override public void onSuccess(List<Task> tasks) { completedTasksResult.setValue(new Result.Success<>(tasks)); }
+            @Override public void onError(Exception e) { completedTasksResult.setValue(new Result.Error<>(e)); }
+        });
+    }
+
+    public void removeCompletedTasksListener() {
+        if (completedTasksListener != null) { completedTasksListener.remove(); completedTasksListener = null; }
+    }
+    public void removeCompletedTasksForSpacesListener() {
+        if (completedTasksForSpacesListener != null) { completedTasksForSpacesListener.remove(); completedTasksForSpacesListener = null; }
+    }
+
+    public LiveData<Result<List<Task>>> getAllTasksResult() { return allTasksResult; }
+
+    public void attachAllTasksListener(List<String> spaceIds) {
+        if (allTasksListener != null) allTasksListener.remove();
+        allTasksResult.setValue(new Result.Loading<>());
+        allTasksListener = firebaseHelper.getAllTasksForSpaces(spaceIds, new FirebaseHelper.TasksCallback() {
+            @Override public void onSuccess(List<Task> tasks) { allTasksResult.setValue(new Result.Success<>(tasks)); }
+            @Override public void onError(Exception e) { allTasksResult.setValue(new Result.Error<>(e)); }
+        });
+    }
+
+    public static void removeAllTasksListener() {
+        if (instance != null && instance.allTasksListener != null) {
+            instance.allTasksListener.remove();
+            instance.allTasksListener = null;
+        }
+    }
+
+    public LiveData<Result<Task>> getTaskById() { return singleTaskResult; }
+
+    public void attachTaskListener(String taskId) {
+        if (taskListenerRegistration != null) taskListenerRegistration.remove();
+        singleTaskResult.setValue(new Result.Loading<>());
+        taskListenerRegistration = firebaseHelper.getTaskById(taskId, new FirebaseHelper.TaskCallback() {
+            @Override public void onSuccess(Task task) { singleTaskResult.setValue(new Result.Success<>(task)); }
+            @Override public void onError(Exception e) { singleTaskResult.setValue(new Result.Error<>(e)); }
+        });
+    }
+
+    public void removeTaskListener() {
+        if (taskListenerRegistration != null) { taskListenerRegistration.remove(); taskListenerRegistration = null; }
     }
 }

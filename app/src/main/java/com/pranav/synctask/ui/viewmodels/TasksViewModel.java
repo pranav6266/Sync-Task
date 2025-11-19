@@ -41,7 +41,6 @@ public class TasksViewModel extends ViewModel {
     }
 
     public void syncLocalTasks(Context context) {
-        taskRepository.syncLocalTasks(context);
     }
 
     // --- ADDED ---

@@ -227,7 +227,7 @@
                 android:text="@string/settings_button_all_tasks"
                 android:textSize="16sp"
                 android:textColor="?attr/colorOnSurface"
-                app:icon="@drawable/ic_archive"
+                app:icon="@drawable/ic_archive_modern"
                 app:iconGravity="start"
                 app:iconPadding="16dp"
                 app:iconTint="?attr/colorSecondary"
