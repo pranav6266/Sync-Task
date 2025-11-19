@@ -20,8 +20,8 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.airbnb.lottie.LottieAnimationView;
 import com.google.android.material.appbar.AppBarLayout;
+import com.google.android.material.chip.Chip; // ADDED
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-// import com.google.android.material.slider.Slider; // REMOVED IN PHASE 1
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.pranav.synctask.R;
@@ -31,6 +31,7 @@ import com.pranav.synctask.ui.viewmodels.TaskDetailViewModel;
 import com.pranav.synctask.utils.DateUtils;
 
 import java.util.Locale;
+
 public class TaskDetailActivity extends AppCompatActivity {
 
     public static final String EXTRA_TASK_ID = "EXTRA_TASK_ID";
@@ -40,19 +41,16 @@ public class TaskDetailActivity extends AppCompatActivity {
     private String taskId;
     private Task currentTask;
     private FirebaseUser currentUser;
-    private TextView tvTitle, tvDescription, tvDueDate, tvPriority, tvScope, tvCreator, tvEffort; // MODIFIED IN PHASE 1
+    private TextView tvTitle, tvDescription, tvDueDate, tvPriority, tvScope, tvCreator, tvEffort;
     private CheckBox cbStatus;
-    // private Slider progressSlider; // REMOVED IN PHASE 1
+    private Chip chipStatus; // ADDED for Requirement 1
     private ProgressBar progressBar;
     private View contentLayout;
     private Toolbar toolbar;
-    private AppBarLayout appBarLayout; // ADDED IN PHASE 1
-    // private LottieAnimationView lottieAnimationView; // REMOVED
+    private AppBarLayout appBarLayout;
     private boolean canEdit = false;
     private boolean canDelete = false;
     private boolean canComplete = false;
-    // private boolean canUpdateProgress = false;
-    // REMOVED IN PHASE 1
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,13 +72,11 @@ public class TaskDetailActivity extends AppCompatActivity {
         initializeViews();
         setupToolbar();
         observeViewModel();
-        // setupProgressSliderListener();
-        // REMOVED IN PHASE 1
     }
 
     private void initializeViews() {
         toolbar = findViewById(R.id.toolbar_task_detail);
-        appBarLayout = findViewById(R.id.app_bar_layout); // ADDED IN PHASE 1
+        appBarLayout = findViewById(R.id.app_bar_layout);
         tvTitle = findViewById(R.id.tv_task_title_detail);
         tvDescription = findViewById(R.id.tv_task_description_detail);
         tvDueDate = findViewById(R.id.tv_task_due_date_detail);
@@ -88,12 +84,10 @@ public class TaskDetailActivity extends AppCompatActivity {
         tvScope = findViewById(R.id.tv_task_scope_detail);
         tvCreator = findViewById(R.id.tv_task_creator_detail);
         tvEffort = findViewById(R.id.tv_task_effort_detail);
-        // ADDED IN PHASE 1
         cbStatus = findViewById(R.id.cb_task_status_detail);
+        chipStatus = findViewById(R.id.chip_read_only_status); // ADDED
         progressBar = findViewById(R.id.progress_bar_detail);
         contentLayout = findViewById(R.id.content_layout_detail);
-        // lottieAnimationView = findViewById(R.id.lottie_complete_animation); // REMOVED
-        // REMOVED progressSlider and tvProgressPercentage
     }
 
     private void setupToolbar() {
@@ -123,20 +117,17 @@ public class TaskDetailActivity extends AppCompatActivity {
                 progressBar.setVisibility(View.VISIBLE);
                 contentLayout.setVisibility(View.GONE);
             } else if (result instanceof Result.Success) {
-
                 progressBar.setVisibility(View.GONE);
                 contentLayout.setVisibility(View.VISIBLE);
                 currentTask = ((Result.Success<Task>) result).data;
                 if (currentTask != null) {
                     calculatePermissions();
                     populateUi();
-
                 } else {
                     Toast.makeText(this, "Error loading task data.", Toast.LENGTH_SHORT).show();
                     finish();
                 }
             } else if (result instanceof Result.Error) {
-
                 progressBar.setVisibility(View.GONE);
                 Log.e(TAG, "Error loading task", ((Result.Error<Task>) result).exception);
                 Toast.makeText(this, "Error loading task.", Toast.LENGTH_SHORT).show();
@@ -155,7 +146,6 @@ public class TaskDetailActivity extends AppCompatActivity {
         canEdit = false;
         canDelete = false;
         canComplete = false;
-        // canUpdateProgress = false; // REMOVED IN PHASE 1
 
         switch (scope) {
             case Task.SCOPE_INDIVIDUAL:
@@ -174,11 +164,11 @@ public class TaskDetailActivity extends AppCompatActivity {
                 if (isCreator) {
                     canEdit = true;
                     canDelete = true;
-                    canComplete = false;
+                    canComplete = false; // Creator assigns, but cannot complete (Requirement 1 logic)
                 } else {
                     canEdit = false;
                     canDelete = false;
-                    canComplete = true;
+                    canComplete = true; // Assignee completes
                 }
                 break;
         }
@@ -203,51 +193,64 @@ public class TaskDetailActivity extends AppCompatActivity {
 
         tvPriority.setText(currentTask.getPriority());
         tvEffort.setText(String.valueOf(currentTask.getEffort()));
-        // ADDED IN PHASE 1
         tvScope.setText(getScopeDisplayString(currentTask.getOwnershipScope()));
 
         boolean isCreator = currentUser.getUid().equals(currentTask.getCreatorUID());
         tvCreator.setText(isCreator ? getString(R.string.task_creator_label_you) : currentTask.getCreatorDisplayName());
 
-        // MODIFIED Checkbox logic IN PHASE 1
-        cbStatus.setOnCheckedChangeListener(null);
-        // Remove listener to set initial state
-        cbStatus.setChecked(Task.STATUS_COMPLETED.equals(currentTask.getStatus()));
-        cbStatus.setEnabled(canComplete);
-        // Enable/disable based on permission
+        // --- MODIFIED: Requirement 1 Logic ---
+        if (canComplete) {
+            // User has permission: Show Checkbox, Hide Status Chip
+            cbStatus.setVisibility(View.VISIBLE);
+            chipStatus.setVisibility(View.GONE);
 
-        // Add new listener
-        cbStatus.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (!buttonView.isPressed()) {
-                return; // Ignore programmatic changes
+            cbStatus.setOnCheckedChangeListener(null); // Remove listener to set initial state
+            cbStatus.setChecked(Task.STATUS_COMPLETED.equals(currentTask.getStatus()));
+
+            // Add new listener
+            cbStatus.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (!buttonView.isPressed()) {
+                    return; // Ignore programmatic changes
+                }
+                if (isChecked) {
+                    playCompleteAnimation();
+                } else {
+                    viewModel.updateTaskStatus(taskId, Task.STATUS_PENDING);
+                }
+            });
+        } else {
+            // User CANNOT complete: Hide Checkbox, Show Status Chip
+            cbStatus.setVisibility(View.GONE);
+            chipStatus.setVisibility(View.VISIBLE);
+
+            boolean isCompleted = Task.STATUS_COMPLETED.equals(currentTask.getStatus());
+            String statusText = isCompleted ? "Completed" : "Pending";
+
+            // Add context if it's an assigned task
+            if (Task.SCOPE_ASSIGNED.equals(currentTask.getOwnershipScope())) {
+                statusText += " (Assigned to Partner)";
             }
 
-            if (isChecked) {
+            chipStatus.setText("Status: " + statusText);
 
-                // User checked the box
-                playCompleteAnimation();
+            // Optional: Change chip color based on status
+            if (isCompleted) {
+                chipStatus.setChipBackgroundColorResource(R.color.md_theme_light_secondaryContainer);
+                chipStatus.setTextColor(getColor(R.color.md_theme_light_onSecondaryContainer));
             } else {
-                // User unchecked the box
-                viewModel.updateTaskStatus(taskId, Task.STATUS_PENDING);
+                chipStatus.setChipBackgroundColorResource(R.color.md_theme_light_surfaceVariant);
+                chipStatus.setTextColor(getColor(R.color.md_theme_light_onSurfaceVariant));
             }
-        });
-        // REMOVED All progress slider logic IN PHASE 1
+        }
+        // --- END MODIFIED ---
     }
 
-    // MODIFIED
     private void playCompleteAnimation() {
-        // 1. Update status in Firestore
         viewModel.updateTaskStatus(taskId, Task.STATUS_COMPLETED);
-
-        // 2. Launch the modal animation activity
         Intent intent = new Intent(this, CompletionAnimationActivity.class);
         startActivity(intent);
-
-        // 3. Finish this activity immediately
         finish();
     }
-
-    // REMOVED progressChangeListener and setupProgressSliderListener IN PHASE 1
 
     private String getScopeDisplayString(String scope) {
         if (scope == null) return getString(R.string.scope_shared_short);
@@ -302,7 +305,6 @@ public class TaskDetailActivity extends AppCompatActivity {
                 .setMessage(R.string.delete_task_dialog_message)
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.delete, (dialog, which) -> {
-
                     viewModel.deleteTask(taskId);
                     Toast.makeText(this, "Task deleted", Toast.LENGTH_SHORT).show();
                     finish();

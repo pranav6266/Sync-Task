@@ -1,7 +1,6 @@
 package com.pranav.synctask.adapters;
 
 import android.content.Context;
-import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,37 +8,32 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast; // Added for view-only feedback
-
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
-
+import com.google.android.material.card.MaterialCardView;
 import com.pranav.synctask.R;
-import com.pranav.synctask.activities.EditTaskActivity;
-// import com.pranav.synctask.data.TaskRepository; // No longer needed for status/delete
 import com.pranav.synctask.models.Space;
 import com.pranav.synctask.models.Task;
-// import com.pranav.synctask.utils.DateUtils; // No longer needed for due date
+import com.pranav.synctask.utils.DateUtils;
 import java.util.List;
 import java.util.Objects;
+
 public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder> {
+
     private final String contextType;
     private List<Task> taskList;
     private final Context context;
     private final String currentUserId;
-    private int lastPosition = -1;
-
-    // --- ADDED IN PHASE 4A ---
     private final OnTaskActionListener listener;
+    private int lastPosition = -1;
 
     public interface OnTaskActionListener {
         void onTaskClick(Task task);
         void onTaskLongClick(Task task, View view);
     }
-    // --- END ADDED ---
 
-    // --- MODIFIED IN PHASE 4A ---
     public TaskAdapter(String contextType, Context context, List<Task> taskList, String currentUserId, OnTaskActionListener listener) {
         this.contextType = contextType;
         this.context = context;
@@ -47,7 +41,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         this.currentUserId = currentUserId;
         this.listener = listener;
     }
-    // --- END MODIFIED ---
 
     @NonNull
     @Override
@@ -62,71 +55,104 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         Task task = taskList.get(position);
         if (task == null) return;
 
-        String scope = task.getOwnershipScope();
-        if (scope == null) {
-            scope = Task.SCOPE_SHARED;
-        }
-
-        // --- APPLY UI AND PERMISSIONS ---
-
+        // 1. Title
         holder.tvTitle.setText(task.getTitle());
-        // Set Task Type Icon
-        switch (task.getTaskType()) {
-            case Task.TYPE_REMINDER:
-                holder.ivTaskType.setImageResource(R.drawable.ic_task_type_reminder);
-                break;
-            case Task.TYPE_UPDATE:
-                holder.ivTaskType.setImageResource(R.drawable.ic_task_type_update);
-                break;
-            case Task.TYPE_TASK:
-            default:
-                holder.ivTaskType.setImageResource(R.drawable.ic_task_type_task);
-                break;
+
+        // 2. Date
+        if (task.getDueDate() != null) {
+            holder.tvDate.setText(DateUtils.formatDate(task.getDueDate()));
+            holder.tvDate.setVisibility(View.VISIBLE);
+            holder.ivCalendar.setVisibility(View.VISIBLE);
+        } else {
+            holder.tvDate.setText("No Due Date");
+            holder.tvDate.setVisibility(View.VISIBLE);
+            holder.ivCalendar.setVisibility(View.VISIBLE);
         }
 
-        // Set Task Scope/Variant Icon
-        switch (scope) {
-            case Task.SCOPE_INDIVIDUAL:
-                holder.ivTaskScope.setImageResource(R.drawable.ic_scope_individual);
-                break;
-            case Task.SCOPE_ASSIGNED:
-                holder.ivTaskScope.setImageResource(R.drawable.ic_scope_assigned);
-                break;
-            case Task.SCOPE_SHARED:
-            default:
-                holder.ivTaskScope.setImageResource(R.drawable.ic_scope_shared);
-                break;
+        // 3. Priority Strip Color
+        String priority = task.getPriority();
+        int priorityColor;
+        if ("High".equalsIgnoreCase(priority)) {
+            priorityColor = ContextCompat.getColor(context, R.color.priority_high);
+        } else if ("Low".equalsIgnoreCase(priority)) {
+            priorityColor = ContextCompat.getColor(context, R.color.priority_low);
+        } else {
+            priorityColor = ContextCompat.getColor(context, R.color.priority_normal);
         }
+        holder.viewPriorityStrip.setBackgroundColor(priorityColor);
+
+        // 4. Scope/Context Logic (The "Chip")
+        String scope = task.getOwnershipScope();
+        if (scope == null) scope = Task.SCOPE_SHARED;
+
+        // Default styling
+        int chipBg = R.color.chip_bg_shared;
+        int chipText = R.color.chip_text_shared;
+        int chipIcon = R.drawable.ic_scope_shared;
+        String scopeText = "Shared";
 
         if (Space.TYPE_PERSONAL.equals(contextType)) {
-            holder.tvTaskOwner.setVisibility(View.VISIBLE);
-            if (Task.SCOPE_INDIVIDUAL.equals(scope)) {
-                holder.tvTaskOwner.setText(R.string.owner_my_task);
-            } else if (Task.SCOPE_ASSIGNED.equals(scope)) {
-                holder.tvTaskOwner.setText(R.string.owner_partners_task);
+            // Personal Space Logic
+            chipBg = R.color.chip_bg_personal;
+            chipText = R.color.chip_text_personal;
+            chipIcon = R.drawable.ic_scope_individual;
+
+            if (currentUserId != null && currentUserId.equals(task.getCreatorUID())) {
+                scopeText = "My Task";
             } else {
-                holder.tvTaskOwner.setVisibility(View.GONE);
+                scopeText = "Partner's Task";
+                // Make partner tasks stand out with Assigned styling
+                chipBg = R.color.chip_bg_assigned;
+                chipText = R.color.chip_text_assigned;
+                chipIcon = R.drawable.ic_scope_assigned;
             }
         } else {
-            holder.tvTaskOwner.setVisibility(View.GONE);
+            // Shared Space Logic
+            if (Task.SCOPE_ASSIGNED.equals(scope)) {
+                scopeText = "Assigned";
+                chipBg = R.color.chip_bg_assigned;
+                chipText = R.color.chip_text_assigned;
+                chipIcon = R.drawable.ic_scope_assigned;
+            } else {
+                scopeText = "Shared";
+                chipBg = R.color.chip_bg_shared;
+                chipText = R.color.chip_text_shared;
+                chipIcon = R.drawable.ic_scope_shared;
+            }
         }
 
-        // --- MODIFIED IN PHASE 4A: New click logic ---
+        holder.cardScopeChip.setCardBackgroundColor(ContextCompat.getColor(context, chipBg));
+        holder.tvScopeText.setTextColor(ContextCompat.getColor(context, chipText));
+        holder.tvScopeText.setText(scopeText);
+        holder.ivScopeIcon.setImageResource(chipIcon);
+        holder.ivScopeIcon.setColorFilter(ContextCompat.getColor(context, chipText));
+
+        // 5. Task Type
+        String typeText = task.getTaskType(); // TASK, REMINDER, UPDATE
+        if(typeText == null) typeText = "Task";
+        // Capitalize first letter only
+        typeText = typeText.substring(0, 1).toUpperCase() + typeText.substring(1).toLowerCase();
+        holder.tvTypeText.setText(typeText);
+
+
+        // 6. Creator Name
+        boolean isMe = currentUserId != null && currentUserId.equals(task.getCreatorUID());
+        String creatorText = isMe ? "Created by You" : "Created by " + task.getCreatorDisplayName();
+        holder.tvCreatedBy.setText(creatorText);
+
+
+        // 7. Listeners
         holder.itemView.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onTaskClick(task);
-            }
+            if (listener != null) listener.onTaskClick(task);
         });
 
-        holder.itemView.setOnLongClickListener(v -> {
-            if (listener != null) {
-                listener.onTaskLongClick(task, v);
-            }
-            return true;
+        // Use the specific 3-dot menu for the long press action usually,
+        // but here we attach it to the specific view
+        holder.ivOptionsMenu.setOnClickListener(v -> {
+            if (listener != null) listener.onTaskLongClick(task, holder.ivOptionsMenu);
         });
-        // --- END MODIFIED ---
 
-        // Set animation
+        // Animation
         setAnimation(holder.itemView, position);
     }
 
@@ -152,15 +178,28 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     }
 
     static class TaskViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTitle, tvTaskOwner; // MODIFIED
-        ImageView ivTaskType, ivTaskScope; // Updated views
+        View viewPriorityStrip;
+        TextView tvTitle, tvDate, tvCreatedBy, tvScopeText, tvTypeText;
+        ImageView ivCalendar, ivScopeIcon, ivOptionsMenu;
+        MaterialCardView cardScopeChip;
 
         public TaskViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvTaskOwner = itemView.findViewById(R.id.tv_task_owner); // ADDED
+            viewPriorityStrip = itemView.findViewById(R.id.view_priority_strip);
             tvTitle = itemView.findViewById(R.id.tv_task_title);
-            ivTaskType = itemView.findViewById(R.id.iv_task_type);
-            ivTaskScope = itemView.findViewById(R.id.iv_task_scope);
+            tvDate = itemView.findViewById(R.id.tv_task_date);
+            tvCreatedBy = itemView.findViewById(R.id.tv_created_by);
+
+            // Scope Chip internals
+            cardScopeChip = itemView.findViewById(R.id.card_scope_chip);
+            tvScopeText = itemView.findViewById(R.id.tv_chip_text);
+            ivScopeIcon = itemView.findViewById(R.id.iv_chip_icon);
+
+            // Type Chip internals
+            tvTypeText = itemView.findViewById(R.id.tv_type_text);
+
+            ivCalendar = itemView.findViewById(R.id.iv_calendar_icon);
+            ivOptionsMenu = itemView.findViewById(R.id.iv_options_menu);
         }
     }
 
@@ -174,14 +213,10 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         }
 
         @Override
-        public int getOldListSize() {
-            return oldList.size();
-        }
+        public int getOldListSize() { return oldList.size(); }
 
         @Override
-        public int getNewListSize() {
-            return newList.size();
-        }
+        public int getNewListSize() { return newList.size(); }
 
         @Override
         public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
@@ -197,12 +232,11 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
             Task oldTask = oldList.get(oldItemPosition);
             Task newTask = newList.get(newItemPosition);
-            // Updated to only check fields that are still relevant to the adapter's logic
             return Objects.equals(oldTask.getTitle(), newTask.getTitle()) &&
-                    Objects.equals(oldTask.getTaskType(), newTask.getTaskType()) && // Added check
+                    Objects.equals(oldTask.getTaskType(), newTask.getTaskType()) &&
                     Objects.equals(oldTask.getOwnershipScope(), newTask.getOwnershipScope()) &&
-                    oldTask.isSynced()
-                            == newTask.isSynced();
+                    Objects.equals(oldTask.getPriority(), newTask.getPriority()) &&
+                    Objects.equals(oldTask.getStatus(), newTask.getStatus());
         }
     }
 }

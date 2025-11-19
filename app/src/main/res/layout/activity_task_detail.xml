@@ -67,11 +67,21 @@
                     android:id="@+id/cb_task_status_detail"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-
                     android:layout_marginBottom="16dp"
                     android:text="@string/status_label"
                     android:textAppearance="?attr/textAppearanceTitleMedium"
                     android:textColor="?attr/colorOnSurface" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_read_only_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:visibility="gone"
+                    android:clickable="false"
+                    android:textColor="?attr/colorOnSecondaryContainer"
+                    app:chipBackgroundColor="?attr/colorSecondaryContainer"
+                    tools:text="Status: Pending (Assigned to Partner)" />
 
                 <View
 
@@ -218,6 +228,8 @@
 
                         android:textColor="?attr/colorOnSurface"
                         tools:text="Partner Name" />
+
+
 
                 </GridLayout>
             </LinearLayout>

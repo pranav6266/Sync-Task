@@ -39,4 +39,10 @@
 
     <color name="my_task_bg">@color/md_theme_light_primary</color>
     <color name="partner_task_bg">@color/md_theme_light_tertiary</color>
+
+    <color name="priority_high">#D32F2F</color>     <color name="priority_normal">#345da7</color>   <color name="priority_low">#4CAF50</color>      <color name="chip_bg_shared">#E3F2FD</color>    <color name="chip_text_shared">#1565C0</color>
+
+    <color name="chip_bg_assigned">#F3E5F5</color>  <color name="chip_text_assigned">#7B1FA2</color>
+
+    <color name="chip_bg_personal">#E8F5E9</color>  <color name="chip_text_personal">#2E7D32</color>
 </resources>
