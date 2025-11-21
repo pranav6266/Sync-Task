@@ -53,7 +53,6 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
     @NonNull
     @Override
     public SpaceViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // This MUST match the fixed item_space.xml file
         View view = LayoutInflater.from(context).inflate(R.layout.item_space, parent, false);
         return new SpaceViewHolder(view);
     }
@@ -103,6 +102,9 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, TaskViewActivity.class);
             intent.putExtra("SPACE_ID", space.getSpaceId());
+            // --- CHANGE START: Pass Space Name ---
+            intent.putExtra("SPACE_NAME", space.getSpaceName());
+            // --- CHANGE END ---
             intent.putExtra("CONTEXT_TYPE", Space.TYPE_SHARED);
             context.startActivity(intent);
         });
@@ -198,7 +200,6 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
     }
 
     private DashboardViewModel getViewModel() {
-        // This requires context to be an Activity (ensured by Fragment using requireActivity())
         return new ViewModelProvider((AppCompatActivity) context).get(DashboardViewModel.class);
     }
 

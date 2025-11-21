@@ -9,7 +9,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.material.appbar.MaterialToolbar;
@@ -42,7 +41,7 @@ public class DashboardActivity extends AppCompatActivity {
         }
 
         topAppBar = findViewById(R.id.topAppBar);
-        setSupportActionBar(topAppBar); // Tells Android to use this toolbar for the Activity's menu
+        setSupportActionBar(topAppBar);
 
         // Setup Bottom Navigation
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
@@ -77,17 +76,11 @@ public class DashboardActivity extends AppCompatActivity {
         updateFcmToken();
     }
 
-    // Inflate the menu (This puts the icons on the top bar)
+    // Inflate the menu (Only Profile icon now)
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_menu, menu);
-
-        // Setup Search View
-        MenuItem searchItem = menu.findItem(R.id.action_search);
-        if (searchItem != null) {
-            SearchView searchView = (SearchView) searchItem.getActionView();
-            // You can attach a query text listener here if you want global search
-        }
+        // Search Logic Removed
         return true;
     }
 
@@ -96,15 +89,13 @@ public class DashboardActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
 
-//        if (id == R.id.action_archive) {
-//            // Open Completed Tasks
-//            startActivity(new Intent(this, CompletedTasksActivity.class));
-//            return true;
-//        } else if (id == R.id.action_profile) {
-//            // Open Profile/Settings (This is where Logout is)
-//            startActivity(new Intent(this, SettingsActivity.class));
-//            return true;
-//        }
+        // Archive Logic Removed
+
+        if (id == R.id.action_profile) {
+            // Open Profile/Settings
+            startActivity(new Intent(this, SettingsActivity.class));
+            return true;
+        }
 
         return super.onOptionsItemSelected(item);
     }

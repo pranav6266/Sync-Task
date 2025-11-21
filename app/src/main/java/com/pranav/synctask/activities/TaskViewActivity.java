@@ -8,7 +8,6 @@ import android.view.MenuItem;
 import android.view.Window;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
@@ -16,7 +15,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.widget.ViewPager2;
 
-import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton; // Updated Import
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.google.android.material.transition.platform.MaterialFadeThrough;
@@ -34,6 +33,7 @@ public class TaskViewActivity extends AppCompatActivity {
     private String currentSpaceId;
     private String contextType;
     private TextView tvHeaderTitle;
+    private TextView tvHeaderSubtitle; // Added for Personal context
 
     @Override
     protected void onNewIntent(@NonNull Intent intent) {
@@ -48,14 +48,23 @@ public class TaskViewActivity extends AppCompatActivity {
         getWindow().setExitTransition(new MaterialFadeThrough());
 
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_task_view);
-        handleNotificationIntent(getIntent());
 
-        currentSpaceId = getIntent().getStringExtra("SPACE_ID");
+        // --- LAYOUT SELECTION LOGIC START ---
         contextType = getIntent().getStringExtra("CONTEXT_TYPE");
         if (contextType == null) {
             contextType = Space.TYPE_SHARED;
         }
+
+        if (Space.TYPE_PERSONAL.equals(contextType)) {
+            setContentView(R.layout.activity_task_view); // Loads layout with Subtitle
+        } else {
+            setContentView(R.layout.activity_task_view_shared); // Loads layout with Heading only
+        }
+        // --- LAYOUT SELECTION LOGIC END ---
+
+        handleNotificationIntent(getIntent());
+
+        currentSpaceId = getIntent().getStringExtra("SPACE_ID");
 
         if (currentSpaceId == null || currentSpaceId.isEmpty()) {
             Toast.makeText(this, "Error: No Space ID provided.", Toast.LENGTH_LONG).show();
@@ -72,41 +81,43 @@ public class TaskViewActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayShowTitleEnabled(false);
         }
 
+        // --- HEADER TEXT LOGIC START ---
         tvHeaderTitle = findViewById(R.id.tv_header_title);
-        // Optional: Set space name to tvHeaderTitle here if available
+
+        if (Space.TYPE_PERSONAL.equals(contextType)) {
+            tvHeaderTitle.setText(R.string.app_name); // "Sync Task"
+            tvHeaderSubtitle = findViewById(R.id.tv_header_subtitle);
+            if (tvHeaderSubtitle != null) {
+                tvHeaderSubtitle.setText("Personal Tasks");
+            }
+        } else {
+            String spaceName = getIntent().getStringExtra("SPACE_NAME");
+            if (spaceName != null && !spaceName.isEmpty()) {
+                tvHeaderTitle.setText(spaceName);
+            } else {
+                tvHeaderTitle.setText("Shared Space");
+            }
+        }
+        // --- HEADER TEXT LOGIC END ---
 
         ViewPager2 viewPager = findViewById(R.id.view_pager);
         TabLayout tabLayout = findViewById(R.id.tab_layout);
 
-        // CHANGED: Updated to ExtendedFloatingActionButton
         ExtendedFloatingActionButton fab = findViewById(R.id.fab_add_task);
-
         viewPager.setAdapter(new ViewPagerAdapter(this, contextType));
         new TabLayoutMediator(tabLayout, viewPager,
                 (tab, position) -> {
                     if (Space.TYPE_PERSONAL.equals(contextType)) {
                         switch (position) {
-                            case 0:
-                                tab.setText("All");
-                                break;
-                            case 1:
-                                tab.setText("My Tasks");
-                                break;
-                            case 2:
-                                tab.setText("Partner");
-                                break;
+                            case 0: tab.setText("All"); break;
+                            case 1: tab.setText("My Tasks"); break;
+                            case 2: tab.setText("Partner"); break;
                         }
                     } else {
                         switch (position) {
-                            case 0:
-                                tab.setText("All");
-                                break;
-                            case 1:
-                                tab.setText("Shared");
-                                break;
-                            case 2:
-                                tab.setText("Assigned");
-                                break;
+                            case 0: tab.setText("All"); break;
+                            case 1: tab.setText("Shared"); break;
+                            case 2: tab.setText("Assigned"); break;
                         }
                     }
                 }
@@ -128,22 +139,27 @@ public class TaskViewActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main_menu, menu);
-        MenuItem searchItem = menu.findItem(R.id.action_search);
-        SearchView searchView = (SearchView) searchItem.getActionView();
-        searchView.setQueryHint("Search by title...");
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                return false;
-            }
+        // Use space_menu for both, or maintain separate ones if needed.
+        // Assuming you created space_menu.xml in the previous step.
+        getMenuInflater().inflate(R.menu.space_view, menu);
 
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                viewModel.setSearchQuery(newText);
-                return true;
-            }
-        });
+        MenuItem searchItem = menu.findItem(R.id.action_search);
+        if (searchItem != null) {
+            SearchView searchView = (SearchView) searchItem.getActionView();
+            searchView.setQueryHint("Search by title...");
+            searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+                @Override
+                public boolean onQueryTextSubmit(String query) {
+                    return false;
+                }
+
+                @Override
+                public boolean onQueryTextChange(String newText) {
+                    viewModel.setSearchQuery(newText);
+                    return true;
+                }
+            });
+        }
         return true;
     }
 
