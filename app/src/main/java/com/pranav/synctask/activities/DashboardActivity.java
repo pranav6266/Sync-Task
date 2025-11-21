@@ -3,9 +3,13 @@ package com.pranav.synctask.activities;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.material.appbar.MaterialToolbar;
@@ -38,7 +42,7 @@ public class DashboardActivity extends AppCompatActivity {
         }
 
         topAppBar = findViewById(R.id.topAppBar);
-        setSupportActionBar(topAppBar);
+        setSupportActionBar(topAppBar); // Tells Android to use this toolbar for the Activity's menu
 
         // Setup Bottom Navigation
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
@@ -65,28 +69,44 @@ public class DashboardActivity extends AppCompatActivity {
             return true;
         });
 
-        // Menu Item Clicks (Settings)
-        topAppBar.setOnMenuItemClickListener(item -> {
-            if (item.getItemId() == R.id.action_archive) {
-                // Archive is now handled globally or per space,
-                // for now let's point to the Settings activity or global archive
-                startActivity(new Intent(this, CompletedTasksActivity.class));
-                return true;
-            }
-            // We can add a profile icon to the menu later to go to SettingsActivity
-            return false;
-        });
-
-        // Profile Access via Toolbar Navigation Icon (Optional, can set icon)
-        // topAppBar.setNavigationIcon(R.drawable.ic_profile);
-        // topAppBar.setNavigationOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
-
         // Load Default Fragment (Personal)
         if (savedInstanceState == null) {
             bottomNav.setSelectedItemId(R.id.nav_personal);
         }
 
         updateFcmToken();
+    }
+
+    // Inflate the menu (This puts the icons on the top bar)
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+
+        // Setup Search View
+        MenuItem searchItem = menu.findItem(R.id.action_search);
+        if (searchItem != null) {
+            SearchView searchView = (SearchView) searchItem.getActionView();
+            // You can attach a query text listener here if you want global search
+        }
+        return true;
+    }
+
+    // Handle clicks on the top bar icons
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.action_archive) {
+            // Open Completed Tasks
+            startActivity(new Intent(this, CompletedTasksActivity.class));
+            return true;
+        } else if (id == R.id.action_profile) {
+            // Open Profile/Settings (This is where Logout is)
+            startActivity(new Intent(this, SettingsActivity.class));
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 
     private void updateFcmToken() {
@@ -96,7 +116,9 @@ public class DashboardActivity extends AppCompatActivity {
                 return;
             }
             String token = task.getResult();
-            UserRepository.getInstance().updateFcmToken(currentUser.getUid(), token);
+            if (currentUser != null) {
+                UserRepository.getInstance().updateFcmToken(currentUser.getUid(), token);
+            }
         });
     }
 
