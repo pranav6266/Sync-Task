@@ -22,6 +22,7 @@
             android:textColor="?attr/colorOnSurface"
             android:layout_marginBottom="24dp" />
 
+        <!-- Title -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -35,6 +36,7 @@
                 android:inputType="textCapSentences" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Description -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -50,6 +52,63 @@
                 android:gravity="top" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Subtasks Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Subtasks"
+            android:textAllCaps="true"
+            android:letterSpacing="0.05"
+            android:textAppearance="?attr/textAppearanceLabelSmall"
+            android:textColor="?attr/colorOutline"
+            android:layout_marginBottom="8dp"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_edit_subtasks"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_add_subtask_edit"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+ Add Subtask"
+            android:textColor="?attr/colorPrimary"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Admin Assignment Section -->
+        <LinearLayout
+            android:id="@+id/layout_admin_assignment_edit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Assignment"
+                android:textAllCaps="true"
+                android:letterSpacing="0.05"
+                android:textAppearance="?attr/textAppearanceLabelSmall"
+                android:textColor="?attr/colorOutline"
+                android:layout_marginBottom="8dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_assign_member_edit"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Change Assignment"
+                app:icon="@drawable/ic_profile"
+                app:iconGravity="textStart"
+                android:gravity="start|center_vertical"
+                android:layout_marginBottom="24dp"/>
+        </LinearLayout>
+
+        <!-- Type -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -90,6 +149,7 @@
                 app:chipIcon="@drawable/ic_task_type_update"/>
         </com.google.android.material.chip.ChipGroup>
 
+        <!-- Priority -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -133,6 +193,7 @@
                 app:chipBackgroundColor="@color/chip_bg_assigned"/>
         </com.google.android.material.chip.ChipGroup>
 
+        <!-- Due Date -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

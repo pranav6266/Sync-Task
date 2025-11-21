@@ -14,7 +14,8 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:paddingBottom="12dp">
 
         <View
             android:id="@+id/view_priority_strip"
@@ -65,6 +66,22 @@
             app:layout_constraintStart_toEndOf="@id/view_priority_strip"
             app:layout_constraintTop_toBottomOf="@id/tv_task_date" />
 
+        <!-- Progress Bar (New) -->
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/progress_task_completion"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="16dp"
+            android:visibility="gone"
+            app:trackCornerRadius="2dp"
+            app:trackThickness="4dp"
+            app:indicatorColor="?attr/colorPrimary"
+            app:trackColor="?attr/colorSurfaceVariant"
+            app:layout_constraintStart_toStartOf="@id/tv_task_title"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_task_title"/>
+
         <LinearLayout
             android:id="@+id/layout_chips"
             android:layout_width="0dp"
@@ -73,7 +90,7 @@
             android:orientation="horizontal"
             app:layout_constraintStart_toStartOf="@id/tv_task_title"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tv_task_title">
+            app:layout_constraintTop_toBottomOf="@id/progress_task_completion">
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_scope_chip"
@@ -138,12 +155,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:layout_marginBottom="12dp"
             android:text="Created by Pranav"
             android:textSize="11sp"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:fontFamily="sans-serif-medium"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="@id/tv_task_title"
             app:layout_constraintTop_toBottomOf="@id/layout_chips" />
 

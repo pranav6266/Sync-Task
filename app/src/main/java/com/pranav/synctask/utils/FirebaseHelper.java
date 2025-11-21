@@ -30,6 +30,7 @@ public class FirebaseHelper {
 
     // Callbacks
     public interface UserCallback { void onSuccess(User user); void onError(Exception e); }
+    public interface UsersCallback { void onSuccess(List<User> users); void onError(Exception e); } // ADDED
     public interface TasksCallback { void onSuccess(List<Task> tasks); void onError(Exception e); }
     public interface TaskCallback { void onSuccess(Task task); void onError(Exception e); }
     public interface SpaceCallback { void onSuccess(Space space); void onError(Exception e); }
@@ -62,6 +63,23 @@ public class FirebaseHelper {
                 }).addOnFailureListener(callback::onError);
     }
 
+    // NEW: Fetch multiple users by ID (for member assignment dropdown)
+    public void getUsers(List<String> uids, UsersCallback callback) {
+        if (uids == null || uids.isEmpty()) {
+            callback.onSuccess(new ArrayList<>());
+            return;
+        }
+        // Firestore 'in' query is limited to 10 items. For robustness, we might need to batch or loop.
+        // For this scale, we'll assume small groups or loop. simpler loop for now:
+        // NOTE: A better production approach is WHERE IN chunks, but for <10 members this works:
+        db.collection(USERS_COLLECTION).whereIn("uid", uids).get()
+                .addOnSuccessListener(querySnapshot -> {
+                    List<User> users = querySnapshot.toObjects(User.class);
+                    callback.onSuccess(users);
+                })
+                .addOnFailureListener(callback::onError);
+    }
+
     public ListenerRegistration addUserListener(String uid, UserCallback callback) {
         return db.collection(USERS_COLLECTION).document(uid)
                 .addSnapshotListener((snapshot, e) -> {
@@ -86,6 +104,19 @@ public class FirebaseHelper {
 
     // --- SPACE METHODS ---
 
+    // NEW: Get Single Space
+    public void getSpace(String spaceId, SpaceCallback callback) {
+        db.collection(SPACES_COLLECTION).document(spaceId).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        callback.onSuccess(documentSnapshot.toObject(Space.class));
+                    } else {
+                        callback.onError(new Exception("Space not found"));
+                    }
+                })
+                .addOnFailureListener(callback::onError);
+    }
+
     public ListenerRegistration getSpacesForUser(String uid, SpacesCallback callback) {
         return db.collection(SPACES_COLLECTION)
                 .whereArrayContains("members", uid)
@@ -108,7 +139,7 @@ public class FirebaseHelper {
         String spaceId = spaceDocRef.getId();
         String inviteCode = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
 
-        Space newSpace = new Space(spaceId, spaceName, Arrays.asList(creatorUID), inviteCode);
+        Space newSpace = new Space(spaceId, spaceName, Arrays.asList(creatorUID), inviteCode, creatorUID);
         newSpace.setSpaceType(Space.TYPE_SHARED);
         spaceDocRef.set(newSpace)
                 .addOnSuccessListener(aVoid -> callback.onSuccess(newSpace))

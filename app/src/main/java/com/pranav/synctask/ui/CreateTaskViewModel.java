@@ -7,8 +7,10 @@ import androidx.lifecycle.ViewModel;
 import com.pranav.synctask.data.Result;
 import com.pranav.synctask.data.TaskRepository;
 import com.pranav.synctask.data.UserRepository;
+import com.pranav.synctask.models.Space;
 import com.pranav.synctask.models.Task;
 import com.pranav.synctask.models.User;
+import java.util.List;
 
 public class CreateTaskViewModel extends ViewModel {
     private final TaskRepository taskRepository;
@@ -19,9 +21,16 @@ public class CreateTaskViewModel extends ViewModel {
         this.userRepository = UserRepository.getInstance();
     }
 
-    // The task object passed in already has the spaceId
     public LiveData<Result<Void>> createTask(Task task, Context context) {
         taskRepository.createTask(task, context);
         return new MutableLiveData<>(new Result.Success<>(null));
+    }
+
+    public LiveData<Result<Space>> getSpace(String spaceId) {
+        return userRepository.getSpace(spaceId);
+    }
+
+    public LiveData<Result<List<User>>> getSpaceMembers(List<String> uids) {
+        return userRepository.getUsers(uids);
     }
 }

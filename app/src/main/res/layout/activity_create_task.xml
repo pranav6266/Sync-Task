@@ -23,6 +23,7 @@
             android:textAppearance="?attr/textAppearanceHeadlineMedium"
             android:textColor="?attr/colorOnSurface" />
 
+        <!-- Title -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -37,10 +38,11 @@
                 android:inputType="textCapSentences" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Description -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="16dp"
             style="?attr/textInputStyle"
             android:hint="@string/description_hint">
 
@@ -53,6 +55,33 @@
                 android:minLines="3" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Subtasks Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Subtasks"
+            android:textAllCaps="true"
+            android:letterSpacing="0.05"
+            android:textAppearance="?attr/textAppearanceLabelSmall"
+            android:textColor="?attr/colorOutline"
+            android:layout_marginBottom="8dp"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_create_subtasks"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_add_subtask"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+ Add Subtask"
+            android:textColor="?attr/colorPrimary"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Type -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -97,61 +126,37 @@
                 app:chipIcon="@drawable/ic_task_type_update"/>
         </com.google.android.material.chip.ChipGroup>
 
-        <TextView
-            android:id="@+id/tv_scope_label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/scope_label"
-            android:textAllCaps="true"
-            android:letterSpacing="0.05"
-            android:textAppearance="?attr/textAppearanceLabelSmall"
-            android:textColor="?attr/colorOutline"
-            android:layout_marginBottom="8dp"/>
-
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/chip_group_scope"
+        <!-- Admin Assignment Section -->
+        <LinearLayout
+            android:id="@+id/layout_admin_assignment"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            app:singleSelection="true"
-            app:selectionRequired="true">
+            android:orientation="vertical"
+            android:visibility="gone">
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chip_scope_shared"
-                style="@style/Widget.Material3.Chip.Filter"
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Shared"
-                android:checked="true"
-                app:chipIcon="@drawable/ic_scope_shared"/>
+                android:text="Assignment"
+                android:textAllCaps="true"
+                android:letterSpacing="0.05"
+                android:textAppearance="?attr/textAppearanceLabelSmall"
+                android:textColor="?attr/colorOutline"
+                android:layout_marginBottom="8dp"/>
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chip_scope_assigned"
-                style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="wrap_content"
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_assign_member"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Assign Partner"
-                app:chipIcon="@drawable/ic_scope_assigned"/>
+                android:text="Assign to Member (Optional)"
+                app:icon="@drawable/ic_profile"
+                app:iconGravity="textStart"
+                android:gravity="start|center_vertical"
+                android:layout_marginBottom="24dp"/>
+        </LinearLayout>
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chip_scope_me"
-                style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="My Task"
-                android:visibility="gone"
-                app:chipIcon="@drawable/ic_scope_individual"/>
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chip_scope_partner"
-                style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Partner's Task"
-                android:visibility="gone"
-                app:chipIcon="@drawable/ic_scope_assigned"/>
-        </com.google.android.material.chip.ChipGroup>
-
+        <!-- Priority -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -196,8 +201,10 @@
                 android:layout_height="wrap_content"
                 android:text="High"
                 android:textColor="@color/priority_high"
-                app:chipBackgroundColor="@color/chip_bg_assigned"/> </com.google.android.material.chip.ChipGroup>
+                app:chipBackgroundColor="@color/chip_bg_assigned"/>
+        </com.google.android.material.chip.ChipGroup>
 
+        <!-- Effort -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -222,6 +229,7 @@
             app:trackColorActive="?attr/colorPrimary"
             app:trackColorInactive="?attr/colorSurfaceVariant"/>
 
+        <!-- Due Date -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

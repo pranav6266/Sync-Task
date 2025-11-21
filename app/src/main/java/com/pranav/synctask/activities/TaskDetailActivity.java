@@ -2,7 +2,6 @@ package com.pranav.synctask.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -10,44 +9,52 @@ import android.widget.CheckBox;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
-
-import com.google.android.material.appbar.AppBarLayout;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.progressindicator.LinearProgressIndicator; // ADDED
+import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.pranav.synctask.R;
+import com.pranav.synctask.adapters.SubtaskAdapter;
 import com.pranav.synctask.data.Result;
+import com.pranav.synctask.models.Space;
+import com.pranav.synctask.models.Subtask;
 import com.pranav.synctask.models.Task;
 import com.pranav.synctask.ui.viewmodels.TaskDetailViewModel;
 import com.pranav.synctask.utils.DateUtils;
+import java.util.ArrayList;
+import java.util.List;
 
-public class TaskDetailActivity extends AppCompatActivity {
+public class TaskDetailActivity extends AppCompatActivity implements SubtaskAdapter.OnSubtaskActionListener {
 
     public static final String EXTRA_TASK_ID = "EXTRA_TASK_ID";
-    private static final String TAG = "TaskDetailActivity";
-
     private TaskDetailViewModel viewModel;
     private String taskId;
     private Task currentTask;
     private FirebaseUser currentUser;
+    private boolean isAdmin = false; // Will be determined by Space info
 
     // Views
     private TextView tvTitle, tvDescription, tvDueDate, tvCreator, tvEffortValue;
     private CheckBox cbStatus;
-    private Chip chipStatus;
-    private Chip chipPriority, chipType, chipScope; // ADDED
-    private LinearProgressIndicator indicatorEffort; // ADDED
+    private Chip chipStatus, chipPriority, chipType, chipScope;
+    private LinearProgressIndicator indicatorEffort;
     private ProgressBar progressBar;
     private View contentLayout;
     private Toolbar toolbar;
+
+    // Subtask Views
+    private View layoutSubtasks;
+    private RecyclerView rvSubtasks;
+    private LinearProgressIndicator indicatorProgress;
+    private TextView tvProgressText;
+    private SubtaskAdapter subtaskAdapter;
 
     private boolean canEdit = false;
     private boolean canDelete = false;
@@ -80,12 +87,10 @@ public class TaskDetailActivity extends AppCompatActivity {
         tvDueDate = findViewById(R.id.tv_task_due_date_detail);
         tvCreator = findViewById(R.id.tv_task_creator_detail);
 
-        // New Chips
         chipPriority = findViewById(R.id.chip_priority_display);
         chipType = findViewById(R.id.chip_type_display);
         chipScope = findViewById(R.id.chip_scope_display);
 
-        // Effort
         tvEffortValue = findViewById(R.id.tv_task_effort_detail);
         indicatorEffort = findViewById(R.id.indicator_effort);
 
@@ -94,6 +99,14 @@ public class TaskDetailActivity extends AppCompatActivity {
 
         progressBar = findViewById(R.id.progress_bar_detail);
         contentLayout = findViewById(R.id.content_layout_detail);
+
+        // Subtasks
+        layoutSubtasks = findViewById(R.id.layout_subtasks_container);
+        rvSubtasks = findViewById(R.id.rv_subtasks_detail);
+        indicatorProgress = findViewById(R.id.indicator_subtask_progress);
+        tvProgressText = findViewById(R.id.tv_progress_text);
+
+        rvSubtasks.setLayoutManager(new LinearLayoutManager(this));
     }
 
     private void setupToolbar() {
@@ -101,7 +114,7 @@ public class TaskDetailActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setDisplayShowHomeEnabled(true);
-            getSupportActionBar().setTitle(""); // Clean header
+            getSupportActionBar().setTitle("");
         }
     }
 
@@ -127,6 +140,8 @@ public class TaskDetailActivity extends AppCompatActivity {
                 contentLayout.setVisibility(View.VISIBLE);
                 currentTask = ((Result.Success<Task>) result).data;
                 if (currentTask != null) {
+                    // Fetch space info to check admin status once we have the task
+                    checkAdminStatus();
                     calculatePermissions();
                     populateUi();
                 }
@@ -136,6 +151,24 @@ public class TaskDetailActivity extends AppCompatActivity {
                 finish();
             }
         });
+    }
+
+    private void checkAdminStatus() {
+        if (currentTask.getSpaceId() != null) {
+            viewModel.getSpace(currentTask.getSpaceId()).observe(this, result -> {
+                if (result instanceof Result.Success) {
+                    Space space = ((Result.Success<Space>) result).data;
+                    String adminUid = space.getAdminUid();
+                    if (adminUid == null && !space.getMembers().isEmpty()) adminUid = space.getMembers().get(0);
+
+                    if (currentUser.getUid().equals(adminUid)) {
+                        isAdmin = true;
+                        // Re-setup adapter with admin privileges if needed
+                        setupSubtaskAdapter();
+                    }
+                }
+            });
+        }
     }
 
     private void calculatePermissions() {
@@ -154,8 +187,15 @@ public class TaskDetailActivity extends AppCompatActivity {
                 canEdit = true; canDelete = true; canComplete = true;
                 break;
             case Task.SCOPE_ASSIGNED:
-                if (isCreator) { canEdit = true; canDelete = true; canComplete = false; }
-                else { canEdit = false; canDelete = false; canComplete = true; }
+                // Assigned tasks: Only Admin (Creator) can edit/delete.
+                // Only Assigned User can complete (logic handled in SubtaskAdapter for granularity, but main checkbox here too)
+                if (isCreator) { canEdit = true; canDelete = true; } // Admin
+
+                String assignedTo = currentTask.getAssignedToUid();
+                if (assignedTo != null && assignedTo.equals(currentUser.getUid())) {
+                    canComplete = true;
+                }
+                if (isCreator) canComplete = true; // Admin can also complete
                 break;
         }
         invalidateOptionsMenu();
@@ -183,45 +223,28 @@ public class TaskDetailActivity extends AppCompatActivity {
         indicatorEffort.setProgress(effort);
         tvEffortValue.setText(effort + "/5");
 
-        // Created By
+        // Creator
         boolean isCreator = currentUser.getUid().equals(currentTask.getCreatorUID());
         tvCreator.setText(isCreator ? "Created by You" : "Created by " + currentTask.getCreatorDisplayName());
 
-        // -- SET CHIPS --
+        // Chips
+        chipPriority.setText(currentTask.getPriority());
+        chipType.setText(currentTask.getTaskType());
 
-        // Priority Chip
-        String priority = currentTask.getPriority();
-        chipPriority.setText(priority);
-        if ("High".equalsIgnoreCase(priority)) {
-            chipPriority.setChipIconTintResource(R.color.priority_high);
-        } else if ("Low".equalsIgnoreCase(priority)) {
-            chipPriority.setChipIconTintResource(R.color.priority_low);
-        } else {
-            chipPriority.setChipIconTintResource(R.color.priority_normal);
+        String scopeText = getScopeDisplayString(currentTask.getOwnershipScope());
+        if (Task.SCOPE_ASSIGNED.equals(currentTask.getOwnershipScope()) && currentTask.getAssignedToName() != null) {
+            scopeText = "Assigned to " + currentTask.getAssignedToName();
         }
+        chipScope.setText(scopeText);
 
-        // Type Chip
-        String type = currentTask.getTaskType();
-        if (Task.TYPE_REMINDER.equals(type)) {
-            chipType.setText("Reminder");
-            chipType.setChipIconResource(R.drawable.ic_task_type_reminder);
-        } else if (Task.TYPE_UPDATE.equals(type)) {
-            chipType.setText("Update");
-            chipType.setChipIconResource(R.drawable.ic_task_type_update);
-        } else {
-            chipType.setText("Task");
-            chipType.setChipIconResource(R.drawable.ic_task_type_task);
-        }
+        // Status
+        boolean isCompleted = Task.STATUS_COMPLETED.equals(currentTask.getStatus());
 
-        // Scope Chip
-        chipScope.setText(getScopeDisplayString(currentTask.getOwnershipScope()));
-
-        // -- STATUS LOGIC --
         if (canComplete) {
             cbStatus.setVisibility(View.VISIBLE);
             chipStatus.setVisibility(View.GONE);
             cbStatus.setOnCheckedChangeListener(null);
-            cbStatus.setChecked(Task.STATUS_COMPLETED.equals(currentTask.getStatus()));
+            cbStatus.setChecked(isCompleted);
             cbStatus.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (!buttonView.isPressed()) return;
                 if (isChecked) playCompleteAnimation();
@@ -230,13 +253,51 @@ public class TaskDetailActivity extends AppCompatActivity {
         } else {
             cbStatus.setVisibility(View.GONE);
             chipStatus.setVisibility(View.VISIBLE);
-            boolean isCompleted = Task.STATUS_COMPLETED.equals(currentTask.getStatus());
-            String statusText = isCompleted ? "Completed" : "Pending";
-            if (Task.SCOPE_ASSIGNED.equals(currentTask.getOwnershipScope())) {
-                statusText += " (Partner)";
-            }
-            chipStatus.setText(statusText);
+            chipStatus.setText(isCompleted ? "Completed" : "Pending");
         }
+
+        // Subtasks Logic
+        if (currentTask.getSubtasks() != null && !currentTask.getSubtasks().isEmpty()) {
+            layoutSubtasks.setVisibility(View.VISIBLE);
+            setupSubtaskAdapter();
+
+            int total = currentTask.getSubtasks().size();
+            int done = currentTask.getProgressPercentage() * total / 100;
+            indicatorProgress.setMax(100);
+            indicatorProgress.setProgress(currentTask.getProgressPercentage(), true);
+            tvProgressText.setText(done + "/" + total);
+
+            // If subtasks exist, disable main checkbox to enforce subtask completion flow?
+            // Or keep main checkbox as an override "Complete All".
+            // For now, we keep both, but usually subtask completion drives the main status.
+        } else {
+            layoutSubtasks.setVisibility(View.GONE);
+        }
+    }
+
+    private void setupSubtaskAdapter() {
+        if (currentTask.getSubtasks() == null) return;
+
+        if (subtaskAdapter == null) {
+            subtaskAdapter = new SubtaskAdapter(this, currentTask.getSubtasks(), currentUser.getUid(), isAdmin, this);
+            rvSubtasks.setAdapter(subtaskAdapter);
+        } else {
+            subtaskAdapter.updateSubtasks(currentTask.getSubtasks());
+        }
+    }
+
+    // --- Subtask Actions ---
+
+    @Override
+    public void onLockToggle(Subtask subtask) {
+        // We pass 'forceUnlock' as true if isAdmin and it's locked by someone else
+        boolean force = isAdmin && subtask.getLockedByUid() != null && !subtask.getLockedByUid().equals(currentUser.getUid());
+        viewModel.toggleSubtaskLock(taskId, subtask.getId(), currentUser.getUid(), currentUser.getDisplayName(), force);
+    }
+
+    @Override
+    public void onCompletionToggle(Subtask subtask, boolean isChecked) {
+        viewModel.toggleSubtaskCompletion(taskId, subtask.getId(), isChecked, currentUser.getUid());
     }
 
     private void playCompleteAnimation() {
