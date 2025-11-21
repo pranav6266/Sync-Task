@@ -51,14 +51,13 @@ public class SubtaskAdapter extends RecyclerView.Adapter<SubtaskAdapter.ViewHold
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Subtask subtask = subtasks.get(position);
-
         holder.tvTitle.setText(subtask.getTitle());
 
-        // Reset listener to prevent triggers during binding
+        // 1. Reset listener to prevent triggers during scrolling/binding
         holder.checkbox.setOnCheckedChangeListener(null);
-        holder.checkbox.setChecked(subtask.isCompleted());
 
-        // Strikethrough if completed
+        // 2. Set visual state for completion (Strikethrough)
+        holder.checkbox.setChecked(subtask.isCompleted());
         if (subtask.isCompleted()) {
             holder.tvTitle.setPaintFlags(holder.tvTitle.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
             holder.tvTitle.setAlpha(0.6f);
@@ -67,59 +66,63 @@ public class SubtaskAdapter extends RecyclerView.Adapter<SubtaskAdapter.ViewHold
             holder.tvTitle.setAlpha(1.0f);
         }
 
-        // --- LOCKING LOGIC ---
-        boolean isLockedByMe = subtask.getLockedByUid() != null && subtask.getLockedByUid().equals(currentUserId);
-        boolean isLockedByOther = subtask.getLockedByUid() != null && !subtask.getLockedByUid().equals(currentUserId);
-        boolean isUnlocked = subtask.getLockedByUid() == null;
+        // 3. LOCKING LOGIC
+        // Check if lockedByUid is null or empty string
+        boolean isLockedBySomeone = subtask.getLockedByUid() != null && !subtask.getLockedByUid().isEmpty();
+        boolean isLockedByMe = isLockedBySomeone && subtask.getLockedByUid().equals(currentUserId);
 
-        if (isUnlocked) {
-            // State: FREE FOR ALL
-            holder.ivLock.setImageResource(R.drawable.ic_lock_open); // You might need an open lock icon, using delete/edit as placeholder if missing
-            // If ic_lock_open doesn't exist, use a dimmed lock or specialized icon
-            holder.ivLock.setImageResource(android.R.drawable.ic_menu_more); // Fallback if icon missing, ideally use R.drawable.ic_lock_open
-            // Actually, let's use the standard lock but tinted grey to signify "Open"
-            holder.ivLock.setImageResource(android.R.drawable.ic_lock_idle_lock);
-            holder.ivLock.setAlpha(0.3f);
+        if (!isLockedBySomeone) {
+            // STATE: UNLOCKED / FREE
+            // Behavior: Show open lock. Checkbox DISABLED (User must lock it first to work on it).
+            holder.ivLock.setImageResource(android.R.drawable.ic_lock_idle_lock); // Or use a specific open lock icon
+            holder.ivLock.setColorFilter(ContextCompat.getColor(context, R.color.md_theme_light_outline));
+            holder.ivLock.setAlpha(0.4f);
 
             holder.tvLockedBy.setVisibility(View.GONE);
-            holder.checkbox.setEnabled(false); // Must lock first
 
+            // Logic change: User must click lock to claim, cannot just check box
+            holder.checkbox.setEnabled(false);
             holder.ivLock.setOnClickListener(v -> listener.onLockToggle(subtask));
 
         } else if (isLockedByMe) {
-            // State: LOCKED BY ME (Working on it)
+            // STATE: LOCKED BY ME
+            // Behavior: Green Lock. Checkbox ENABLED.
             holder.ivLock.setImageResource(android.R.drawable.ic_lock_lock);
-            holder.ivLock.setColorFilter(ContextCompat.getColor(context, R.color.priority_low)); // Green lock
+            holder.ivLock.setColorFilter(ContextCompat.getColor(context, R.color.priority_low)); // Green
             holder.ivLock.setAlpha(1.0f);
 
             holder.tvLockedBy.setVisibility(View.VISIBLE);
             holder.tvLockedBy.setText("Locked by You");
             holder.tvLockedBy.setTextColor(ContextCompat.getColor(context, R.color.priority_low));
 
-            holder.checkbox.setEnabled(true); // Can complete
-            holder.ivLock.setOnClickListener(v -> listener.onLockToggle(subtask)); // Can unlock
+            holder.checkbox.setEnabled(true);
+            holder.ivLock.setOnClickListener(v -> listener.onLockToggle(subtask)); // Click to unlock/release
 
-        } else if (isLockedByOther) {
-            // State: LOCKED BY SOMEONE ELSE
+        } else {
+            // STATE: LOCKED BY OTHER
+            // Behavior: Red Lock. Checkbox DISABLED.
             holder.ivLock.setImageResource(android.R.drawable.ic_lock_lock);
-            holder.ivLock.setColorFilter(ContextCompat.getColor(context, R.color.priority_high)); // Red lock
+            holder.ivLock.setColorFilter(ContextCompat.getColor(context, R.color.priority_high)); // Red
             holder.ivLock.setAlpha(1.0f);
 
+            String lockerName = subtask.getLockedByName() != null ? subtask.getLockedByName() : "Partner";
             holder.tvLockedBy.setVisibility(View.VISIBLE);
-            holder.tvLockedBy.setText("Locked by " + (subtask.getLockedByName() != null ? subtask.getLockedByName() : "Partner"));
+            holder.tvLockedBy.setText("Locked by " + lockerName);
             holder.tvLockedBy.setTextColor(ContextCompat.getColor(context, R.color.priority_high));
 
-            holder.checkbox.setEnabled(false); // Cannot complete
+            holder.checkbox.setEnabled(false); // Cannot touch
 
             if (isAdmin) {
-                // Admin Override
-                holder.ivLock.setOnClickListener(v -> listener.onLockToggle(subtask)); // Force unlock
+                // Admin can force unlock
+                holder.ivLock.setOnClickListener(v -> listener.onLockToggle(subtask));
             } else {
-                holder.ivLock.setOnClickListener(null); // Cannot touch
+                holder.ivLock.setOnClickListener(v -> {
+                    // Optional: Toast "Task is being worked on by X"
+                });
             }
         }
 
-        // Re-attach listener
+        // 4. Re-attach Checkbox Listener
         holder.checkbox.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (buttonView.isPressed()) {
                 listener.onCompletionToggle(subtask, isChecked);

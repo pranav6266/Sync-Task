@@ -6,7 +6,6 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Transaction;
 import com.pranav.synctask.models.Subtask;
@@ -25,7 +24,6 @@ public class TaskRepository {
     private ListenerRegistration completedTasksForSpacesListener;
 
     private List<Task> firestoreTasks = new ArrayList<>();
-
     private final MutableLiveData<Result<List<Task>>> combinedTasksResult = new MutableLiveData<>();
     private final MutableLiveData<Result<Task>> singleTaskResult = new MutableLiveData<>();
     private final MutableLiveData<Result<List<Task>>> completedTasksResult = new MutableLiveData<>();
@@ -33,7 +31,7 @@ public class TaskRepository {
 
     private final FirebaseHelper firebaseHelper;
     private String currentSpaceId;
-    private final FirebaseFirestore db; // Exposed for transactions
+    private final FirebaseFirestore db;
 
     private TaskRepository() {
         firebaseHelper = new FirebaseHelper();
@@ -51,7 +49,6 @@ public class TaskRepository {
         return instance;
     }
 
-    // --- Existing Methods (Shortened for brevity, assume they exist as before) ---
     public LiveData<Result<List<Task>>> getTasks() { return combinedTasksResult; }
     public LiveData<Result<Task>> getTaskById() { return singleTaskResult; }
 
@@ -63,12 +60,10 @@ public class TaskRepository {
         }
         if (tasksListListenerRegistration != null) tasksListListenerRegistration.remove();
         combinedTasksResult.setValue(new Result.Loading<>());
-
         tasksListListenerRegistration = firebaseHelper.getTasks(spaceId, new FirebaseHelper.TasksCallback() {
             @Override
             public void onSuccess(List<Task> tasks) {
                 firestoreTasks = tasks;
-                // Sorting Logic
                 firestoreTasks.sort((t1, t2) -> {
                     boolean c1 = "completed".equals(t1.getStatus());
                     boolean c2 = "completed".equals(t2.getStatus());
@@ -112,14 +107,10 @@ public class TaskRepository {
     public void updateTaskStatus(String taskId, String newStatus) { firebaseHelper.updateTaskStatus(taskId, newStatus); }
     public void deleteTask(String taskId) { firebaseHelper.deleteTask(taskId); }
 
-    // --- NEW: SUBTASK TRANSACTIONS ---
+    // --- SUBTASK TRANSACTIONS ---
 
-    /**
-     * Toggles the lock on a subtask. Uses Firestore Transaction to prevent race conditions.
-     */
     public void toggleSubtaskLock(String taskId, String subtaskId, String userId, String userName, boolean forceUnlock) {
         DocumentReference taskRef = db.collection("tasks").document(taskId);
-
         db.runTransaction((Transaction.Function<Void>) transaction -> {
             Task snapshot = transaction.get(taskRef).toObject(Task.class);
             if (snapshot == null || snapshot.getSubtasks() == null) return null;
@@ -129,18 +120,13 @@ public class TaskRepository {
 
             for (Subtask s : subtasks) {
                 if (s.getId().equals(subtaskId)) {
-                    // Logic:
-                    // If Unlocked -> Lock it
-                    // If Locked by Me -> Unlock it
-                    // If Locked by Other AND ForceUnlock -> Unlock it
-
-                    if (s.getLockedByUid() == null) {
-                        // Lock
+                    if (s.getLockedByUid() == null || s.getLockedByUid().isEmpty()) {
+                        // Lock it
                         s.setLockedByUid(userId);
                         s.setLockedByName(userName);
                         updated = true;
                     } else if (s.getLockedByUid().equals(userId) || forceUnlock) {
-                        // Unlock
+                        // Unlock it
                         s.setLockedByUid(null);
                         s.setLockedByName(null);
                         updated = true;
@@ -150,7 +136,6 @@ public class TaskRepository {
             }
 
             if (updated) {
-                // Re-serialize subtasks list
                 List<Map<String, Object>> subtasksMap = new ArrayList<>();
                 for (Subtask s : subtasks) subtasksMap.add(s.toMap());
                 transaction.update(taskRef, "subtasks", subtasksMap);
@@ -159,13 +144,8 @@ public class TaskRepository {
         }).addOnFailureListener(e -> Log.e("TaskRepository", "Transaction failure.", e));
     }
 
-    /**
-     * Toggles completion of a subtask.
-     * Also checks if ALL subtasks are done to update the main task status.
-     */
     public void toggleSubtaskCompletion(String taskId, String subtaskId, boolean isCompleted, String userId) {
         DocumentReference taskRef = db.collection("tasks").document(taskId);
-
         db.runTransaction((Transaction.Function<Void>) transaction -> {
             Task snapshot = transaction.get(taskRef).toObject(Task.class);
             if (snapshot == null || snapshot.getSubtasks() == null) return null;
@@ -176,26 +156,30 @@ public class TaskRepository {
 
             for (Subtask s : subtasks) {
                 if (s.getId().equals(subtaskId)) {
-                    // Only update if locked by me (security check) or allow lenient updates
-                    // For robustness, we assume UI handled the check, but we enforce it here if needed.
-                    // Here we just update.
+                    // NOTE: We allow the update here. The UI checks the lock status.
+                    // To be strictly secure, we could check s.getLockedByUid() here too.
                     s.setCompleted(isCompleted);
                     s.setCompletedByUid(isCompleted ? userId : null);
                     updated = true;
                 }
-                if (!s.isCompleted()) allComplete = false;
+                // Check aggregated status
+                if (!s.isCompleted()) {
+                    allComplete = false;
+                }
             }
 
             if (updated) {
                 List<Map<String, Object>> subtasksMap = new ArrayList<>();
                 for (Subtask s : subtasks) subtasksMap.add(s.toMap());
+
+                // Update subtasks array
                 transaction.update(taskRef, "subtasks", subtasksMap);
 
-                // Auto-update main task status
+                // Auto-update main task status based on subtasks
                 if (allComplete) {
                     transaction.update(taskRef, "status", Task.STATUS_COMPLETED);
-                } else if (Task.STATUS_COMPLETED.equals(snapshot.getStatus())) {
-                    // Re-open if it was marked complete but we just unchecked a box
+                } else {
+                    // Ensure it is pending if not all are done
                     transaction.update(taskRef, "status", Task.STATUS_PENDING);
                 }
             }
@@ -203,7 +187,7 @@ public class TaskRepository {
         }).addOnFailureListener(e -> Log.e("TaskRepository", "Completion Transaction failure.", e));
     }
 
-    // --- Existing Helper Methods ---
+    // --- Helper Methods ---
     private int getPriorityValue(String priority) {
         if (priority == null) return 1;
         switch (priority) {
@@ -213,7 +197,6 @@ public class TaskRepository {
         }
     }
 
-    // Standard listeners...
     public LiveData<Result<List<Task>>> getCompletedTasks() { return completedTasksResult; }
     public void attachCompletedTasksListener(String spaceId) {
         if (completedTasksListener != null) completedTasksListener.remove();

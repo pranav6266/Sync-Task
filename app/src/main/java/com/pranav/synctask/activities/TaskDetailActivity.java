@@ -38,7 +38,7 @@ public class TaskDetailActivity extends AppCompatActivity implements SubtaskAdap
     private String taskId;
     private Task currentTask;
     private FirebaseUser currentUser;
-    private boolean isAdmin = false; // Will be determined by Space info
+    private boolean isAdmin = false;
 
     // Views
     private TextView tvTitle, tvDescription, tvDueDate, tvCreator, tvEffortValue;
@@ -140,7 +140,6 @@ public class TaskDetailActivity extends AppCompatActivity implements SubtaskAdap
                 contentLayout.setVisibility(View.VISIBLE);
                 currentTask = ((Result.Success<Task>) result).data;
                 if (currentTask != null) {
-                    // Fetch space info to check admin status once we have the task
                     checkAdminStatus();
                     calculatePermissions();
                     populateUi();
@@ -158,13 +157,13 @@ public class TaskDetailActivity extends AppCompatActivity implements SubtaskAdap
             viewModel.getSpace(currentTask.getSpaceId()).observe(this, result -> {
                 if (result instanceof Result.Success) {
                     Space space = ((Result.Success<Space>) result).data;
+                    if (space == null) return;
                     String adminUid = space.getAdminUid();
                     if (adminUid == null && !space.getMembers().isEmpty()) adminUid = space.getMembers().get(0);
 
                     if (currentUser.getUid().equals(adminUid)) {
                         isAdmin = true;
-                        // Re-setup adapter with admin privileges if needed
-                        setupSubtaskAdapter();
+                        setupSubtaskAdapter(); // Refresh adapter with admin status
                     }
                 }
             });
@@ -177,7 +176,9 @@ public class TaskDetailActivity extends AppCompatActivity implements SubtaskAdap
         if (scope == null) scope = Task.SCOPE_SHARED;
 
         boolean isCreator = currentUser.getUid().equals(currentTask.getCreatorUID());
-        canEdit = false; canDelete = false; canComplete = false;
+        canEdit = false;
+        canDelete = false;
+        canComplete = false;
 
         switch (scope) {
             case Task.SCOPE_INDIVIDUAL:
@@ -187,15 +188,12 @@ public class TaskDetailActivity extends AppCompatActivity implements SubtaskAdap
                 canEdit = true; canDelete = true; canComplete = true;
                 break;
             case Task.SCOPE_ASSIGNED:
-                // Assigned tasks: Only Admin (Creator) can edit/delete.
-                // Only Assigned User can complete (logic handled in SubtaskAdapter for granularity, but main checkbox here too)
-                if (isCreator) { canEdit = true; canDelete = true; } // Admin
-
+                if (isCreator) { canEdit = true; canDelete = true; }
                 String assignedTo = currentTask.getAssignedToUid();
                 if (assignedTo != null && assignedTo.equals(currentUser.getUid())) {
                     canComplete = true;
                 }
-                if (isCreator) canComplete = true; // Admin can also complete
+                if (isCreator) canComplete = true;
                 break;
         }
         invalidateOptionsMenu();
@@ -203,7 +201,6 @@ public class TaskDetailActivity extends AppCompatActivity implements SubtaskAdap
 
     private void populateUi() {
         tvTitle.setText(currentTask.getTitle());
-
         if (currentTask.getDescription() != null && !currentTask.getDescription().isEmpty()) {
             tvDescription.setText(currentTask.getDescription());
             tvDescription.setAlpha(1.0f);
@@ -227,7 +224,6 @@ public class TaskDetailActivity extends AppCompatActivity implements SubtaskAdap
         boolean isCreator = currentUser.getUid().equals(currentTask.getCreatorUID());
         tvCreator.setText(isCreator ? "Created by You" : "Created by " + currentTask.getCreatorDisplayName());
 
-        // Chips
         chipPriority.setText(currentTask.getPriority());
         chipType.setText(currentTask.getTaskType());
 
@@ -237,47 +233,54 @@ public class TaskDetailActivity extends AppCompatActivity implements SubtaskAdap
         }
         chipScope.setText(scopeText);
 
-        // Status
+        // --- LOGIC FOR SUBTASKS & COMPLETION ---
+        boolean hasSubtasks = currentTask.getSubtasks() != null && !currentTask.getSubtasks().isEmpty();
         boolean isCompleted = Task.STATUS_COMPLETED.equals(currentTask.getStatus());
 
-        if (canComplete) {
-            cbStatus.setVisibility(View.VISIBLE);
-            chipStatus.setVisibility(View.GONE);
-            cbStatus.setOnCheckedChangeListener(null);
-            cbStatus.setChecked(isCompleted);
-            cbStatus.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (!buttonView.isPressed()) return;
-                if (isChecked) playCompleteAnimation();
-                else viewModel.updateTaskStatus(taskId, Task.STATUS_PENDING);
-            });
-        } else {
-            cbStatus.setVisibility(View.GONE);
-            chipStatus.setVisibility(View.VISIBLE);
-            chipStatus.setText(isCompleted ? "Completed" : "Pending");
-        }
-
-        // Subtasks Logic
-        if (currentTask.getSubtasks() != null && !currentTask.getSubtasks().isEmpty()) {
+        if (hasSubtasks) {
+            // 1. Has Subtasks: Hide main checkbox, show calculated progress
             layoutSubtasks.setVisibility(View.VISIBLE);
             setupSubtaskAdapter();
 
             int total = currentTask.getSubtasks().size();
             int done = currentTask.getProgressPercentage() * total / 100;
+
             indicatorProgress.setMax(100);
             indicatorProgress.setProgress(currentTask.getProgressPercentage(), true);
             tvProgressText.setText(done + "/" + total);
 
-            // If subtasks exist, disable main checkbox to enforce subtask completion flow?
-            // Or keep main checkbox as an override "Complete All".
-            // For now, we keep both, but usually subtask completion drives the main status.
+            // HIDE MANUAL CHECKBOX
+            cbStatus.setVisibility(View.GONE);
+            chipStatus.setVisibility(View.VISIBLE);
+            chipStatus.setText(isCompleted ? "Completed (Auto)" : "In Progress (" + done + "/" + total + ")");
+
+            // Check if we need to trigger animation if it just became 100% while we were watching?
+            // (Handled by ViewModel or Repo usually, but pure UI update here is fine)
+
         } else {
+            // 2. No Subtasks: Show main checkbox based on permissions
             layoutSubtasks.setVisibility(View.GONE);
+
+            if (canComplete) {
+                cbStatus.setVisibility(View.VISIBLE);
+                chipStatus.setVisibility(View.GONE);
+                cbStatus.setOnCheckedChangeListener(null);
+                cbStatus.setChecked(isCompleted);
+                cbStatus.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    if (!buttonView.isPressed()) return;
+                    if (isChecked) playCompleteAnimation();
+                    else viewModel.updateTaskStatus(taskId, Task.STATUS_PENDING);
+                });
+            } else {
+                cbStatus.setVisibility(View.GONE);
+                chipStatus.setVisibility(View.VISIBLE);
+                chipStatus.setText(isCompleted ? "Completed" : "Pending");
+            }
         }
     }
 
     private void setupSubtaskAdapter() {
         if (currentTask.getSubtasks() == null) return;
-
         if (subtaskAdapter == null) {
             subtaskAdapter = new SubtaskAdapter(this, currentTask.getSubtasks(), currentUser.getUid(), isAdmin, this);
             rvSubtasks.setAdapter(subtaskAdapter);
@@ -286,11 +289,8 @@ public class TaskDetailActivity extends AppCompatActivity implements SubtaskAdap
         }
     }
 
-    // --- Subtask Actions ---
-
     @Override
     public void onLockToggle(Subtask subtask) {
-        // We pass 'forceUnlock' as true if isAdmin and it's locked by someone else
         boolean force = isAdmin && subtask.getLockedByUid() != null && !subtask.getLockedByUid().equals(currentUser.getUid());
         viewModel.toggleSubtaskLock(taskId, subtask.getId(), currentUser.getUid(), currentUser.getDisplayName(), force);
     }
