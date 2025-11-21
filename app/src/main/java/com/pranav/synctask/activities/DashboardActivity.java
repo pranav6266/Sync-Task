@@ -96,15 +96,15 @@ public class DashboardActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
 
-        if (id == R.id.action_archive) {
-            // Open Completed Tasks
-            startActivity(new Intent(this, CompletedTasksActivity.class));
-            return true;
-        } else if (id == R.id.action_profile) {
-            // Open Profile/Settings (This is where Logout is)
-            startActivity(new Intent(this, SettingsActivity.class));
-            return true;
-        }
+//        if (id == R.id.action_archive) {
+//            // Open Completed Tasks
+//            startActivity(new Intent(this, CompletedTasksActivity.class));
+//            return true;
+//        } else if (id == R.id.action_profile) {
+//            // Open Profile/Settings (This is where Logout is)
+//            startActivity(new Intent(this, SettingsActivity.class));
+//            return true;
+//        }
 
         return super.onOptionsItemSelected(item);
     }

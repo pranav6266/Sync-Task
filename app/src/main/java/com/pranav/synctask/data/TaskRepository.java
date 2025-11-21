@@ -156,13 +156,10 @@ public class TaskRepository {
 
             for (Subtask s : subtasks) {
                 if (s.getId().equals(subtaskId)) {
-                    // NOTE: We allow the update here. The UI checks the lock status.
-                    // To be strictly secure, we could check s.getLockedByUid() here too.
                     s.setCompleted(isCompleted);
                     s.setCompletedByUid(isCompleted ? userId : null);
                     updated = true;
                 }
-                // Check aggregated status
                 if (!s.isCompleted()) {
                     allComplete = false;
                 }
@@ -175,11 +172,10 @@ public class TaskRepository {
                 // Update subtasks array
                 transaction.update(taskRef, "subtasks", subtasksMap);
 
-                // Auto-update main task status based on subtasks
+                // Auto-update main task status
                 if (allComplete) {
                     transaction.update(taskRef, "status", Task.STATUS_COMPLETED);
                 } else {
-                    // Ensure it is pending if not all are done
                     transaction.update(taskRef, "status", Task.STATUS_PENDING);
                 }
             }
@@ -226,6 +222,7 @@ public class TaskRepository {
         });
     }
     public static void removeAllTasksListener() { if (instance != null && instance.allTasksListener != null) instance.allTasksListener.remove(); }
+
     public void attachTaskListener(String taskId) {
         if (taskListenerRegistration != null) taskListenerRegistration.remove();
         singleTaskResult.setValue(new Result.Loading<>());

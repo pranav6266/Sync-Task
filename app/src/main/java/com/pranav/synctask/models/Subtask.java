@@ -1,5 +1,6 @@
 package com.pranav.synctask.models;
 
+import com.google.firebase.firestore.PropertyName; // Import this
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
@@ -9,12 +10,11 @@ public class Subtask implements Serializable {
     private String id;
     private String title;
     private boolean isCompleted;
-    private String lockedByUid;   // UID of the user currently working on this (locking it)
-    private String lockedByName;  // Display name of the user
-    private String completedByUid; // UID of who finished it
+    private String lockedByUid;
+    private String lockedByName;
+    private String completedByUid;
 
     public Subtask() {
-        // Default constructor for Firestore
         this.id = UUID.randomUUID().toString();
         this.isCompleted = false;
         this.lockedByUid = null;
@@ -34,7 +34,12 @@ public class Subtask implements Serializable {
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
 
+    // FIX: Explicitly map the Firestore property "isCompleted" to this getter
+    @PropertyName("isCompleted")
     public boolean isCompleted() { return isCompleted; }
+
+    // FIX: Explicitly map the Firestore property "isCompleted" to this setter
+    @PropertyName("isCompleted")
     public void setCompleted(boolean completed) { isCompleted = completed; }
 
     public String getLockedByUid() { return lockedByUid; }
