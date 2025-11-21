@@ -1,7 +1,5 @@
 package com.pranav.synctask.fragments;
 
-import android.content.ClipboardManager;
-import android.content.Context;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.LayoutInflater;
@@ -57,7 +55,6 @@ public class SpacesTabFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
         viewModel = new ViewModelProvider(requireActivity()).get(DashboardViewModel.class);
 
         recyclerView = view.findViewById(R.id.rv_spaces);
@@ -77,7 +74,8 @@ public class SpacesTabFragment extends Fragment {
 
     private void setupRecyclerView() {
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapter = new SpacesAdapter(getContext(), new ArrayList<>(), new HashMap<>(), new ArrayList<>());
+        // CHANGED: Use requireActivity() to ensure correct Context for Dialogs/ViewModel
+        adapter = new SpacesAdapter(requireActivity(), new ArrayList<>(), new HashMap<>(), new ArrayList<>());
         recyclerView.setAdapter(adapter);
     }
 
@@ -92,13 +90,11 @@ public class SpacesTabFragment extends Fragment {
                 Toast.makeText(getContext(), "Error loading spaces", Toast.LENGTH_SHORT).show();
             }
         });
-
         // 2. Members Map
         viewModel.getMembersMap().observe(getViewLifecycleOwner(), map -> {
             currentMembers = map;
             updateAdapter();
         });
-
         // 3. Tasks (for progress)
         viewModel.getAllTasksResult().observe(getViewLifecycleOwner(), result -> {
             if (result instanceof Result.Success) {
@@ -112,18 +108,23 @@ public class SpacesTabFragment extends Fragment {
         viewModel.getCreateSpaceResult().observe(getViewLifecycleOwner(), result -> {
             if (result instanceof Result.Success) {
                 Toast.makeText(getContext(), "Space Created!", Toast.LENGTH_SHORT).show();
-                // Auto refresh handled by Firestore listener
             } else if (result instanceof Result.Error) {
                 Toast.makeText(getContext(), "Failed: " + ((Result.Error<Space>) result).exception.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
-
         viewModel.getJoinSpaceResult().observe(getViewLifecycleOwner(), result -> {
             if (result instanceof Result.Success) {
                 Toast.makeText(getContext(), "Joined successfully!", Toast.LENGTH_SHORT).show();
             } else if (result instanceof Result.Error) {
                 Toast.makeText(getContext(), "Failed: " + ((Result.Error<Space>) result).exception.getMessage(), Toast.LENGTH_SHORT).show();
             }
+        });
+        // ADDED: Observe Leave/Delete results to provide feedback
+        viewModel.getLeaveSpaceResult().observe(getViewLifecycleOwner(), result -> {
+            if(result instanceof Result.Success) Toast.makeText(getContext(), "Left space", Toast.LENGTH_SHORT).show();
+        });
+        viewModel.getDeleteSpaceResult().observe(getViewLifecycleOwner(), result -> {
+            if(result instanceof Result.Success) Toast.makeText(getContext(), "Space deleted", Toast.LENGTH_SHORT).show();
         });
     }
 

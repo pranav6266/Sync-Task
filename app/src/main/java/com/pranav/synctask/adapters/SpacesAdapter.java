@@ -53,8 +53,8 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
     @NonNull
     @Override
     public SpaceViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // Best Practice: Use parent.getContext() to ensure the correct theme is applied
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_space, parent, false);
+        // This MUST match the fixed item_space.xml file
+        View view = LayoutInflater.from(context).inflate(R.layout.item_space, parent, false);
         return new SpaceViewHolder(view);
     }
 
@@ -63,53 +63,43 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
         Space space = spaceList.get(position);
         if (space == null) return;
 
-        // CRITICAL: If this line crashes, it means findViewById in ViewHolder returned null.
-        // Solution: Build > Clean Project, then Build > Rebuild Project.
-        if (holder.tvSpaceName != null) {
-            holder.tvSpaceName.setText(space.getSpaceName());
-        }
+        holder.tvSpaceName.setText(space.getSpaceName());
 
         // Calculate Progress
         int totalEffort = 0;
         int completedEffort = 0;
         int activeTaskCount = 0;
 
-        if (allTasks != null) {
-            for (Task task : allTasks) {
-                if (space.getSpaceId().equals(task.getSpaceId())) {
-                    if (Task.STATUS_PENDING.equals(task.getStatus())) {
-                        activeTaskCount++;
-                    }
-                    // Progress based on Today's tasks or recent activity
-                    boolean isRelevant = false;
-                    if (task.getDueDate() != null && DateUtils.isToday(task.getDueDate())) isRelevant = true;
-                    else if (task.getCreatedAt() != null && DateUtils.isToday(task.getCreatedAt())) isRelevant = true;
+        for (Task task : allTasks) {
+            if (space.getSpaceId().equals(task.getSpaceId())) {
+                if (Task.STATUS_PENDING.equals(task.getStatus())) {
+                    activeTaskCount++;
+                }
+                // Progress based on recent activity
+                boolean isRelevant = false;
+                if (task.getDueDate() != null && DateUtils.isToday(task.getDueDate())) isRelevant = true;
+                else if (task.getCreatedAt() != null && DateUtils.isToday(task.getCreatedAt())) isRelevant = true;
 
-                    if (isRelevant) {
-                        totalEffort += task.getEffort();
-                        if (Task.STATUS_COMPLETED.equals(task.getStatus())) {
-                            completedEffort += task.getEffort();
-                        }
+                if (isRelevant) {
+                    totalEffort += task.getEffort();
+                    if (Task.STATUS_COMPLETED.equals(task.getStatus())) {
+                        completedEffort += task.getEffort();
                     }
                 }
             }
         }
 
         int progress = (totalEffort == 0) ? 0 : (int) (100.0 * completedEffort / totalEffort);
-
-        if (holder.progressSpace != null) {
-            if (totalEffort == 0) {
-                holder.progressSpace.setVisibility(View.GONE);
-            } else {
-                holder.progressSpace.setVisibility(View.VISIBLE);
-                holder.progressSpace.setProgress(progress, true);
-            }
+        if (totalEffort == 0) {
+            holder.progressSpace.setVisibility(View.GONE);
+        } else {
+            holder.progressSpace.setVisibility(View.VISIBLE);
+            holder.progressSpace.setProgress(progress, true);
         }
 
-        if (holder.tvSpaceDesc != null) {
-            holder.tvSpaceDesc.setText(activeTaskCount + " Active Tasks");
-        }
+        holder.tvSpaceDesc.setText(activeTaskCount + " Active Tasks");
 
+        // Click on Card -> Open Task View
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, TaskViewActivity.class);
             intent.putExtra("SPACE_ID", space.getSpaceId());
@@ -117,11 +107,17 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
             context.startActivity(intent);
         });
 
-        boolean isCreator = space.getMembers() != null && !space.getMembers().isEmpty() && space.getMembers().get(0).equals(currentUserId);
-
-        if (holder.ivSpaceOptions != null) {
-            holder.ivSpaceOptions.setOnClickListener(v -> showOptionsDialog(space, isCreator));
+        // Determine if current user is Admin/Creator
+        boolean isCreator = false;
+        if (space.getAdminUid() != null) {
+            isCreator = space.getAdminUid().equals(currentUserId);
+        } else if (space.getMembers() != null && !space.getMembers().isEmpty()) {
+            // Fallback for legacy data
+            isCreator = space.getMembers().get(0).equals(currentUserId);
         }
+
+        final boolean finalIsCreator = isCreator;
+        holder.ivSpaceOptions.setOnClickListener(v -> showOptionsDialog(space, finalIsCreator));
     }
 
     private void showOptionsDialog(Space space, boolean isCreator) {
@@ -138,6 +134,7 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
         else options.add(leaveOption);
 
         new MaterialAlertDialogBuilder(context)
+                .setTitle(space.getSpaceName())
                 .setItems(options.toArray(new String[0]), (dialog, which) -> {
                     String selectedOption = options.get(which);
                     switch (selectedOption) {
@@ -148,10 +145,10 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
                             copyInviteCode(space.getInviteCode());
                             break;
                         case leaveOption:
-                            showConfirmationDialog("Leave", "Are you sure you want to leave?", () -> getViewModel().leaveSpace(space.getSpaceId()));
+                            showConfirmationDialog("Leave Space", "Are you sure you want to leave? You will lose access to these tasks.", () -> getViewModel().leaveSpace(space.getSpaceId()));
                             break;
                         case deleteOption:
-                            showConfirmationDialog("Delete", "Delete space for everyone? This cannot be undone.", () -> getViewModel().deleteSpace(space.getSpaceId()));
+                            showConfirmationDialog("Delete Space", "Delete this space for EVERYONE? This action cannot be undone.", () -> getViewModel().deleteSpace(space.getSpaceId()));
                             break;
                     }
                 }).show();
@@ -160,8 +157,10 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
     private void showMembersDialog(Space space) {
         List<String> memberNames = new ArrayList<>();
         if (space.getMembers() != null && membersMap != null) {
+            String adminId = space.getAdminUid() != null ? space.getAdminUid() : (space.getMembers().isEmpty() ? "" : space.getMembers().get(0));
+
             for (String uid : space.getMembers()) {
-                String role = (space.getMembers().get(0).equals(uid)) ? " (Admin)" : "";
+                String role = uid.equals(adminId) ? " (Admin)" : "";
                 if (uid.equals(currentUserId)) {
                     memberNames.add("You" + role);
                 } else if (membersMap.containsKey(uid)) {
@@ -183,18 +182,23 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
     private void copyInviteCode(String code) {
         ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
         ClipData clip = ClipData.newPlainText("Invite Code", code);
-        clipboard.setPrimaryClip(clip);
-        Toast.makeText(context, "Code copied: " + code, Toast.LENGTH_SHORT).show();
+        if (clipboard != null) {
+            clipboard.setPrimaryClip(clip);
+            Toast.makeText(context, "Invite Code copied: " + code, Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void showConfirmationDialog(String title, String message, Runnable onConfirm) {
         new MaterialAlertDialogBuilder(context)
-                .setTitle(title).setMessage(message)
-                .setPositiveButton(title, (dialog, which) -> onConfirm.run())
-                .setNegativeButton("Cancel", null).show();
+                .setTitle(title)
+                .setMessage(message)
+                .setPositiveButton(title.split(" ")[0], (dialog, which) -> onConfirm.run()) // "Delete" or "Leave"
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private DashboardViewModel getViewModel() {
+        // This requires context to be an Activity (ensured by Fragment using requireActivity())
         return new ViewModelProvider((AppCompatActivity) context).get(DashboardViewModel.class);
     }
 
@@ -213,14 +217,12 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
     }
 
     public static class SpaceViewHolder extends RecyclerView.ViewHolder {
-        // Java Fields (CamelCase)
         TextView tvSpaceName, tvSpaceDesc;
         ImageView ivSpaceOptions;
         LinearProgressIndicator progressSpace;
 
         public SpaceViewHolder(@NonNull View itemView) {
             super(itemView);
-            // Mapping XML IDs (snake_case) to Java Fields
             tvSpaceName = itemView.findViewById(R.id.tv_space_name);
             tvSpaceDesc = itemView.findViewById(R.id.tv_space_desc);
             ivSpaceOptions = itemView.findViewById(R.id.iv_space_options);
