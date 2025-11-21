@@ -1,7 +1,5 @@
 package com.pranav.synctask.utils;
 
-import android.util.Log;
-import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -10,13 +8,11 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.WriteBatch;
-import com.google.firebase.functions.FirebaseFunctions;
 import com.pranav.synctask.models.Space;
 import com.pranav.synctask.models.Task;
 import com.pranav.synctask.models.User;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -88,9 +84,8 @@ public class FirebaseHelper {
         if (uid != null) db.collection(USERS_COLLECTION).document(uid).update("fcmToken", token);
     }
 
-    // --- SPACE METHODS (FIXED) ---
+    // --- SPACE METHODS ---
 
-    // 1. New Query Method: Finds spaces where 'members' array contains the UID
     public ListenerRegistration getSpacesForUser(String uid, SpacesCallback callback) {
         return db.collection(SPACES_COLLECTION)
                 .whereArrayContains("members", uid)
@@ -108,7 +103,6 @@ public class FirebaseHelper {
                 });
     }
 
-    // 2. Create Space: No longer writes to User document
     public void createSpace(String spaceName, String creatorUID, SpaceCallback callback) {
         DocumentReference spaceDocRef = db.collection(SPACES_COLLECTION).document();
         String spaceId = spaceDocRef.getId();
@@ -116,26 +110,11 @@ public class FirebaseHelper {
 
         Space newSpace = new Space(spaceId, spaceName, Arrays.asList(creatorUID), inviteCode);
         newSpace.setSpaceType(Space.TYPE_SHARED);
-
         spaceDocRef.set(newSpace)
                 .addOnSuccessListener(aVoid -> callback.onSuccess(newSpace))
                 .addOnFailureListener(callback::onError);
     }
 
-    // 3. Create Personal Link: No longer writes to User documents
-    public void createPersonalLink(String creatorUID, String partnerUID, String spaceName, SpaceCallback callback) {
-        DocumentReference spaceDocRef = db.collection(SPACES_COLLECTION).document();
-        String spaceId = spaceDocRef.getId();
-
-        Space newSpace = new Space(spaceId, spaceName, Arrays.asList(creatorUID, partnerUID), null);
-        newSpace.setSpaceType(Space.TYPE_PERSONAL);
-
-        spaceDocRef.set(newSpace)
-                .addOnSuccessListener(aVoid -> callback.onSuccess(newSpace))
-                .addOnFailureListener(callback::onError);
-    }
-
-    // 4. Join Space: No longer writes to User document
     public void joinSpace(String inviteCode, String userUID, SpaceCallback callback) {
         db.collection(SPACES_COLLECTION)
                 .whereEqualTo("inviteCode", inviteCode.toUpperCase())
@@ -153,7 +132,6 @@ public class FirebaseHelper {
                         return;
                     }
 
-                    // Only update the Space document
                     spaceDoc.getReference().update("members", FieldValue.arrayUnion(userUID))
                             .addOnSuccessListener(aVoid -> callback.onSuccess(space))
                             .addOnFailureListener(callback::onError);
@@ -162,48 +140,24 @@ public class FirebaseHelper {
     }
 
     public void leaveSpace(String spaceId, String userUID, SpaceCallback callback) {
-        // 1. Get the space first to check its type
-        db.collection(SPACES_COLLECTION).document(spaceId).get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (!documentSnapshot.exists()) {
-                        callback.onError(new Exception("Space not found"));
-                        return;
-                    }
-
-                    Space space = documentSnapshot.toObject(Space.class);
-                    if (space == null) return;
-
-                    // 2. LOGIC CHECK
-                    if (Space.TYPE_PERSONAL.equals(space.getSpaceType())) {
-                        // Case A: Personal Link -> DELETE IT FOR EVERYONE
-                        // This ensures it disappears from the partner's phone too.
-                        deleteSpace(spaceId, userUID, callback);
-                    } else {
-                        // Case B: Shared Space -> JUST REMOVE ME
-                        db.collection(SPACES_COLLECTION).document(spaceId)
-                                .update("members", FieldValue.arrayRemove(userUID))
-                                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
-                                .addOnFailureListener(callback::onError);
-                    }
-                })
+        db.collection(SPACES_COLLECTION).document(spaceId)
+                .update("members", FieldValue.arrayRemove(userUID))
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
                 .addOnFailureListener(callback::onError);
     }
+
     public void deleteSpace(String spaceId, String userUID, SpaceCallback callback) {
-        // 1. First, find all tasks in this space
         db.collection(TASKS_COLLECTION)
                 .whereEqualTo("spaceId", spaceId)
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
-                    // 2. Create a batch to delete them all
                     WriteBatch batch = db.batch();
                     for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
                         batch.delete(doc.getReference());
                     }
-                    // 3. Delete the Space document itself in the same batch
                     DocumentReference spaceRef = db.collection(SPACES_COLLECTION).document(spaceId);
                     batch.delete(spaceRef);
 
-                    // 4. Commit the batch
                     batch.commit()
                             .addOnSuccessListener(aVoid -> callback.onSuccess(null))
                             .addOnFailureListener(callback::onError);

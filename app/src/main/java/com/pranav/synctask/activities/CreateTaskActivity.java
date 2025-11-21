@@ -57,6 +57,8 @@ public class CreateTaskActivity extends AppCompatActivity {
 
         currentSpaceId = getIntent().getStringExtra("SPACE_ID");
         contextType = getIntent().getStringExtra("CONTEXT_TYPE");
+
+        // Default to Shared if not specified, unless space ID is null
         if (contextType == null) contextType = Space.TYPE_SHARED;
 
         if (currentSpaceId == null || currentSpaceId.isEmpty()) {
@@ -88,28 +90,24 @@ public class CreateTaskActivity extends AppCompatActivity {
     }
 
     private void setupChips() {
-        // Handle Dynamic Scope Visibility based on Context
+        // Handle Dynamic Scope Visibility
         if (Space.TYPE_PERSONAL.equals(contextType)) {
-            // Personal Mode: Show "Me" and "Partner", Hide "Shared"/"Assigned"
-            tvScopeLabel.setText(getString(R.string.owner_hint));
-            findViewById(R.id.chip_scope_shared).setVisibility(View.GONE);
-            findViewById(R.id.chip_scope_assigned).setVisibility(View.GONE);
-
-            findViewById(R.id.chip_scope_me).setVisibility(View.VISIBLE);
-            findViewById(R.id.chip_scope_partner).setVisibility(View.VISIBLE);
-
-            // Default Select "Me"
-            chipGroupScope.check(R.id.chip_scope_me);
+            // Personal Mode: It's always just "My Task"
+            tvScopeLabel.setVisibility(View.GONE);
+            chipGroupScope.setVisibility(View.GONE);
         } else {
-            // Shared Mode: Show "Shared" and "Assigned"
-            tvScopeLabel.setText(getString(R.string.scope_hint));
+            // Shared Mode: Show options
+            tvScopeLabel.setVisibility(View.VISIBLE);
+            chipGroupScope.setVisibility(View.VISIBLE);
+
+            // Ensure only relevant chips are visible
             findViewById(R.id.chip_scope_shared).setVisibility(View.VISIBLE);
             findViewById(R.id.chip_scope_assigned).setVisibility(View.VISIBLE);
 
+            // Hide old personal link specific chips if they exist in XML
             findViewById(R.id.chip_scope_me).setVisibility(View.GONE);
             findViewById(R.id.chip_scope_partner).setVisibility(View.GONE);
 
-            // Default Select "Shared"
             chipGroupScope.check(R.id.chip_scope_shared);
         }
     }
@@ -143,10 +141,15 @@ public class CreateTaskActivity extends AppCompatActivity {
             return;
         }
 
-        // 1. Get Values from Chips
         String taskType = getSelectedType();
         String priority = getSelectedPriority();
-        String ownershipScope = getSelectedScope();
+        String ownershipScope;
+
+        if (Space.TYPE_PERSONAL.equals(contextType)) {
+            ownershipScope = Task.SCOPE_INDIVIDUAL;
+        } else {
+            ownershipScope = getSelectedScope();
+        }
 
         Timestamp dueDateTimestamp = null;
         if (!etDueDate.getText().toString().isEmpty()) {
@@ -159,8 +162,7 @@ public class CreateTaskActivity extends AppCompatActivity {
         newTask.setOwnershipScope(ownershipScope);
         newTask.setEffort(effort);
 
-        // 2. Create
-        btnCreateTask.setEnabled(false); // Prevent double click
+        btnCreateTask.setEnabled(false);
         btnCreateTask.setText("Creating...");
 
         viewModel.createTask(newTask, this).observe(this, result -> {
@@ -175,26 +177,23 @@ public class CreateTaskActivity extends AppCompatActivity {
         });
     }
 
-    // Helper to map Chip IDs to Constants
     private String getSelectedType() {
         int id = chipGroupType.getCheckedChipId();
         if (id == R.id.chip_type_reminder) return Task.TYPE_REMINDER;
         if (id == R.id.chip_type_update) return Task.TYPE_UPDATE;
-        return Task.TYPE_TASK; // Default
+        return Task.TYPE_TASK;
     }
 
     private String getSelectedPriority() {
         int id = chipGroupPriority.getCheckedChipId();
         if (id == R.id.chip_prio_high) return "High";
         if (id == R.id.chip_prio_low) return "Low";
-        return "Normal"; // Default
+        return "Normal";
     }
 
     private String getSelectedScope() {
         int id = chipGroupScope.getCheckedChipId();
         if (id == R.id.chip_scope_assigned) return Task.SCOPE_ASSIGNED;
-        if (id == R.id.chip_scope_me) return Task.SCOPE_INDIVIDUAL;
-        if (id == R.id.chip_scope_partner) return Task.SCOPE_ASSIGNED; // "Partner's Task" is an assignment
-        return Task.SCOPE_SHARED; // Default
+        return Task.SCOPE_SHARED;
     }
 }

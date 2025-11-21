@@ -16,7 +16,6 @@ import java.util.List;
 public class UserRepository {
     private static volatile UserRepository instance;
     private ListenerRegistration userListenerRegistration;
-    // REMOVED: private ListenerRegistration spacesListenerRegistration; <--- Caused the bug
     private User currentUserCache;
     private final FirebaseHelper firebaseHelper;
 
@@ -35,11 +34,8 @@ public class UserRepository {
         return instance;
     }
 
-    // --- UPDATED: Returns the listener so ViewModel can own it ---
     public ListenerRegistration getSpacesForUser(String uid, MutableLiveData<Result<List<Space>>> spacesLiveData) {
         spacesLiveData.setValue(new Result.Loading<>());
-
-        // We simply return the new registration. We do NOT cancel any existing ones here.
         return firebaseHelper.getSpacesForUser(uid, new FirebaseHelper.SpacesCallback() {
             @Override
             public void onSuccess(List<Space> spaces) {
@@ -52,14 +48,11 @@ public class UserRepository {
         });
     }
 
-    // REMOVED: removeSpacesListener() - No longer needed here.
-
-    // ... (Keep all other methods: updateProfilePicture, createOrUpdateUser, etc. exactly as they were) ...
-
     public LiveData<Result<String>> updateProfilePicture(FirebaseUser firebaseUser, Uri imageUri) {
         MutableLiveData<Result<String>> result = new MutableLiveData<>(new Result.Loading<>());
         StorageReference storageRef = FirebaseStorage.getInstance().getReference();
         StorageReference photoRef = storageRef.child("profile_images/" + firebaseUser.getUid());
+
         photoRef.putFile(imageUri).addOnSuccessListener(taskSnapshot -> {
             photoRef.getDownloadUrl().addOnSuccessListener(uri -> {
                 String photoUrl = uri.toString();
@@ -106,16 +99,6 @@ public class UserRepository {
         MutableLiveData<Result<Space>> result = new MutableLiveData<>();
         result.setValue(new Result.Loading<>());
         firebaseHelper.createSpace(spaceName, creatorUID, new FirebaseHelper.SpaceCallback() {
-            @Override public void onSuccess(Space space) { result.setValue(new Result.Success<>(space)); }
-            @Override public void onError(Exception e) { result.setValue(new Result.Error<>(e)); }
-        });
-        return result;
-    }
-
-    public LiveData<Result<Space>> createPersonalLink(String creatorUID, String partnerUID, String spaceName) {
-        MutableLiveData<Result<Space>> result = new MutableLiveData<>();
-        result.setValue(new Result.Loading<>());
-        firebaseHelper.createPersonalLink(creatorUID, partnerUID, spaceName, new FirebaseHelper.SpaceCallback() {
             @Override public void onSuccess(Space space) { result.setValue(new Result.Success<>(space)); }
             @Override public void onError(Exception e) { result.setValue(new Result.Error<>(e)); }
         });
