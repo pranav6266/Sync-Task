@@ -72,7 +72,6 @@ public class DashboardViewModel extends ViewModel {
                     List<Space> allSpaces = ((Result.Success<List<Space>>) result).data;
 
                     // Filter: We only want SHARED spaces now.
-                    // Personal "spaces" are just tasks with spaceId=uid, so they don't appear here.
                     List<Space> sharedSpaces = allSpaces.stream()
                             .filter(space -> Space.TYPE_SHARED.equals(space.getSpaceType()))
                             .collect(Collectors.toList());

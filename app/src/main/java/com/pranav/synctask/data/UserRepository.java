@@ -137,6 +137,26 @@ public class UserRepository {
         return result;
     }
 
+    public LiveData<Result<List<User>>> getUsers(List<String> uids) {
+        MutableLiveData<Result<List<User>>> result = new MutableLiveData<>();
+        result.setValue(new Result.Loading<>());
+        firebaseHelper.getUsers(uids, new FirebaseHelper.UsersCallback() {
+            @Override public void onSuccess(List<User> users) { result.setValue(new Result.Success<>(users)); }
+            @Override public void onError(Exception e) { result.setValue(new Result.Error<>(e)); }
+        });
+        return result;
+    }
+
+    public LiveData<Result<Space>> getSpace(String spaceId) {
+        MutableLiveData<Result<Space>> result = new MutableLiveData<>();
+        result.setValue(new Result.Loading<>());
+        firebaseHelper.getSpace(spaceId, new FirebaseHelper.SpaceCallback() {
+            @Override public void onSuccess(Space space) { result.setValue(new Result.Success<>(space)); }
+            @Override public void onError(Exception e) { result.setValue(new Result.Error<>(e)); }
+        });
+        return result;
+    }
+
     public LiveData<Result<Void>> leaveSpace(String spaceId, String userUID) {
         MutableLiveData<Result<Void>> result = new MutableLiveData<>();
         firebaseHelper.leaveSpace(spaceId, userUID, new FirebaseHelper.SpaceCallback() {

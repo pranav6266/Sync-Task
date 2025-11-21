@@ -51,6 +51,7 @@
                     android:orientation="vertical"
                     android:padding="24dp">
 
+                    <!-- Status and Complete Button -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -82,7 +83,7 @@
                         android:id="@+id/tv_task_title_detail"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Buy Groceries"
+                        android:text="Title"
                         android:textAppearance="?attr/textAppearanceHeadlineMedium"
                         android:textStyle="bold"
                         android:textColor="?attr/colorOnSurface" />
@@ -99,6 +100,63 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Subtasks Section -->
+            <LinearLayout
+                android:id="@+id/layout_subtasks_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="16dp"
+                android:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Subtasks"
+                        android:textAllCaps="true"
+                        android:textSize="12sp"
+                        android:letterSpacing="0.05"
+                        android:textColor="?attr/colorOutline" />
+
+                    <Space
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"/>
+
+                    <TextView
+                        android:id="@+id/tv_progress_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0/5"
+                        android:textSize="12sp"
+                        android:textColor="?attr/colorOutline"
+                        android:layout_marginEnd="8dp"/>
+                </LinearLayout>
+
+                <com.google.android.material.progressindicator.LinearProgressIndicator
+                    android:id="@+id/indicator_subtask_progress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    app:trackCornerRadius="4dp"
+                    app:trackColor="?attr/colorSurfaceVariant"
+                    app:indicatorColor="?attr/colorPrimary"/>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_subtasks_detail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"/>
+            </LinearLayout>
+
+            <!-- Chips -->
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -138,6 +196,7 @@
                 </LinearLayout>
             </HorizontalScrollView>
 
+            <!-- Details Card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -207,7 +266,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="24dp"
-                        android:text="Milk, Bread, Eggs..."
+                        android:text="Description"
                         android:lineSpacingMultiplier="1.2"
                         android:textAppearance="?attr/textAppearanceBodyLarge"
                         android:textColor="?attr/colorOnSurface" />

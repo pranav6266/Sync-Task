@@ -53,7 +53,8 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
     @NonNull
     @Override
     public SpaceViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item_space, parent, false);
+        // Best Practice: Use parent.getContext() to ensure the correct theme is applied
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_space, parent, false);
         return new SpaceViewHolder(view);
     }
 
@@ -62,41 +63,52 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
         Space space = spaceList.get(position);
         if (space == null) return;
 
-        holder.tvSpaceName.setText(space.getSpaceName());
+        // CRITICAL: If this line crashes, it means findViewById in ViewHolder returned null.
+        // Solution: Build > Clean Project, then Build > Rebuild Project.
+        if (holder.tvSpaceName != null) {
+            holder.tvSpaceName.setText(space.getSpaceName());
+        }
 
         // Calculate Progress
         int totalEffort = 0;
         int completedEffort = 0;
         int activeTaskCount = 0;
 
-        for (Task task : allTasks) {
-            if (space.getSpaceId().equals(task.getSpaceId())) {
-                if (Task.STATUS_PENDING.equals(task.getStatus())) {
-                    activeTaskCount++;
-                }
-                // Progress based on Today's tasks or recent activity
-                boolean isRelevant = false;
-                if (task.getDueDate() != null && DateUtils.isToday(task.getDueDate())) isRelevant = true;
-                else if (task.getCreatedAt() != null && DateUtils.isToday(task.getCreatedAt())) isRelevant = true;
+        if (allTasks != null) {
+            for (Task task : allTasks) {
+                if (space.getSpaceId().equals(task.getSpaceId())) {
+                    if (Task.STATUS_PENDING.equals(task.getStatus())) {
+                        activeTaskCount++;
+                    }
+                    // Progress based on Today's tasks or recent activity
+                    boolean isRelevant = false;
+                    if (task.getDueDate() != null && DateUtils.isToday(task.getDueDate())) isRelevant = true;
+                    else if (task.getCreatedAt() != null && DateUtils.isToday(task.getCreatedAt())) isRelevant = true;
 
-                if (isRelevant) {
-                    totalEffort += task.getEffort();
-                    if (Task.STATUS_COMPLETED.equals(task.getStatus())) {
-                        completedEffort += task.getEffort();
+                    if (isRelevant) {
+                        totalEffort += task.getEffort();
+                        if (Task.STATUS_COMPLETED.equals(task.getStatus())) {
+                            completedEffort += task.getEffort();
+                        }
                     }
                 }
             }
         }
 
         int progress = (totalEffort == 0) ? 0 : (int) (100.0 * completedEffort / totalEffort);
-        if (totalEffort == 0) {
-            holder.progressSpace.setVisibility(View.GONE);
-        } else {
-            holder.progressSpace.setVisibility(View.VISIBLE);
-            holder.progressSpace.setProgress(progress, true);
+
+        if (holder.progressSpace != null) {
+            if (totalEffort == 0) {
+                holder.progressSpace.setVisibility(View.GONE);
+            } else {
+                holder.progressSpace.setVisibility(View.VISIBLE);
+                holder.progressSpace.setProgress(progress, true);
+            }
         }
 
-        holder.tvSpaceDesc.setText(activeTaskCount + " Active Tasks");
+        if (holder.tvSpaceDesc != null) {
+            holder.tvSpaceDesc.setText(activeTaskCount + " Active Tasks");
+        }
 
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, TaskViewActivity.class);
@@ -106,7 +118,10 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
         });
 
         boolean isCreator = space.getMembers() != null && !space.getMembers().isEmpty() && space.getMembers().get(0).equals(currentUserId);
-        holder.ivSpaceOptions.setOnClickListener(v -> showOptionsDialog(space, isCreator));
+
+        if (holder.ivSpaceOptions != null) {
+            holder.ivSpaceOptions.setOnClickListener(v -> showOptionsDialog(space, isCreator));
+        }
     }
 
     private void showOptionsDialog(Space space, boolean isCreator) {
@@ -198,12 +213,14 @@ public class SpacesAdapter extends RecyclerView.Adapter<SpacesAdapter.SpaceViewH
     }
 
     public static class SpaceViewHolder extends RecyclerView.ViewHolder {
+        // Java Fields (CamelCase)
         TextView tvSpaceName, tvSpaceDesc;
         ImageView ivSpaceOptions;
         LinearProgressIndicator progressSpace;
 
         public SpaceViewHolder(@NonNull View itemView) {
             super(itemView);
+            // Mapping XML IDs (snake_case) to Java Fields
             tvSpaceName = itemView.findViewById(R.id.tv_space_name);
             tvSpaceDesc = itemView.findViewById(R.id.tv_space_desc);
             ivSpaceOptions = itemView.findViewById(R.id.iv_space_options);
