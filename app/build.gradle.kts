@@ -1,71 +1,70 @@
 plugins {
     alias(libs.plugins.android.application)
-    id("com.google.gms.google-services")
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.google.gms.google.services)
 }
 
 android {
     namespace = "com.pranav.synctask"
-    compileSdk = 36
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.pranav.synctask"
         minSdk = 24
-        targetSdk = 36
-
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
     buildFeatures {
+        compose = true
         viewBinding = true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = libs.versions.composeCompiler.get()
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = "1.8"
     }
 }
 
 dependencies {
 
-    implementation(libs.appcompat)
-    implementation(libs.material) // This is now the single M3 dependency
-    implementation(libs.activity)
+    // XML / legacy
+    implementation(libs.androidx.appcompat)
+    implementation(libs.material)
     implementation(libs.constraintlayout)
-    implementation(libs.firebase.common)
 
-    implementation(libs.firebase.firestore)
+    // Core
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.lifecycle.runtime)
+    implementation(libs.lifecycle.viewmodel)
+
+    // Compose
+    implementation(platform(libs.compose.bom))
+    implementation(libs.activity.compose)
+    implementation(libs.compose.ui)
+    implementation(libs.compose.ui.graphics)
+    implementation(libs.compose.ui.preview)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.icons)
+    implementation(libs.navigation.compose)
+    debugImplementation(libs.compose.ui.tooling)
+
+    // Firebase (BOM FIRST)
+    implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
     implementation(libs.firebase.storage)
     implementation(libs.firebase.messaging)
+
+    // Google Sign-In
     implementation(libs.play.services.auth)
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.analytics)
-    implementation(libs.swiperefreshlayout)
-    // implementation(libs.google.material) // REMOVED - Redundant
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.ext.junit)
-    androidTestImplementation(libs.espresso.core)
-
-    // Added for profile image circle view
-    implementation(libs.circleimageview)
-    // Added for loading profile image from URL
-    implementation(libs.glide)
-
-    implementation(libs.lifecycle.viewmodel)
-    implementation(libs.lifecycle.livedata)
-
-    implementation(libs.firebase.functions)
-    implementation(libs.lottie)
 }
-apply(plugin = "com.google.gms.google-services")

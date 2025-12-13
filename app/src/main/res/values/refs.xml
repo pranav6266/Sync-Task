@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <drawable name="ic_sync_task_logo" />
+    <drawable name="ic_add" />
+    <drawable name="ic_edit" />
+    <drawable name="ic_delete" />
+    <drawable name="ic_check_white" />
+    <drawable name="ic_task_type_update" />
+</resources>
