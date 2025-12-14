@@ -97,7 +97,7 @@ public class UserRepository {
         resultData.setValue(new Result.Loading<>());
 
         // Create a space named "Partner Space"
-        firebaseHelper.createSpace("Partner Space", uid, new FirebaseHelper.SpaceCallback() {
+        firebaseHelper.createSpace("Partner Space", uid, Space.TYPE_SHARED,new FirebaseHelper.SpaceCallback() {
             @Override
             public void onSuccess(Space space) {
                 // Update the user's partnerSpaceId immediately
@@ -126,18 +126,7 @@ public class UserRepository {
                 // 1. Update My User Doc
                 db.collection("users").document(myUid)
                         .update("partnerSpaceId", space.getSpaceId())
-                        .addOnSuccessListener(aVoid -> {
-
-                            // 2. Update the Partner (Admin) User Doc
-                            // The space creator is the admin.
-                            String partnerUid = space.getAdminUid();
-                            if (partnerUid != null && !partnerUid.equals(myUid)) {
-                                db.collection("users").document(partnerUid)
-                                        .update("partnerSpaceId", space.getSpaceId());
-                            }
-
-                            resultData.setValue(new Result.Success<>(null));
-                        })
+                        .addOnSuccessListener(aVoid -> resultData.setValue(new Result.Success<>(null)))
                         .addOnFailureListener(e -> resultData.setValue(new Result.Error<>(e)));
             }
             @Override
@@ -177,7 +166,7 @@ public class UserRepository {
 
     public LiveData<Result<Space>> createSpace(String spaceName, String creatorUID) {
         MutableLiveData<Result<Space>> result = new MutableLiveData<>();
-        firebaseHelper.createSpace(spaceName, creatorUID, new FirebaseHelper.SpaceCallback() {
+        firebaseHelper.createSpace(spaceName, creatorUID, Space.TYPE_SHARED,new FirebaseHelper.SpaceCallback() {
             @Override public void onSuccess(Space space) { result.setValue(new Result.Success<>(space)); }
             @Override public void onError(Exception e) { result.setValue(new Result.Error<>(e)); }
         });

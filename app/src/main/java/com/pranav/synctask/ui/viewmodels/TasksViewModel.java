@@ -72,7 +72,20 @@ public class TasksViewModel extends ViewModel {
 
     // --- ACTIONS ---
     public void createTask(Task task, Context context) {
-        taskRepository.createTask(task, context);
+        if (Task.SCOPE_INDIVIDUAL.equals(task.getOwnershipScope())) {
+            // Fetch current user to get their Personal Space ID
+            String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+            userRepository.getUser(uid).observeForever(result -> {
+                if (result instanceof Result.Success) {
+                    User user = ((Result.Success<User>) result).data;
+                    // FIX: Assign the correct Space ID
+                    task.setSpaceId(user.getPersonalSpaceId());
+                    taskRepository.createTask(task, context);
+                }
+            });
+        } else {
+            taskRepository.createTask(task, context);
+        }
     }
 
     public void updateTaskStatus(String taskId, String newStatus) {

@@ -56,7 +56,7 @@ public class FirebaseHelper {
                         .addOnFailureListener(callback::onError);
             } else {
                 // NEW USER: Create their Personal Space immediately
-                createSpace("My Tasks", firebaseUser.getUid(), new SpaceCallback() {
+                createSpace("My Tasks", firebaseUser.getUid(),Space.TYPE_PERSONAL, new SpaceCallback() {
                     @Override
                     public void onSuccess(Space space) {
                         User newUser = new User(firebaseUser.getUid(), firebaseUser.getEmail(), firebaseUser.getDisplayName(),
@@ -156,13 +156,13 @@ public class FirebaseHelper {
                 });
     }
 
-    public void createSpace(String spaceName, String creatorUID, SpaceCallback callback) {
+    public void createSpace(String spaceName, String creatorUID,String type, SpaceCallback callback) {
         DocumentReference spaceDocRef = db.collection(SPACES_COLLECTION).document();
         String spaceId = spaceDocRef.getId();
         String inviteCode = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
 
         Space newSpace = new Space(spaceId, spaceName, Arrays.asList(creatorUID), inviteCode, creatorUID);
-        newSpace.setSpaceType(Space.TYPE_SHARED);
+        newSpace.setSpaceType(type);
         spaceDocRef.set(newSpace)
                 .addOnSuccessListener(aVoid -> callback.onSuccess(newSpace))
                 .addOnFailureListener(callback::onError);
