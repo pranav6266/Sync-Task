@@ -1,5 +1,7 @@
 package com.pranav.synctask.utils;
 
+import android.net.Uri;
+
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -16,6 +18,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import com.pranav.synctask.models.Message;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
 public class FirebaseHelper {
     private static final String TAG = "FirebaseHelper";
@@ -23,10 +28,13 @@ public class FirebaseHelper {
     private static final String USERS_COLLECTION = "users";
     private static final String TASKS_COLLECTION = "tasks";
     private static final String SPACES_COLLECTION = "spaces";
-
+    private static final String MESSAGES_COLLECTION = "messages";
+    private final FirebaseStorage storage;
     public FirebaseHelper() {
         db = FirebaseFirestore.getInstance();
+        storage = FirebaseStorage.getInstance(); // Init Storage
     }
+
 
     // Callbacks
     public interface UserCallback { void onSuccess(User user); void onError(Exception e); }
@@ -35,7 +43,7 @@ public class FirebaseHelper {
     public interface TaskCallback { void onSuccess(Task task); void onError(Exception e); }
     public interface SpaceCallback { void onSuccess(Space space); void onError(Exception e); }
     public interface SpacesCallback { void onSuccess(List<Space> spaces); void onError(Exception e); }
-
+    public interface MessagesCallback { void onSuccess(List<Message> messages); void onError(Exception e); }
     // --- USER METHODS ---
     public void createOrUpdateUser(FirebaseUser firebaseUser, UserCallback callback) {
         DocumentReference userDocRef = db.collection(USERS_COLLECTION).document(firebaseUser.getUid());
@@ -297,5 +305,45 @@ public class FirebaseHelper {
 
     public void deleteTask(String taskId) {
         db.collection(TASKS_COLLECTION).document(taskId).delete();
+    }
+
+    public void sendMessage(Message message, String spaceId, TasksCallback callback) {
+        // We assume 'spaceId' is stored in the message or passed here.
+        // Actually, let's store messages in a subcollection of the Space OR top-level with spaceId.
+        // Top-level is consistent with your Tasks design.
+        Map<String, Object> map = message.toMap();
+        map.put("spaceId", spaceId); // Ensure spaceId is attached
+
+        db.collection(MESSAGES_COLLECTION).add(map)
+                .addOnSuccessListener(ref -> callback.onSuccess(null))
+                .addOnFailureListener(callback::onError);
+    }
+
+    public ListenerRegistration getMessages(String spaceId, MessagesCallback callback) {
+        return db.collection(MESSAGES_COLLECTION)
+                .whereEqualTo("spaceId", spaceId)
+                .orderBy("timestamp", Query.Direction.ASCENDING) // Oldest first (WhatsApp style)
+                .addSnapshotListener((value, error) -> {
+                    if (error != null) { callback.onError(error); return; }
+                    if (value != null) {
+                        List<Message> messages = value.toObjects(Message.class);
+                        callback.onSuccess(messages);
+                    } else {
+                        callback.onSuccess(new ArrayList<>());
+                    }
+                });
+    }
+
+    public void uploadProfileImage(Uri imageUri, String uid, UserCallback callback) {
+        StorageReference ref = storage.getReference().child("profile_images/" + uid + ".jpg");
+
+        ref.putFile(imageUri)
+                .addOnSuccessListener(taskSnapshot -> {
+                    ref.getDownloadUrl().addOnSuccessListener(uri -> {
+                        // Update User Profile with new URL
+                        updatePhotoUrl(uid, uri.toString(), callback);
+                    });
+                })
+                .addOnFailureListener(callback::onError);
     }
 }

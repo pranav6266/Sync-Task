@@ -14,22 +14,26 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.pranav.synctask.data.Result
 import com.pranav.synctask.models.Task
+import com.pranav.synctask.ui.components.EmptyState
 import com.pranav.synctask.ui.components.TaskItem
 import com.pranav.synctask.ui.viewmodels.TasksViewModel
 
 @Composable
 fun HomeScreen(
+    onTaskClick: (String) -> Unit,
     viewModel: TasksViewModel = viewModel()
 ) {
+
     val currentUser = FirebaseAuth.getInstance().currentUser
     // FIX 1: Explicitly tell observeAsState the type to help inference
-    val tasksResult by viewModel.getPersonalTasks().observeAsState(initial = Result.Loading())
+    val tasksResult by viewModel.personalTasks.observeAsState(initial = Result.Loading())
 
     LaunchedEffect(currentUser) {
         currentUser?.uid?.let { uid ->
             viewModel.loadPersonalTasks(uid)
         }
     }
+
 
     Box(modifier = Modifier.fillMaxSize()) {
         when (val result = tasksResult) {
@@ -45,22 +49,26 @@ fun HomeScreen(
                 )
             }
             is Result.Success<*> -> {
-                // FIX 3: Safe cast the data. Since Result is Java, we ensure Kotlin knows it's a List<Task>
                 @Suppress("UNCHECKED_CAST")
-                val tasks = result.data as? List<Task> ?: emptyList()
+                val tasks = result.data as? List<Task> ?: emptyList() // <--- 'tasks' is defined here
 
                 if (tasks.isEmpty()) {
-                    Text(
+                    // --- DELETE THE OLD TEXT COMPOSABLE ---
+                    /* Text(
                         text = "No personal tasks yet!",
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.align(Alignment.Center)
                     )
+                    */
+
+                    // --- ADD THE NEW ANIMATION HERE ---
+                    EmptyState(message = "All caught up! No personal tasks.")
+
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(bottom = 80.dp)
                     ) {
-                        // FIX 4: With 'tasks' now correctly identified as List<Task>, this works
                         items(tasks) { task ->
                             TaskItem(
                                 task = task,
@@ -68,9 +76,7 @@ fun HomeScreen(
                                     val newStatus = if (isChecked) Task.STATUS_COMPLETED else Task.STATUS_PENDING
                                     viewModel.updateTaskStatus(task.id, newStatus)
                                 },
-                                onTaskClick = {
-                                    // Handle click
-                                }
+                                onTaskClick = { onTaskClick(task.id) }
                             )
                         }
                     }
@@ -80,4 +86,6 @@ fun HomeScreen(
             else -> {}
         }
     }
+
+
 }

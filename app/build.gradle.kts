@@ -68,4 +68,6 @@ dependencies {
     // Google Sign-In
     implementation(libs.play.services.auth)
     implementation(libs.androidx.compose.runtime.livedata)
+
+    implementation("com.airbnb.android:lottie-compose:6.5.0")
 }

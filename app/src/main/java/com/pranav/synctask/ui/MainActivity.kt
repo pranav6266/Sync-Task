@@ -30,14 +30,18 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Check if user is already logged in
         val startDestination = if (auth.currentUser != null) "main" else "login"
 
+        // EXTRACT NOTIFICATION DATA
+        val targetSpaceId = intent.getStringExtra("target_space_id")
+        val targetType = intent.getStringExtra("target_type")
+
         setContent {
-            // This is your new App Entry Point
             AppNavigation(
                 startDestination = startDestination,
-                onLoginClick = { launchGoogleSignIn() }
+                onLoginClick = { launchGoogleSignIn() },
+                // Pass deep link data down to navigation
+                deepLinkData = if (targetSpaceId != null) Pair(targetType, targetSpaceId) else null
             )
         }
     }

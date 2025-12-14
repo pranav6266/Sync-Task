@@ -8,6 +8,7 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Transaction;
+import com.pranav.synctask.models.Message;
 import com.pranav.synctask.models.Subtask;
 import com.pranav.synctask.models.Task;
 import com.pranav.synctask.utils.FirebaseHelper;
@@ -270,5 +271,32 @@ public class TaskRepository {
             case "Low": return 0;
             default: return 1;
         }
+    }
+
+    // --- CHAT SUPPORT ---
+
+    public void sendMessage(Message message, String spaceId) {
+        firebaseHelper.sendMessage(message, spaceId, new FirebaseHelper.TasksCallback() {
+            @Override public void onSuccess(List<Task> t) { /* Success */ }
+            @Override public void onError(Exception e) { Log.e("Repo", "Send failed", e); }
+        });
+    }
+
+    public void attachMessagesListener(String spaceId, MutableLiveData<Result<List<Message>>> targetLiveData) {
+        // We reuse the activeListeners map to avoid duplicate subscriptions
+        String key = "CHAT_" + spaceId;
+        if (activeListeners.containsKey(key)) activeListeners.get(key).remove();
+
+        ListenerRegistration reg = firebaseHelper.getMessages(spaceId, new FirebaseHelper.MessagesCallback() {
+            @Override
+            public void onSuccess(List<Message> messages) {
+                targetLiveData.setValue(new Result.Success<>(messages));
+            }
+            @Override
+            public void onError(Exception e) {
+                targetLiveData.setValue(new Result.Error<>(e));
+            }
+        });
+        activeListeners.put(key, reg);
     }
 }

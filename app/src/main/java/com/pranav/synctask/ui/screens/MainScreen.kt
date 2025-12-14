@@ -18,24 +18,28 @@ import androidx.navigation.compose.rememberNavController
 import com.google.firebase.auth.FirebaseAuth
 import com.pranav.synctask.models.Task
 import com.pranav.synctask.ui.components.AddTaskDialog
+import com.pranav.synctask.ui.viewmodels.PartnerViewModel
 import com.pranav.synctask.ui.viewmodels.TasksViewModel
 
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    onNavigateToTask: (String) -> Unit ,
+    onNavigateToGroup: (String) -> Unit
+) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: "home"
     val context = LocalContext.current
 
+    // ViewModels
+    val tasksViewModel: TasksViewModel = viewModel()
+    val partnerViewModel: PartnerViewModel = viewModel()
+
     // Dialog State
     var showAddTaskDialog by remember { mutableStateOf(false) }
 
-    // We need the VM here to create tasks from the FAB
-    val tasksViewModel: TasksViewModel = viewModel()
-
     Scaffold(
         floatingActionButton = {
-            // Only show FAB on Home and Partner screens
             if (currentRoute == "home" || currentRoute == "partner") {
                 FloatingActionButton(onClick = { showAddTaskDialog = true }) {
                     Icon(Icons.Default.Add, contentDescription = "Add Task")
@@ -77,24 +81,17 @@ fun MainScreen() {
                 onDismiss = { showAddTaskDialog = false },
                 onConfirm = { title ->
                     val currentUser = FirebaseAuth.getInstance().currentUser
-                    // NOTE: In Phase 4 we will handle "Partner" tasks.
-                    // For now, this defaults to Personal Task logic.
                     if (currentUser != null) {
-                        val newTask = Task()
-                        newTask.title = title
-                        newTask.creatorUID = currentUser.uid
-                        newTask.status = Task.STATUS_PENDING
-                        newTask.ownershipScope = Task.SCOPE_INDIVIDUAL
-
-                        // IMPORTANT: The backend 'User' logic we added in Phase 2
-                        // will assign the correct personalSpaceId inside the repo/helper
-                        // or we can fetch it here. For MVP, relying on helper to assign
-                        // or adding a logic in VM is safer.
-                        // Ideally:
-                        // newTask.setSpaceId(user.getPersonalSpaceId())
-                        // For now, let's assume the user is set up correctly.
-
-                        tasksViewModel.createTask(newTask, context)
+                        if (currentRoute == "partner") {
+                            partnerViewModel.createSharedTask(title)
+                        } else {
+                            val newTask = Task()
+                            newTask.title = title
+                            newTask.creatorUID = currentUser.uid
+                            newTask.status = Task.STATUS_PENDING
+                            newTask.ownershipScope = Task.SCOPE_INDIVIDUAL
+                            tasksViewModel.createTask(newTask, context)
+                        }
                     }
                     showAddTaskDialog = false
                 }
@@ -106,13 +103,18 @@ fun MainScreen() {
             startDestination = "home",
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable("home") { HomeScreen() }
-            composable("partner") { PlaceholderScreen("Partner Chat & Tasks (Coming Phase 5)") }
-            composable("groups") { PlaceholderScreen("Groups List (Coming Phase 6)") }
-            composable("settings") { PlaceholderScreen("Settings (Coming Phase 4)") }
-            composable("settings") { SettingsScreen(onLogout = { navController.navigate("login") { popUpTo(0) }
-                    }
-                )
+            // PASS THE CALLBACK TO SCREENS
+            composable("home") {
+                HomeScreen(onTaskClick = onNavigateToTask)
+            }
+            composable("partner") {
+                PartnerScreen(onTaskClick = onNavigateToTask)
+            }
+            composable("groups") {
+                GroupsScreen(onGroupClick = onNavigateToGroup) // Pass it here
+            }
+            composable("settings") {
+                SettingsScreen(onLogout = { /* Handle logout in parent if needed */ })
             }
         }
     }
