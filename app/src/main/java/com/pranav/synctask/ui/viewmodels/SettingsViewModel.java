@@ -1,49 +1,63 @@
 package com.pranav.synctask.ui.viewmodels;
 
-import android.net.Uri;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
-import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.FirebaseAuth;
 import com.pranav.synctask.data.Result;
-// REMOVED: TaskRepository import
 import com.pranav.synctask.data.UserRepository;
 import com.pranav.synctask.models.User;
-// REMOVED: Map import
 
-public class SettingsViewModel extends ViewModel { // RENAMED
+public class SettingsViewModel extends ViewModel {
     private final UserRepository userRepository;
-    // REMOVED: private final TaskRepository taskRepository;
     private final MutableLiveData<Result<User>> userLiveData = new MutableLiveData<>();
-    // REMOVED: private final MutableLiveData<Map<String, Integer>> taskStats = new MutableLiveData<>();
-    private final MutableLiveData<Result<String>> photoUpdateResult = new MutableLiveData<>();
-    public SettingsViewModel() { // RENAMED
+
+    // Results for UI actions
+    private final MutableLiveData<Result<String>> generateCodeResult = new MutableLiveData<>();
+    private final MutableLiveData<Result<Void>> linkPartnerResult = new MutableLiveData<>();
+    private final MutableLiveData<Result<Void>> unlinkPartnerResult = new MutableLiveData<>();
+
+    public SettingsViewModel() {
         this.userRepository = UserRepository.getInstance();
-        // REMOVED: this.taskRepository = TaskRepository.getInstance();
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid != null) {
+            userRepository.addUserListener(uid, userLiveData);
+        }
     }
 
-    public LiveData<Result<User>> getUserLiveData() {
-        return userLiveData;
+    public LiveData<Result<User>> getUserLiveData() { return userLiveData; }
+    public LiveData<Result<String>> getGenerateCodeResult() { return generateCodeResult; }
+    public LiveData<Result<Void>> getLinkPartnerResult() { return linkPartnerResult; }
+
+    public void generatePartnerCode() {
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid != null) {
+            userRepository.generatePartnerCode(uid, generateCodeResult);
+        }
     }
 
-    // REMOVED: public LiveData<Map<String, Integer>> getTaskStats() { ... }
-
-    public LiveData<Result<String>> getPhotoUpdateResult() {
-        return photoUpdateResult;
+    public void linkPartner(String inviteCode) {
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid != null) {
+            userRepository.linkPartner(uid, inviteCode, linkPartnerResult);
+        }
     }
 
-    public void attachUserListener(String uid) {
-        userRepository.addUserListener(uid, userLiveData);
+    public void unlinkPartner() {
+        String uid = FirebaseAuth.getInstance().getUid();
+        // We need the current user's partnerSpaceId to remove it
+        Result<User> currentVal = userLiveData.getValue();
+        if (uid != null && currentVal instanceof Result.Success) {
+            String partnerSpaceId = ((Result.Success<User>) currentVal).data.getPartnerSpaceId();
+            if (partnerSpaceId != null) {
+                userRepository.unlinkPartner(uid, partnerSpaceId, unlinkPartnerResult);
+            }
+        }
     }
 
-    // REMOVED: public void loadTaskStats() { ... }
-
-    public void uploadProfilePicture(FirebaseUser firebaseUser, Uri imageUri) {
-        userRepository.updateProfilePicture(firebaseUser, imageUri).observeForever(photoUpdateResult::setValue);
-    }
-
-    public LiveData<Result<User>> saveProfileChanges(String uid, String newName) {
-        return userRepository.updateDisplayName(uid, newName);
+    public void logout() {
+        FirebaseAuth.getInstance().signOut();
+        // UI should observe auth state and navigate to login
     }
 
     @Override

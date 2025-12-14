@@ -67,4 +67,5 @@ dependencies {
 
     // Google Sign-In
     implementation(libs.play.services.auth)
+    implementation(libs.androidx.compose.runtime.livedata)
 }

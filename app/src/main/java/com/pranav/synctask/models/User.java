@@ -12,9 +12,14 @@ public class User implements Serializable {
     private String displayName;
     private String photoURL;
     private String fcmToken;
-    private List<String> spaceIds; // CHANGED
+    private List<String> spaceIds;
+
+    // NEW FIELDS FOR V2.0
+    private String personalSpaceId; // ID for "Me" Tab
+    private String partnerSpaceId;  // ID for "Us" Tab
 
     public User() {
+        this.spaceIds = new ArrayList<>();
     }
 
     public User(String uid, String email, String displayName, String photoURL) {
@@ -23,57 +28,33 @@ public class User implements Serializable {
         this.displayName = displayName;
         this.photoURL = photoURL;
         this.fcmToken = null;
-        this.spaceIds = new ArrayList<>(); // CHANGED
+        this.spaceIds = new ArrayList<>();
     }
 
     // Getters and Setters
-    public String getUid() {
-        return uid;
-    }
+    public String getUid() { return uid; }
+    public void setUid(String uid) { this.uid = uid; }
 
-    public void setUid(String uid) {
-        this.uid = uid;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public String getEmail() {
-        return email;
-    }
+    public String getDisplayName() { return displayName; }
+    public void setDisplayName(String displayName) { this.displayName = displayName; }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+    public String getPhotoURL() { return photoURL; }
+    public void setPhotoURL(String photoURL) { this.photoURL = photoURL; }
 
-    public String getDisplayName() {
-        return displayName;
-    }
+    public String getFcmToken() { return fcmToken; }
+    public void setFcmToken(String fcmToken) { this.fcmToken = fcmToken; }
 
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
-    }
+    public List<String> getSpaceIds() { return spaceIds; }
+    public void setSpaceIds(List<String> spaceIds) { this.spaceIds = spaceIds; }
 
-    public String getPhotoURL() {
-        return photoURL;
-    }
+    public String getPersonalSpaceId() { return personalSpaceId; }
+    public void setPersonalSpaceId(String personalSpaceId) { this.personalSpaceId = personalSpaceId; }
 
-    public void setPhotoURL(String photoURL) {
-        this.photoURL = photoURL;
-    }
-
-    public String getFcmToken() {
-        return fcmToken;
-    }
-
-    public void setFcmToken(String fcmToken) {
-        this.fcmToken = fcmToken;
-    }
-
-    public List<String> getSpaceIds() { // CHANGED
-        return spaceIds;
-    }
-
-    public void setSpaceIds(List<String> spaceIds) { // CHANGED
-        this.spaceIds = spaceIds;
-    }
+    public String getPartnerSpaceId() { return partnerSpaceId; }
+    public void setPartnerSpaceId(String partnerSpaceId) { this.partnerSpaceId = partnerSpaceId; }
 
     public Map<String, Object> toMap() {
         Map<String, Object> map = new HashMap<>();
@@ -82,7 +63,9 @@ public class User implements Serializable {
         map.put("displayName", displayName);
         map.put("photoURL", photoURL);
         map.put("fcmToken", fcmToken);
-        map.put("spaceIds", spaceIds); // CHANGED
+        map.put("spaceIds", spaceIds);
+        map.put("personalSpaceId", personalSpaceId);
+        map.put("partnerSpaceId", partnerSpaceId);
         return map;
     }
 }

@@ -41,16 +41,30 @@ public class FirebaseHelper {
         DocumentReference userDocRef = db.collection(USERS_COLLECTION).document(firebaseUser.getUid());
         userDocRef.get().addOnSuccessListener(document -> {
             if (document.exists()) {
+                // Update basic info, keep existing space IDs
                 userDocRef.update("displayName", firebaseUser.getDisplayName(),
                                 "photoURL", firebaseUser.getPhotoUrl() != null ? firebaseUser.getPhotoUrl().toString() : null)
                         .addOnSuccessListener(aVoid -> getUser(firebaseUser.getUid(), callback))
                         .addOnFailureListener(callback::onError);
             } else {
-                User newUser = new User(firebaseUser.getUid(), firebaseUser.getEmail(), firebaseUser.getDisplayName(),
-                        firebaseUser.getPhotoUrl() != null ? firebaseUser.getPhotoUrl().toString() : null);
-                userDocRef.set(newUser)
-                        .addOnSuccessListener(aVoid -> callback.onSuccess(newUser))
-                        .addOnFailureListener(callback::onError);
+                // NEW USER: Create their Personal Space immediately
+                createSpace("My Tasks", firebaseUser.getUid(), new SpaceCallback() {
+                    @Override
+                    public void onSuccess(Space space) {
+                        User newUser = new User(firebaseUser.getUid(), firebaseUser.getEmail(), firebaseUser.getDisplayName(),
+                                firebaseUser.getPhotoUrl() != null ? firebaseUser.getPhotoUrl().toString() : null);
+
+                        // Set the new space as their Personal Space
+                        newUser.setPersonalSpaceId(space.getSpaceId());
+                        newUser.getSpaceIds().add(space.getSpaceId());
+
+                        userDocRef.set(newUser)
+                                .addOnSuccessListener(aVoid -> callback.onSuccess(newUser))
+                                .addOnFailureListener(callback::onError);
+                    }
+                    @Override
+                    public void onError(Exception e) { callback.onError(e); }
+                });
             }
         }).addOnFailureListener(callback::onError);
     }

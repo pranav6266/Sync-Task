@@ -8,57 +8,84 @@ import com.pranav.synctask.data.Result;
 import com.pranav.synctask.data.TaskRepository;
 import com.pranav.synctask.data.UserRepository;
 import com.pranav.synctask.models.Task;
-
+import com.pranav.synctask.models.User;
+import java.util.Collections;
 import java.util.List;
 
 public class TasksViewModel extends ViewModel {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
-    private final MutableLiveData<String> searchQuery = new MutableLiveData<>("");
+
+    // Two distinct live data streams for the two main tabs
+    private final MutableLiveData<Result<List<Task>>> personalTasksResult = new MutableLiveData<>();
+    private final MutableLiveData<Result<List<Task>>> partnerTasksResult = new MutableLiveData<>();
+
     public TasksViewModel() {
         this.taskRepository = TaskRepository.getInstance();
         this.userRepository = UserRepository.getInstance();
     }
 
-    public LiveData<Result<List<Task>>> getTasksResult() {
-        return taskRepository.getTasks();
+    // --- PERSONAL TASKS (ME TAB) ---
+    public LiveData<Result<List<Task>>> getPersonalTasks() {
+        return personalTasksResult;
     }
 
-    public LiveData<String> getSearchQuery() {
-        return searchQuery;
+    public void loadPersonalTasks(String uid) {
+        personalTasksResult.setValue(new Result.Loading<>());
+        userRepository.getUser(uid).observeForever(result -> {
+            if (result instanceof Result.Success) {
+                User user = ((Result.Success<User>) result).data;
+                if (user.getPersonalSpaceId() != null) {
+                    // Re-use the existing repository logic, but point it to our specific LiveData
+                    taskRepository.attachTasksListener(user.getPersonalSpaceId(), personalTasksResult);
+                } else {
+                    // If no personal space exists (edge case), return empty
+                    personalTasksResult.setValue(new Result.Success<>(Collections.emptyList()));
+                }
+            } else if (result instanceof Result.Error) {
+                personalTasksResult.setValue(new Result.Error<>(((Result.Error<User>) result).exception));
+            }
+        });
     }
 
-    public void setSearchQuery(String query) {
-        searchQuery.setValue(query);
+    // --- PARTNER TASKS (US TAB) ---
+    public LiveData<Result<List<Task>>> getPartnerTasks() {
+        return partnerTasksResult;
     }
 
-    public void loadTasks(String spaceId) {
-        taskRepository.attachTasksListener(spaceId);
+    public void loadPartnerTasks(String uid) {
+        partnerTasksResult.setValue(new Result.Loading<>());
+        userRepository.getUser(uid).observeForever(result -> {
+            if (result instanceof Result.Success) {
+                User user = ((Result.Success<User>) result).data;
+                if (user.getPartnerSpaceId() != null) {
+                    taskRepository.attachTasksListener(user.getPartnerSpaceId(), partnerTasksResult);
+                } else {
+                    // No partner linked yet
+                    partnerTasksResult.setValue(new Result.Success<>(Collections.emptyList()));
+                }
+            } else if (result instanceof Result.Error) {
+                partnerTasksResult.setValue(new Result.Error<>(((Result.Error<User>) result).exception));
+            }
+        });
     }
 
-    public void refreshTasks() {
-        taskRepository.refreshTasks();
+    // --- ACTIONS ---
+    public void createTask(Task task, Context context) {
+        taskRepository.createTask(task, context);
     }
 
     public void updateTaskStatus(String taskId, String newStatus) {
         taskRepository.updateTaskStatus(taskId, newStatus);
     }
-    // --- ADDED ---
-    // Used for the "Undo" delete feature
-    public void createTask(Task task, Context context) {
-        taskRepository.createTask(task, context);
-    }
-    // --- END ADDED ---
 
-    // --- ADDED IN PHASE 4A ---
     public void deleteTask(String taskId) {
         taskRepository.deleteTask(taskId);
     }
-    // --- END ADDED ---
 
     @Override
     protected void onCleared() {
         super.onCleared();
-        taskRepository.removeTasksListListener(); // MODIFIED to call renamed method
+        taskRepository.removeTasksListListener();
     }
 }
